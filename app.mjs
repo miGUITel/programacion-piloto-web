@@ -1,4 +1,4 @@
-import { validateDocument, summarize, GithubStore, saveErrorFeedback } from './core.mjs?v=20261015-4';
+import { validateDocument, summarize, GithubStore, saveErrorFeedback } from './core.mjs?v=20261015-5';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -413,7 +413,7 @@ function openEditor(sessionIndex, activityIndex, targetField = 'observations') {
   fields.forEach((field) => { $(field).value = text(activity[field]); });
   const details = $('editor-details');
   details.replaceChildren();
-  for (const [label, value] of [['Unidad', draft.unit.id], ['Sesión', session.id], ['Porción', activity.id], ['Tipo de origen', activity.kind], ['Fila de origen', activity.sourceRow]]) {
+  for (const [label, value] of [['Unidad', draft.unit.id], ['Sesión', session.id], ['Porción', activity.id], ['Tipo de porción', activity.kind], ['Evento de Calendar', activity.calendar?.uid ?? activity.metadata?.calendarUid], ['Fila de origen', activity.sourceRow]]) {
     if (value !== undefined && value !== null) details.append(node('dt', '', label), node('dd', '', value));
   }
   $('editor').querySelectorAll('details').forEach((element) => { element.open = false; });

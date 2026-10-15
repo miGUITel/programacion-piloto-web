@@ -10,6 +10,9 @@ const isObject = value => value !== null && typeof value === 'object' && !Array.
 const isText = value => typeof value === 'string';
 const nonemptyText = value => isText(value) && value.trim().length > 0;
 const positiveInteger = value => Number.isInteger(value) && value > 0;
+const isArchivePath = value => isText(value)
+  && /^(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A-Za-z0-9_-][A-Za-z0-9._-]*\.json$/.test(value)
+  && !value.split('/').some(part => part === '.' || part === '..');
 
 export class ApiError extends Error {
   constructor(message, { status = null, code = 'API_ERROR', errors = [] } = {}) {
@@ -103,11 +106,19 @@ export function validateDocument(doc) {
   const errors = [];
   if (!isObject(doc)) return ['El documento debe ser un objeto JSON.'];
   validateJson(doc, 'document', errors);
-  if (doc.schemaVersion !== 1) errors.push('schemaVersion: debe ser 1.');
+  if (doc.schemaVersion !== 1 && doc.schemaVersion !== 2) errors.push('schemaVersion: debe ser 1 o 2.');
+  const isV2 = doc.schemaVersion === 2;
   if (doc.pilot !== true) errors.push('pilot: debe ser true.');
   if (!isObject(doc.module) || doc.module.code !== 'LM' || !nonemptyText(doc.module.name)) errors.push('module: requiere code LM y name no vacío.');
   if (!isObject(doc.unit) || doc.unit.id !== 'LM-UT02' || doc.unit.code !== 'UT02' || !nonemptyText(doc.unit.title)) errors.push('unit: requiere id LM-UT02, code UT02 y title no vacío.');
-  if (!isObject(doc.source)) errors.push('source: debe ser un objeto.');
+  if (isV2) {
+    if (Object.hasOwn(doc, 'source')) errors.push('source: no forma parte de schemaVersion 2; el origen se conserva en el archivo privado.');
+    if (!isObject(doc.provenance)) errors.push('provenance: debe ser un objeto.');
+    else {
+      if (!isArchivePath(doc.provenance.archivePath)) errors.push('provenance.archivePath: debe ser una ruta relativa segura a un archivo JSON privado.');
+      if (!isText(doc.provenance.sha256) || !/^[a-fA-F0-9]{64}$/.test(doc.provenance.sha256)) errors.push('provenance.sha256: debe ser una huella SHA-256 de 64 caracteres hexadecimales.');
+    }
+  } else if (!isObject(doc.source)) errors.push('source: debe ser un objeto.');
   if (!Array.isArray(doc.sessions)) {
     errors.push('sessions: debe ser una lista.');
     return errors;
@@ -147,7 +158,13 @@ export function validateDocument(doc) {
       for (const field of TEXT_FIELDS) {
         if (!isText(activity[field])) errors.push(`${activityPath}.${field}: debe ser texto.`);
       }
-      if (!positiveInteger(activity.sourceRow)) errors.push(`${activityPath}.sourceRow: debe ser un entero positivo.`);
+      if (isV2) {
+        if (Object.hasOwn(activity, 'sourceRow')) errors.push(`${activityPath}.sourceRow: no forma parte de schemaVersion 2.`);
+        if (Object.hasOwn(activity, 'calendar')) {
+          if (!isObject(activity.calendar)) errors.push(`${activityPath}.calendar: debe ser un objeto.`);
+          else if (!nonemptyText(activity.calendar.uid)) errors.push(`${activityPath}.calendar.uid: debe ser un identificador no vacío.`);
+        }
+      } else if (!positiveInteger(activity.sourceRow)) errors.push(`${activityPath}.sourceRow: debe ser un entero positivo.`);
       const start = timeToMinutes(activity.start);
       const end = timeToMinutes(activity.end);
       if (start === null || end === null) errors.push(`${activityPath}: las horas requieren formato HH:mm válido.`);

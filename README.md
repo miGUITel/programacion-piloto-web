@@ -33,7 +33,7 @@ En el entorno sintético se comprobarán también la lectura válida seguida de 
 
 **Criterio de cierre:** pruebas automatizadas y de interfaz satisfactorias, más confirmación del guardado real y su recuperación tras reconectar. Un mensaje más claro no equivale por sí solo a resolver la causa del error.
 
-**Resultado de la prueba del 15/10/2026:** el docente confirma que el rechazo HTTP 403 se debía a los permisos del token y que, tras corregirlos, GitHub confirmó el guardado con una revisión. La existencia de esa revisión también se ha comprobado mediante lectura del repositorio. La escritura queda confirmada; queda pendiente comunicar el resultado de la recuperación de la anotación después de actualizar y reconectar.
+**Resultado de la prueba del 15/10/2026:** el docente confirma que el rechazo HTTP 403 se debía a los permisos del token y que, tras corregirlos, GitHub confirmó el guardado con una revisión. La existencia de esa revisión también se ha comprobado mediante lectura del repositorio. El docente ha confirmado asimismo que la anotación permanece tras desconectar y volver a conectar. La escritura y la recuperación reales quedan confirmadas.
 
 ## Presentación
 
@@ -49,20 +49,22 @@ Cuando una actividad contiene `progress` con valor 0, 1 o 2, se muestra su progr
 
 ## Requisitos futuros pendientes
 
-Estos requisitos están anotados para desarrollo posterior; no están implementados. La escritura en GitHub ya está confirmada y se completará la comprobación de recuperación tras reconectar. El refinamiento visual continuará después, manteniendo la densidad y el aprovechamiento de la anchura.
+Estos requisitos están anotados para desarrollo posterior; no están implementados. La escritura en GitHub y su recuperación tras reconectar ya están confirmadas. El refinamiento visual continuará después, manteniendo la densidad y el aprovechamiento de la anchura.
 
 - **Tareas:** destacar en azul más intenso la porción correspondiente y añadir un botón pequeño de confirmación de que la tarea se ha presentado y abierto para que el alumnado la trabaje. No confundir esta confirmación docente con tarea entregada, completada o calificada. Tampoco debe publicar automáticamente en Aula Virtual.
 - **Exámenes:** destacar en naranja la porción correspondiente. Tres sesiones antes del examen, mostrar un recordatorio para avisar al alumnado y un botón para marcar que el aviso ya se ha dado. Contar sesiones del módulo, no tres días ni tres porciones. El alcance debe poder cruzar el límite entre UT. Antes de implementarlo, concretar el tratamiento de sesiones canceladas, reprogramaciones y exámenes con menos de tres sesiones anteriores disponibles.
 - **Preparación de sesiones:** mostrar de un vistazo qué sesiones están preparadas. Valorar una pequeña marca en cada cabecera de sesión o una vista anual limpia que reúna las sesiones y su preparación. Queda abierto si se adopta una opción o ambas; si hay dos vistas, consultarán el mismo dato, sin registros paralelos. La preparación es distinta de la impartición, del progreso de las actividades y de la confirmación de apertura de una tarea. El control se refiere a la sesión completa, no a una marca repetida en cada porción. Antes de implementarlo, acordar cómo se marca una sesión preparada y qué implica cambiar su planificación después; no deducir preparación automáticamente de la existencia de recursos ni del estado Impartida.
 - **Datos explícitos:** identificar tarea o examen mediante un tipo estructurado, no deducirlo exclusivamente del título o del color. Las confirmaciones serán datos propios, distintos del estado de impartición; los detalles del modelo quedan pendientes de aprobación.
 
-## Evolución prevista del JSON
+## Formato del JSON
 
-El JSON operativo ya organiza módulo, unidad, sesiones y porciones con campos semánticos e identificadores estables. Sin embargo, `source.originalRows` conserva una instantánea histórica de importación con coordenadas y fórmulas Excel. La web no calcula esas fórmulas; la instantánea tampoco es el estado actual de las notas. Se mantiene por trazabilidad, no porque sea necesaria para editar el seguimiento.
+La interfaz admite `schemaVersion` 1 y 2. El formato 2 mantiene módulo, unidad, sesiones y porciones con campos semánticos e identificadores estables. La primera porción sigue siendo `Cabecera`: tiene duración y seguimiento propios, y no es una fila meramente decorativa.
 
-Completar la prueba de guardado y recuperación antes de migrar el formato. Después, proponer separar la instantánea en un archivo de procedencia del repositorio privado y dejar solo su referencia y huella en el documento operativo. Mantener los identificadores y los vínculos de Calendar útiles, retirar redundancias por nivel y separar explícitamente el seguimiento general de sesión del seguimiento de cada porción, sin reinterpretar notas existentes automáticamente.
+La instantánea original del Excel, sus fórmulas y coordenadas, las referencias de filas y los metadatos de importación redundantes se conservan en un histórico del repositorio privado. El documento operativo contiene únicamente su referencia `provenance.archivePath` y la huella SHA-256 de sus bytes. La interfaz no descarga ni interpreta ese histórico. Los identificadores de Calendar se conservan en `calendar.uid`; esto no activa ninguna sincronización con Calendar.
 
-Una migración posterior partirá de la última versión confirmada de GitHub, no de una nueva importación del Excel ni de una copia local antigua. Se probará sobre copia, con versión de esquema y conservación comprobada de todos los textos, estados, horarios, identificadores y datos desconocidos. Los recordatorios calculables no deben duplicarse como fechas fijas. Los nuevos tipos y confirmaciones se incorporarán después de aprobar su significado.
+La conversión parte de la última versión confirmada de GitHub y verifica que puede reconstruirse exactamente el documento anterior, incluidos textos, estados, horarios, identificadores, campos desconocidos y progreso con valor cero. No reimporta Excel ni reinterpreta las notas. El histórico se publica y comprueba antes de actualizar el documento mediante su SHA, sin forzar cambios concurrentes.
+
+Para futuros cambios, conservar la estructura semántica y los campos desconocidos; separar explícitamente nuevos conceptos sin redistribuir notas automáticamente. Los recordatorios calculables no deben duplicarse como fechas fijas. Los nuevos tipos y confirmaciones se incorporarán después de aprobar su significado. La copia piloto sigue siendo independiente de los Excel oficiales.
 
 ## Seguridad y ejecución
 
