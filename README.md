@@ -33,6 +33,8 @@ En el entorno sintético se comprobarán también la lectura válida seguida de 
 
 **Criterio de cierre:** pruebas automatizadas y de interfaz satisfactorias, más confirmación del guardado real y su recuperación tras reconectar. Un mensaje más claro no equivale por sí solo a resolver la causa del error.
 
+**Resultado de la prueba del 15/10/2026:** el docente confirma que el rechazo HTTP 403 se debía a los permisos del token y que, tras corregirlos, GitHub confirmó el guardado con una revisión. La existencia de esa revisión también se ha comprobado mediante lectura del repositorio. La escritura queda confirmada; queda pendiente comunicar el resultado de la recuperación de la anotación después de actualizar y reconectar.
+
 ## Presentación
 
 Hay tres propuestas provisionales seleccionables arriba: **Tabla**, con columnas alineadas y previsualizaciones de una línea; **Bandas**, con hasta dos líneas de descripción y separación entre sesiones; y **Agenda**, con filas más densas y más anchura para lo previsto, dejando las notas tras sus accesos directos. El contexto de módulo y unidad está siempre arriba, sin barra lateral. En ventanas estrechas la distribución se adapta y las previsualizaciones secundarias se ocultan; el contenido completo sigue disponible en el editor.
@@ -47,17 +49,18 @@ Cuando una actividad contiene `progress` con valor 0, 1 o 2, se muestra su progr
 
 ## Requisitos futuros pendientes
 
-Estos requisitos están anotados para desarrollo posterior; no están implementados. La prioridad actual es validar el guardado. El refinamiento visual continuará después, manteniendo la densidad y el aprovechamiento de la anchura.
+Estos requisitos están anotados para desarrollo posterior; no están implementados. La escritura en GitHub ya está confirmada y se completará la comprobación de recuperación tras reconectar. El refinamiento visual continuará después, manteniendo la densidad y el aprovechamiento de la anchura.
 
 - **Tareas:** destacar en azul más intenso la porción correspondiente y añadir un botón pequeño de confirmación de que la tarea se ha presentado y abierto para que el alumnado la trabaje. No confundir esta confirmación docente con tarea entregada, completada o calificada. Tampoco debe publicar automáticamente en Aula Virtual.
 - **Exámenes:** destacar en naranja la porción correspondiente. Tres sesiones antes del examen, mostrar un recordatorio para avisar al alumnado y un botón para marcar que el aviso ya se ha dado. Contar sesiones del módulo, no tres días ni tres porciones. El alcance debe poder cruzar el límite entre UT. Antes de implementarlo, concretar el tratamiento de sesiones canceladas, reprogramaciones y exámenes con menos de tres sesiones anteriores disponibles.
+- **Preparación de sesiones:** mostrar de un vistazo qué sesiones están preparadas. Valorar una pequeña marca en cada cabecera de sesión o una vista anual limpia que reúna las sesiones y su preparación. Queda abierto si se adopta una opción o ambas; si hay dos vistas, consultarán el mismo dato, sin registros paralelos. La preparación es distinta de la impartición, del progreso de las actividades y de la confirmación de apertura de una tarea. El control se refiere a la sesión completa, no a una marca repetida en cada porción. Antes de implementarlo, acordar cómo se marca una sesión preparada y qué implica cambiar su planificación después; no deducir preparación automáticamente de la existencia de recursos ni del estado Impartida.
 - **Datos explícitos:** identificar tarea o examen mediante un tipo estructurado, no deducirlo exclusivamente del título o del color. Las confirmaciones serán datos propios, distintos del estado de impartición; los detalles del modelo quedan pendientes de aprobación.
 
 ## Evolución prevista del JSON
 
 El JSON operativo ya organiza módulo, unidad, sesiones y porciones con campos semánticos e identificadores estables. Sin embargo, `source.originalRows` conserva una instantánea histórica de importación con coordenadas y fórmulas Excel. La web no calcula esas fórmulas; la instantánea tampoco es el estado actual de las notas. Se mantiene por trazabilidad, no porque sea necesaria para editar el seguimiento.
 
-No migrar el formato mientras se diagnostica el guardado. Después, proponer separar la instantánea en un archivo de procedencia del repositorio privado y dejar solo su referencia y huella en el documento operativo. Mantener los identificadores y los vínculos de Calendar útiles, retirar redundancias por nivel y separar explícitamente el seguimiento general de sesión del seguimiento de cada porción, sin reinterpretar notas existentes automáticamente.
+Completar la prueba de guardado y recuperación antes de migrar el formato. Después, proponer separar la instantánea en un archivo de procedencia del repositorio privado y dejar solo su referencia y huella en el documento operativo. Mantener los identificadores y los vínculos de Calendar útiles, retirar redundancias por nivel y separar explícitamente el seguimiento general de sesión del seguimiento de cada porción, sin reinterpretar notas existentes automáticamente.
 
 Una migración posterior partirá de la última versión confirmada de GitHub, no de una nueva importación del Excel ni de una copia local antigua. Se probará sobre copia, con versión de esquema y conservación comprobada de todos los textos, estados, horarios, identificadores y datos desconocidos. Los recordatorios calculables no deben duplicarse como fechas fijas. Los nuevos tipos y confirmaciones se incorporarán después de aprobar su significado.
 
