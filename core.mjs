@@ -199,7 +199,8 @@ export class GithubStore {
     if (typeof fetchImpl !== 'function') throw new TypeError('fetchImpl debe ser una función.');
     if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) throw new TypeError('timeoutMs debe ser positivo.');
     this.#token = token.trim();
-    this.#fetch = fetchImpl;
+    // Native browser fetch requires its Window/Worker receiver, not this store.
+    this.#fetch = fetchImpl.bind(globalThis);
     this.#timeout = timeoutMs;
   }
 

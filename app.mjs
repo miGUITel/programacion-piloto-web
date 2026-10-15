@@ -1,4 +1,4 @@
-import { validateDocument, summarize, GithubStore, ConflictError, UnknownSaveError } from './core.mjs';
+import { validateDocument, summarize, GithubStore, ConflictError, UnknownSaveError } from './core.mjs?v=20261015-2';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -279,10 +279,19 @@ async function connect(event) {
   } catch (error) {
     token = '';
     store = null;
-    const status = error?.status;
-    message('login-message', status === 401 || status === 403 || status === 404
-      ? 'No se ha podido abrir el documento. Comprueba el token, su acceso al repositorio privado y los permisos de Contents.'
-      : 'No se ha podido cargar un documento válido. Comprueba la conexión, el acceso al repositorio y el formato del archivo antes de volver a conectar.', 'error');
+    const explanations = new Map([
+      ['HTTP_401', 'GitHub no acepta el token. Comprueba que lo has copiado completo y que no ha caducado.'],
+      ['HTTP_403', 'GitHub ha denegado el acceso. Comprueba los permisos del token; también puede haberse alcanzado un límite temporal de peticiones.'],
+      ['HTTP_404', 'GitHub no permite encontrar LM/UT02.json. Comprueba que el token tenga acceso a programacion-piloto-datos y permiso Contents.'],
+      ['READ_TIMEOUT', 'GitHub ha tardado demasiado en responder. El token se ha retirado del campo; vuelve a introducirlo para reintentar.'],
+      ['READ_FAILED', 'El navegador no ha podido conectar con GitHub. Este error no confirma que el token sea incorrecto.'],
+      ['INVALID_RESPONSE', 'GitHub ha devuelto una respuesta ilegible. No se ha modificado ningún dato.'],
+      ['INVALID_DOCUMENT', 'Se ha leído el archivo, pero su formato no coincide con el esperado por el piloto. No cambies el token: hay que revisar el documento.'],
+    ]);
+    const explanation = explanations.get(error?.code);
+    message('login-message', explanation
+      ? `${explanation} [${error.code}]`
+      : 'No se ha podido abrir el cuaderno por un error interno o una respuesta inesperada. No se ha modificado ningún dato. [CONNECTION_ERROR]', 'error');
   } finally {
     token = '';
     setBusy(false);
