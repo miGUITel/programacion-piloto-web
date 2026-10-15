@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261015-3">
-  <script type="module" src="./app.mjs?v=20261015-5"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261015-6">
+  <script type="module" src="./app.mjs?v=20261015-6"></script>
 </head>
 <body>
   <header class="topbar">
@@ -30,7 +30,7 @@
         <span class="card-kicker">ACCESO A DATOS PRIVADOS</span>
         <h2 id="connect-title">Conectar el cuaderno</h2>
         <p>La interfaz es pública. El contenido del cuaderno solo se carga con acceso al repositorio privado.</p>
-        <dl class="repository-card"><div><dt>Repositorio de datos</dt><dd>miGUITel/programacion-piloto-datos</dd></div><div><dt>Documento del piloto</dt><dd>LM/UT02.json</dd></div></dl>
+        <dl class="repository-card"><div><dt>Repositorio de datos</dt><dd>miGUITel/programacion-piloto-datos</dd></div><div><dt>Tu cuaderno</dt><dd>Elige módulo y unidad después de conectar.</dd></div></dl>
         <form id="login-form">
           <label for="token">Token de acceso de GitHub</label>
           <input id="token" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="token-help" placeholder="Introduce tu token de acceso">
@@ -40,6 +40,18 @@
         <p id="login-message" class="message" role="status" aria-live="polite"></p>
         <p class="login-footnote">No hay datos de muestra ni datos académicos incluidos en esta web.</p>
       </section>
+    </section>
+
+    <section id="library-view" class="library-bar" hidden aria-label="Elegir módulo y unidad">
+      <div class="document-picker">
+        <div class="picker-field"><label for="module-select">Módulo</label><select id="module-select" aria-describedby="selection-help"></select></div>
+        <div class="picker-field unit-picker"><label for="unit-select">Unidad</label><select id="unit-select" aria-describedby="selection-help"></select></div>
+        <button id="open-unit" class="button button-primary button-small" type="button">Abrir unidad</button>
+        <button id="refresh-catalog" class="button button-small" type="button">Actualizar lista</button>
+        <span id="active-document" class="active-document" role="status">Ninguna unidad abierta</span>
+      </div>
+      <p id="selection-help" class="selection-help"></p>
+      <p id="library-message" class="message" role="status" aria-live="polite" hidden></p>
     </section>
 
     <section id="workspace" class="workspace" data-layout="table" hidden aria-labelledby="unit-title">

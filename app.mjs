@@ -1,4 +1,4 @@
-import { validateDocument, summarize, GithubStore, saveErrorFeedback } from './core.mjs?v=20261015-5';
+import { validateCatalog, validateDocument, summarize, GithubStore, saveErrorFeedback } from './core.mjs?v=20261015-6';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -11,7 +11,11 @@ const layoutDescriptions = new Map([
   ['agenda', 'Agenda · máxima densidad y más espacio para lo previsto; notas en sus botones.'],
 ]);
 const openSessions = new Set();
+const documentStores = new Map();
 let store = null;
+let connection = null;
+let catalog = null;
+let activeEntry = null;
 let savedDocument = null;
 let draft = null;
 let originalSha = null;
@@ -40,8 +44,8 @@ function editorDirty() {
 
 function hasPendingChanges() { return dirty() || editorDirty(); }
 
-function checked(value) {
-  const errors = validateDocument(value);
+function checked(value, entry = activeEntry) {
+  const errors = validateDocument(value, entry ?? undefined);
   if (!Array.isArray(errors) || errors.length) throw new Error('InvalidDocument');
   return value;
 }
@@ -81,7 +85,114 @@ function updateSaveState() {
   $('refresh').disabled = busy || !draft || $('editor').open;
   $('disconnect').disabled = busy;
   $('download-draft').disabled = busy || !draft;
-  $('recovery-actions').hidden = !(blockedSave || failedSave);
+  $('recovery-actions').hidden = !(dirty() || blockedSave || failedSave);
+  updateNavigation();
+}
+
+function selectedEntry() {
+  const module = catalog?.modules.find(item => item.code === $('module-select').value);
+  const unit = module?.units.find(item => item.code === $('unit-select').value);
+  return unit ? { moduleCode: module.code, unitCode: unit.code, unitId: unit.id, path: unit.path } : null;
+}
+
+function updateNavigation() {
+  const editing = hasPendingChanges() || $('editor').open || blockedSave;
+  const selectedModule = catalog?.modules.find(item => item.code === $('module-select').value);
+  const selected = selectedEntry();
+  $('module-select').disabled = busy || editing || !catalog?.modules.length;
+  $('unit-select').disabled = busy || editing || !selectedModule?.units.length;
+  $('open-unit').disabled = busy || editing || !selected || selected.path === activeEntry?.path;
+  $('refresh-catalog').disabled = busy || editing || !connection;
+  $('active-document').textContent = activeEntry ? `Abierta: ${activeEntry.moduleCode} · ${activeEntry.unitCode}` : 'Ninguna unidad abierta';
+  let help = 'Selecciona módulo y unidad; pulsa Abrir unidad para cargarla.';
+  if (blockedSave) help = 'Conserva el borrador y actualiza la unidad abierta para revisar el guardado antes de cambiar de unidad.';
+  else if ($('editor').open) help = 'Termina de editar y guarda los cambios antes de abrir otra unidad.';
+  else if (editing) help = 'Guarda tus cambios antes de abrir otra unidad. El borrador permanece en la unidad abierta.';
+  else if (selectedModule && !selectedModule.units.length) help = `${selectedModule.code}: pendiente de incorporar su unidad. No hay planificación disponible en la app todavía.${activeEntry ? ` Sigue abierta ${activeEntry.moduleCode} · ${activeEntry.unitCode}.` : ''}`;
+  else if (selected?.path === activeEntry?.path && activeEntry) help = 'Unidad abierta. Los cambios se guardan únicamente en su documento.';
+  else if (activeEntry) help += ` Hasta entonces sigue abierta ${activeEntry.moduleCode} · ${activeEntry.unitCode}.`;
+  $('selection-help').textContent = help;
+}
+
+function fillUnits(preferredCode = '') {
+  const module = catalog?.modules.find(item => item.code === $('module-select').value);
+  const select = $('unit-select');
+  select.replaceChildren();
+  if (!module?.units.length) {
+    const option = node('option', '', 'Pendiente de incorporar');
+    option.value = '';
+    select.append(option);
+  } else for (const unit of module.units) {
+    const option = node('option', '', `${unit.code} · ${unit.title}`);
+    option.value = unit.code;
+    select.append(option);
+  }
+  if (module?.units.some(unit => unit.code === preferredCode)) select.value = preferredCode;
+  updateNavigation();
+}
+
+function acceptCatalog(result) {
+  const errors = validateCatalog(result.catalog);
+  if (errors.length) throw new Error('InvalidCatalog');
+  const previousModule = $('module-select').value;
+  const previousUnit = $('unit-select').value;
+  catalog = copy(result.catalog);
+  const select = $('module-select');
+  select.replaceChildren();
+  for (const module of catalog.modules) {
+    const option = node('option', '', `${module.code} · ${module.name}`);
+    option.value = module.code;
+    select.append(option);
+  }
+  const preferred = catalog.modules.find(module => module.code === previousModule)
+    ?? catalog.modules.find(module => module.units.length) ?? catalog.modules[0];
+  select.value = preferred?.code ?? '';
+  fillUnits(previousUnit);
+  $('library-view').hidden = false;
+  $('login-view').hidden = true;
+  $('disconnect').hidden = false;
+  $('connection-label').replaceChildren(node('span', 'status-dot'), document.createTextNode('Conectado'));
+  $('connection-label').classList.add('is-connected');
+}
+
+async function loadSelectedDocument() {
+  const entry = selectedEntry();
+  if (!entry || !connection || hasPendingChanges() || blockedSave || $('editor').open || entry.path === activeEntry?.path) return;
+  message('library-message', `Abriendo ${entry.moduleCode} · ${entry.unitCode}…`);
+  try {
+    const candidate = documentStores.get(entry.path) ?? connection.forDocument(entry);
+    documentStores.set(entry.path, candidate);
+    const result = await candidate.load();
+    // Do not replace the current document, its SHA or its store until the new read is valid.
+    checked(result.document, entry);
+    if (typeof result.sha !== 'string' || !result.sha) throw new Error('MissingVersion');
+    store = candidate;
+    activeEntry = Object.freeze({ ...entry });
+    openSessions.clear();
+    acceptLoaded(result);
+    message('library-message');
+    $('unit-title').focus({ preventScroll: true });
+  } catch {
+    message('library-message', `No se ha podido abrir ${entry.moduleCode} · ${entry.unitCode}. Comprueba el acceso, la conexión y el documento.${activeEntry ? ' La unidad anterior y sus datos siguen intactos.' : ' Puedes actualizar la lista o probar otra unidad.'}`, 'error');
+  }
+}
+
+async function openSelectedUnit() {
+  if (busy || !connection || hasPendingChanges() || blockedSave || $('editor').open) return;
+  setBusy(true);
+  try { await loadSelectedDocument(); } finally { setBusy(false); }
+}
+
+async function refreshCatalog() {
+  if (busy || !connection || hasPendingChanges() || blockedSave || $('editor').open) return;
+  setBusy(true);
+  message('library-message', 'Actualizando la lista de unidades…');
+  try {
+    acceptCatalog(await connection.loadCatalog());
+    message('library-message', 'Lista actualizada. La unidad abierta no ha cambiado.');
+  } catch {
+    message('library-message', 'No se ha podido actualizar la lista. Se conservan la lista anterior y la unidad abierta.', 'error');
+  } finally { setBusy(false); }
 }
 
 function confirmationTime() {
@@ -299,25 +410,34 @@ async function connect(event) {
   $('token').value = '';
   if (!token) return;
   try {
-    store = new GithubStore({ token });
+    connection = new GithubStore({ token });
     token = '';
     setBusy(true);
-    message('login-message', 'Comprobando acceso y leyendo el documento privado…');
-    acceptLoaded(await store.load());
+    message('login-message', 'Comprobando acceso y leyendo el catálogo privado…');
+    acceptCatalog(await connection.loadCatalog());
     message('login-message');
-    $('unit-title').tabIndex = -1;
-    $('unit-title').focus();
+    await loadSelectedDocument();
   } catch (error) {
     token = '';
     store = null;
+    connection = null;
+    documentStores.clear();
+    catalog = null;
+    activeEntry = null;
+    $('library-view').hidden = true;
+    $('login-view').hidden = false;
+    $('disconnect').hidden = true;
+    $('connection-label').replaceChildren(node('span', 'status-dot'), document.createTextNode('Sin conectar'));
+    $('connection-label').classList.remove('is-connected');
     const explanations = new Map([
       ['HTTP_401', 'GitHub no acepta el token. Comprueba que lo has copiado completo y que no ha caducado.'],
       ['HTTP_403', 'GitHub ha denegado el acceso. Comprueba los permisos del token; también puede haberse alcanzado un límite temporal de peticiones.'],
-      ['HTTP_404', 'GitHub no permite encontrar LM/UT02.json. Comprueba que el token tenga acceso a programacion-piloto-datos y permiso Contents.'],
+      ['HTTP_404', 'GitHub no permite encontrar el catálogo privado. Comprueba que el token tenga acceso a programacion-piloto-datos y permiso Contents.'],
       ['READ_TIMEOUT', 'GitHub ha tardado demasiado en responder. El token se ha retirado del campo; vuelve a introducirlo para reintentar.'],
       ['READ_FAILED', 'El navegador no ha podido conectar con GitHub. Este error no confirma que el token sea incorrecto.'],
       ['INVALID_RESPONSE', 'GitHub ha devuelto una respuesta ilegible. No se ha modificado ningún dato.'],
       ['INVALID_DOCUMENT', 'Se ha leído el archivo, pero su formato no coincide con el esperado por el piloto. No cambies el token: hay que revisar el documento.'],
+      ['INVALID_CATALOG', 'Se ha leído el catálogo, pero su formato no es válido. No cambies el token: hay que revisar la lista de unidades.'],
     ]);
     const explanation = explanations.get(error?.code);
     message('login-message', explanation
@@ -335,6 +455,10 @@ function disconnect() {
   $('editor').close();
   editorTarget = null;
   store = null;
+  connection = null;
+  documentStores.clear();
+  catalog = null;
+  activeEntry = null;
   savedDocument = null;
   draft = null;
   originalSha = null;
@@ -349,6 +473,10 @@ function disconnect() {
   fields.forEach((field) => { $(field).value = ''; });
   $('token').value = '';
   $('workspace').hidden = true;
+  $('library-view').hidden = true;
+  $('module-select').replaceChildren();
+  $('unit-select').replaceChildren();
+  message('library-message');
   $('login-view').hidden = false;
   $('disconnect').hidden = true;
   $('connection-label').replaceChildren(node('span', 'status-dot'), document.createTextNode('Sin conectar'));
@@ -375,7 +503,7 @@ async function refresh() {
 
 async function save() {
   if (busy || !store || !draft || !dirty() || blockedSave || $('editor').open) return;
-  const errors = validateDocument(draft);
+  const errors = validateDocument(draft, activeEntry);
   if (!Array.isArray(errors) || errors.length) {
     failedSave = true;
     message('workspace-message', 'El borrador no supera la validación. No se ha enviado. Puedes descargarlo para revisarlo.', 'error');
@@ -452,7 +580,7 @@ function downloadDraft() {
   const url = URL.createObjectURL(blob);
   const anchor = node('a');
   anchor.href = url;
-  anchor.download = 'LM-UT02-borrador.json';
+  anchor.download = `${activeEntry.moduleCode}-${activeEntry.unitCode}-borrador.json`;
   document.body.append(anchor);
   anchor.click();
   anchor.remove();
@@ -477,6 +605,10 @@ function selectLayout(layout) {
 
 $('login-form').addEventListener('submit', connect);
 $('disconnect').addEventListener('click', disconnect);
+$('module-select').addEventListener('change', () => { fillUnits(); message('library-message'); });
+$('unit-select').addEventListener('change', () => { updateNavigation(); message('library-message'); });
+$('open-unit').addEventListener('click', openSelectedUnit);
+$('refresh-catalog').addEventListener('click', refreshCatalog);
 $('refresh').addEventListener('click', refresh);
 $('save').addEventListener('click', save);
 $('download-draft').addEventListener('click', downloadDraft);

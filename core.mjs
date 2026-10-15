@@ -1,8 +1,10 @@
 const OWNER = 'miGUITel';
 const REPOSITORY = 'programacion-piloto-datos';
-const FILE_PATH = 'LM/UT02.json';
 const BRANCH = 'main';
-const ENDPOINT = `https://api.github.com/repos/${OWNER}/${REPOSITORY}/contents/${FILE_PATH}`;
+const CONTENTS_ENDPOINT = `https://api.github.com/repos/${OWNER}/${REPOSITORY}/contents/`;
+const DEFAULT_ENTRY = Object.freeze({ moduleCode: 'LM', unitCode: 'UT02', unitId: 'LM-UT02', path: 'LM/UT02.json' });
+const MODULE_CODES = new Set(['LM', 'SR', 'SOS', 'ED', 'PRO']);
+const ENTRY_KEYS = new Set(['moduleCode', 'unitCode', 'unitId', 'path']);
 const STATES = new Set(['', 'Impartida', 'Reprogramada', 'Cancelada']);
 const TEXT_FIELDS = ['title', 'planned', 'observations', 'improvements', 'realized', 'pending'];
 
@@ -10,6 +12,7 @@ const isObject = value => value !== null && typeof value === 'object' && !Array.
 const isText = value => typeof value === 'string';
 const nonemptyText = value => isText(value) && value.trim().length > 0;
 const positiveInteger = value => Number.isInteger(value) && value > 0;
+const isUnitCode = value => isText(value) && value === value.trim() && /^(?:UT|RA|B)\d{1,3}[A-Z]?$/.test(value);
 const isArchivePath = value => isText(value)
   && /^(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A-Za-z0-9_-][A-Za-z0-9._-]*\.json$/.test(value)
   && !value.split('/').some(part => part === '.' || part === '..');
@@ -101,16 +104,66 @@ function validateJson(value, path, errors, ancestors = new WeakSet()) {
   ancestors.delete(value);
 }
 
+/** A document target is a copied identity, never a caller-supplied URL/repository. */
+function validateEntry(entry) {
+  const errors = [];
+  if (!isObject(entry)) return ['El destino debe ser un objeto.'];
+  validateJson(entry, 'destination', errors);
+  if (Object.keys(entry).some(key => !ENTRY_KEYS.has(key))) errors.push('destination: solo admite moduleCode, unitCode, unitId y path.');
+  if (!MODULE_CODES.has(entry.moduleCode)) errors.push('destination.moduleCode: módulo no admitido.');
+  if (!isUnitCode(entry.unitCode)) errors.push('destination.unitCode: código de unidad no válido.');
+  if (entry.unitId !== `${entry.moduleCode}-${entry.unitCode}`) errors.push('destination.unitId: debe coincidir con el módulo y la unidad.');
+  if (entry.path !== `${entry.moduleCode}/${entry.unitCode}.json`) errors.push('destination.path: debe ser MÓDULO/UNIDAD.json y coincidir con la identidad.');
+  return errors;
+}
+
+/** Private discovery data; empty unit lists represent modules not yet imported. */
+export function validateCatalog(catalog) {
+  const errors = [];
+  if (!isObject(catalog)) return ['El catálogo debe ser un objeto JSON.'];
+  validateJson(catalog, 'catalog', errors);
+  if (catalog.schemaVersion !== 1) errors.push('catalog.schemaVersion: debe ser 1.');
+  if (!Array.isArray(catalog.modules)) return [...errors, 'catalog.modules: debe ser una lista.'];
+  const modules = new Set();
+  const identities = new Set();
+  const paths = new Set();
+  catalog.modules.forEach((module, index) => {
+    const prefix = `catalog.modules[${index}]`;
+    if (!isObject(module)) { errors.push(`${prefix}: debe ser un objeto.`); return; }
+    if (!MODULE_CODES.has(module.code)) errors.push(`${prefix}.code: módulo no admitido.`);
+    if (modules.has(module.code)) errors.push(`${prefix}.code: módulo duplicado.`);
+    modules.add(module.code);
+    if (!nonemptyText(module.name)) errors.push(`${prefix}.name: debe ser texto no vacío.`);
+    if (!Array.isArray(module.units)) { errors.push(`${prefix}.units: debe ser una lista.`); return; }
+    module.units.forEach((unit, unitIndex) => {
+      const unitPrefix = `${prefix}.units[${unitIndex}]`;
+      if (!isObject(unit)) { errors.push(`${unitPrefix}: debe ser un objeto.`); return; }
+      const entry = { moduleCode: module.code, unitCode: unit.code, unitId: unit.id, path: unit.path };
+      for (const error of validateEntry(entry)) errors.push(`${unitPrefix}: ${error}`);
+      if (!nonemptyText(unit.title)) errors.push(`${unitPrefix}.title: debe ser texto no vacío.`);
+      if (identities.has(unit.id)) errors.push(`${unitPrefix}.id: unidad duplicada.`);
+      if (paths.has(unit.path)) errors.push(`${unitPrefix}.path: ruta duplicada.`);
+      identities.add(unit.id);
+      paths.add(unit.path);
+    });
+  });
+  return errors;
+}
+
 /** Validate without coercing, reordering, renumbering, or dropping unknown fields. */
-export function validateDocument(doc) {
+export function validateDocument(doc, expectedEntry) {
   const errors = [];
   if (!isObject(doc)) return ['El documento debe ser un objeto JSON.'];
   validateJson(doc, 'document', errors);
   if (doc.schemaVersion !== 1 && doc.schemaVersion !== 2) errors.push('schemaVersion: debe ser 1 o 2.');
   const isV2 = doc.schemaVersion === 2;
   if (doc.pilot !== true) errors.push('pilot: debe ser true.');
-  if (!isObject(doc.module) || doc.module.code !== 'LM' || !nonemptyText(doc.module.name)) errors.push('module: requiere code LM y name no vacío.');
-  if (!isObject(doc.unit) || doc.unit.id !== 'LM-UT02' || doc.unit.code !== 'UT02' || !nonemptyText(doc.unit.title)) errors.push('unit: requiere id LM-UT02, code UT02 y title no vacío.');
+  if (!isObject(doc.module) || !MODULE_CODES.has(doc.module.code) || !nonemptyText(doc.module.name)) errors.push('module: requiere un code admitido y name no vacío.');
+  if (!isObject(doc.unit) || !isUnitCode(doc.unit.code) || doc.unit.id !== `${doc.module?.code}-${doc.unit.code}` || !nonemptyText(doc.unit.title)) errors.push('unit: requiere code válido, id MÓDULO-UNIDAD coherente y title no vacío.');
+  if (expectedEntry !== undefined) {
+    errors.push(...validateEntry(expectedEntry));
+    if (doc.module?.code !== expectedEntry?.moduleCode || doc.unit?.code !== expectedEntry?.unitCode || doc.unit?.id !== expectedEntry?.unitId) errors.push('document: la identidad del módulo y la unidad no coincide con el destino seleccionado.');
+  }
   if (isV2) {
     if (Object.hasOwn(doc, 'source')) errors.push('source: no forma parte de schemaVersion 2; el origen se conserva en el archivo privado.');
     if (!isObject(doc.provenance)) errors.push('provenance: debe ser un objeto.');
@@ -222,20 +275,21 @@ function httpError(status) {
   const messages = {
     401: 'GitHub no acepta el token. Comprueba que siga vigente.',
     403: 'GitHub ha denegado el acceso. Revisa los permisos del token o los límites de uso.',
-    404: 'No se encuentra LM/UT02.json o el token no tiene acceso al repositorio privado.',
+    404: 'No se encuentra el archivo solicitado o el token no tiene acceso al repositorio privado.',
     422: 'GitHub ha rechazado los datos del guardado. No se ha reintentado.',
     429: 'GitHub ha limitado temporalmente las peticiones. No se ha reintentado.',
   };
   return new ApiError(messages[status] ?? `GitHub devolvió un error HTTP ${status}.`, { status, code: `HTTP_${status}` });
 }
 
-/** One fixed repository/path; the token is held only in this object's private memory. */
+/** Fixed private repository and immutable per-instance target; token only in memory. */
 export class GithubStore {
   #token;
   #fetch;
   #timeout;
   #queue = Promise.resolve();
   #needsReload = false;
+  #entry = DEFAULT_ENTRY;
 
   constructor({ token, fetchImpl = globalThis.fetch, timeoutMs = 15000 } = {}) {
     if (!nonemptyText(token)) throw new ApiError('Introduce un token para conectar con GitHub.', { code: 'MISSING_TOKEN' });
@@ -247,13 +301,21 @@ export class GithubStore {
     this.#timeout = timeoutMs;
   }
 
+  forDocument(entry) {
+    const errors = validateEntry(entry);
+    if (errors.length) throw new ApiError('El destino del documento no es válido.', { code: 'INVALID_TARGET', errors });
+    const bound = new GithubStore({ token: this.#token, fetchImpl: this.#fetch, timeoutMs: this.#timeout });
+    bound.#entry = Object.freeze({ moduleCode: entry.moduleCode, unitCode: entry.unitCode, unitId: entry.unitId, path: entry.path });
+    return bound;
+  }
+
   #enqueue(operation) {
     const result = this.#queue.then(operation, operation);
     this.#queue = result.then(() => undefined, () => undefined);
     return result;
   }
 
-  async #request(method, body) {
+  async #request(method, body, path) {
     const writing = method === 'PUT';
     const controller = new AbortController();
     let timer;
@@ -266,7 +328,8 @@ export class GithubStore {
     const request = (async () => {
       let response;
       try {
-        response = await this.#fetch(writing ? ENDPOINT : `${ENDPOINT}?ref=${BRANCH}`, {
+        const endpoint = `${CONTENTS_ENDPOINT}${path}`;
+        response = await this.#fetch(writing ? endpoint : `${endpoint}?ref=${BRANCH}`, {
           method,
           signal: controller.signal,
           cache: 'no-store',
@@ -302,25 +365,40 @@ export class GithubStore {
     }
   }
 
-  load() {
+  async #readJson(path, code) {
+    const result = await this.#request('GET', undefined, path);
+    try {
+      if (!isObject(result) || result.encoding !== 'base64' || !nonemptyText(result.sha)) throw new Error();
+      if (Object.hasOwn(result, 'path') && result.path !== path) throw new Error();
+      return { value: JSON.parse(decodeUtf8Base64(result.content)), sha: result.sha };
+    } catch {
+      throw new ApiError('El archivo de GitHub no contiene el JSON UTF-8 esperado.', { code });
+    }
+  }
+
+  loadCatalog() {
     return this.#enqueue(async () => {
-      const result = await this.#request('GET');
-      let document;
-      try {
-        if (!isObject(result) || result.encoding !== 'base64' || !nonemptyText(result.sha)) throw new Error();
-        document = JSON.parse(decodeUtf8Base64(result.content));
-      } catch {
-        throw new ApiError('El archivo de GitHub no contiene un JSON UTF-8 válido.', { code: 'INVALID_DOCUMENT' });
-      }
-      const errors = validateDocument(document);
+      const { value: catalog, sha } = await this.#readJson('catalog.json', 'INVALID_CATALOG');
+      const errors = validateCatalog(catalog);
+      if (errors.length) throw new ApiError('El catálogo privado no cumple el formato del piloto.', { code: 'INVALID_CATALOG', errors });
+      return { catalog, sha };
+    });
+  }
+
+  load() {
+    const entry = this.#entry;
+    return this.#enqueue(async () => {
+      const { value: document, sha } = await this.#readJson(entry.path, 'INVALID_DOCUMENT');
+      const errors = validateDocument(document, entry);
       if (errors.length) throw new ApiError('El documento de GitHub no cumple el formato del piloto.', { code: 'INVALID_DOCUMENT', errors });
       this.#needsReload = false;
-      return { document, sha: result.sha };
+      return { document, sha };
     });
   }
 
   async save(document, sha) {
-    const errors = validateDocument(document);
+    const entry = this.#entry;
+    const errors = validateDocument(document, entry);
     if (errors.length) throw new ApiError('Revisa los datos antes de guardar.', { code: 'INVALID_DOCUMENT', errors });
     if (!nonemptyText(sha)) throw new ApiError('Falta la versión original del archivo. Vuelve a cargarlo.', { code: 'MISSING_SHA' });
     const text = `${JSON.stringify(document, null, 2)}\n`;
@@ -329,12 +407,13 @@ export class GithubStore {
       if (this.#needsReload) throw new UnknownSaveError('reload-required');
       try {
         const result = await this.#request('PUT', {
-          message: 'Actualizar piloto LM UT02',
+          message: `Actualizar piloto ${entry.moduleCode} ${entry.unitCode}`,
           content: encodeUtf8Base64(text),
           sha,
           branch: BRANCH,
-        });
+        }, entry.path);
         if (!isObject(result) || !nonemptyText(result.content?.sha) || !nonemptyText(result.commit?.sha)) throw new UnknownSaveError('invalid-response');
+        if (Object.hasOwn(result.content, 'path') && result.content.path !== entry.path) throw new UnknownSaveError('invalid-response');
         return { document: snapshot, sha: result.content.sha, commitSha: result.commit.sha };
       } catch (error) {
         if (error instanceof UnknownSaveError) this.#needsReload = true;

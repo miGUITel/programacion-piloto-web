@@ -1,4 +1,16 @@
 @charset "UTF-8";
+.library-bar{padding:10px 26px 0;margin:auto;max-width:1720px}
+.document-picker{display:flex;align-items:center;gap:9px;min-width:0;flex-wrap:wrap}
+.picker-field{display:flex;align-items:center;gap:7px;min-width:0}
+.picker-field label{font-size:10px;margin:0;white-space:nowrap}
+.picker-field select{border:1px solid #cbd6ce;background:#fffefa;color:#203b49;border-radius:5px;padding:7px 24px 7px 8px;font-size:11px;max-width:300px;min-width:80px}
+.unit-picker{flex:1}
+.unit-picker select{width:100%;max-width:420px}
+.active-document{margin-left:auto;color:#087b73;font-size:11px;font-weight:700;white-space:nowrap}
+.selection-help{font-size:10px;color:#677875;line-height:1.45;margin:6px 0 0}
+.library-bar .message{margin-top:6px;padding:8px 10px}
+@media(max-width:900px){.library-bar{padding:10px 14px 0}.picker-field select{max-width:230px}.active-document{margin-left:0}}
+@media(max-width:560px){.library-bar{padding:9px 8px 0}.picker-field{width:100%;flex:auto}.picker-field label{width:42px}.picker-field select{flex:1;max-width:calc(100% - 49px);min-width:0}.active-document{font-size:10px}.selection-help{font-size:10px}}
 .activity-progress{display:inline-block;font-size:8px;font-weight:650;margin:5px 0 0;padding:2px 5px;border-radius:3px;background:#ecefe9;color:#63705f}
 .activity-progress.progress-1{background:#fff0c8;color:#946509}
 .activity-progress.progress-2{background:#dceedd;color:#246b3c}
