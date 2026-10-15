@@ -1,4 +1,4 @@
-import { validateDocument, summarize, GithubStore, ConflictError, UnknownSaveError } from './core.mjs?v=20261015-2';
+import { validateDocument, summarize, GithubStore, saveErrorFeedback } from './core.mjs?v=20261015-4';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -391,15 +391,9 @@ async function save() {
     message('workspace-message', `Cambios guardados y confirmados en GitHub.${commit ? ` Revisión ${commit}.` : ''}`);
   } catch (error) {
     failedSave = true;
-    if (error instanceof ConflictError) {
-      blockedSave = true;
-      message('workspace-message', 'GitHub contiene cambios posteriores a la versión que abriste. No se ha sobrescrito. Tu borrador sigue aquí: descárgalo antes de actualizar y revisar las diferencias.', 'warning');
-    } else if (error instanceof UnknownSaveError) {
-      blockedSave = true;
-      message('workspace-message', 'No se puede confirmar si GitHub recibió el guardado. El borrador se conserva y el reenvío queda bloqueado. Descárgalo y actualiza para comprobar la versión remota antes de continuar.', 'warning');
-    } else {
-      message('workspace-message', 'No se ha podido guardar. El borrador se conserva. Comprueba el acceso y la conexión; no se ha realizado ningún reintento automático.', 'error');
-    }
+    const feedback = saveErrorFeedback(error);
+    if (feedback.requiresReload) blockedSave = true;
+    message('workspace-message', `${feedback.message} [${feedback.code}]`, feedback.kind);
   } finally {
     setBusy(false);
   }

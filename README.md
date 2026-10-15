@@ -18,6 +18,21 @@ Se conserva el documento leído y su SHA. Un guardado utiliza esa versión; no s
 
 Las entradas y acciones quedan bloqueadas durante la carga o el guardado. El navegador recibe una advertencia de salida cuando hay cambios pendientes. Los borradores no se guardan sin conexión y se perderán si se cierra la página después de aceptar esa advertencia.
 
+### Plan de comprobación del guardado
+
+Una prueba simulada de la interfaz no acredita que el token personal tenga permiso para escribir. La validación de extremo a extremo requiere guardar y volver a leer desde GitHub con el acceso que utiliza el docente.
+
+1. **Proteger el trabajo pendiente.** Si ya hay un error, descargar el borrador antes de recargar, desconectar o actualizar. Conservar también el texto que aún esté abierto en el editor y sin aplicar. No compartir el token en capturas ni mensajes.
+2. **Una observación.** En una porción elegida, añadir al final de las observaciones existentes una marca inequívoca como `PRUEBA GUARDADO A`, sin sustituir el contenido anterior. Pulsar Aplicar al borrador. Debe aparecer Cambios sin guardar.
+3. **Guardar realmente.** Pulsar Guardar cambios. Solo se considera correcto si aparece la confirmación de GitHub con una revisión. Ante un error, conservar el borrador y recoger el mensaje y código; no insistir a ciegas ni descartar cambios.
+4. **Volver a leer.** Tras la confirmación, pulsar Actualizar, abrir la misma porción y comprobar la marca. Después desconectar, volver a conectar y comprobarla de nuevo. Esto separa la persistencia real de un cambio visible solo en memoria.
+5. **Mejoras e independencia.** Añadir una marca distinta en Mejoras de otra porción. Aplicar, guardar y actualizar. Comprobar que permanece en esa porción y que no se ha sustituido la observación anterior. Alternar Tabla, Bandas y Agenda: el documento debe ser el mismo.
+6. **Limpieza.** Eliminar únicamente las marcas de prueba, guardar y volver a leer. Comprobar que se conservan las anotaciones originales.
+
+En el entorno sintético se comprobarán también la lectura válida seguida de escritura denegada, el rechazo de datos, los límites de peticiones, el conflicto con otra versión, la respuesta de escritura incierta y las tildes y saltos de línea. No provocar estos escenarios contra el trabajo real ni introducir pruebas de estados académicos ficticios.
+
+**Criterio de cierre:** pruebas automatizadas y de interfaz satisfactorias, más confirmación del guardado real y su recuperación tras reconectar. Un mensaje más claro no equivale por sí solo a resolver la causa del error.
+
 ## Presentación
 
 Hay tres propuestas provisionales seleccionables arriba: **Tabla**, con columnas alineadas y previsualizaciones de una línea; **Bandas**, con hasta dos líneas de descripción y separación entre sesiones; y **Agenda**, con filas más densas y más anchura para lo previsto, dejando las notas tras sus accesos directos. El contexto de módulo y unidad está siempre arriba, sin barra lateral. En ventanas estrechas la distribución se adapta y las previsualizaciones secundarias se ocultan; el contenido completo sigue disponible en el editor.
@@ -29,6 +44,22 @@ Hay exactamente dos niveles: las cabeceras de sesión y las filas compactas de s
 La fecha se muestra una vez en la cabecera, con abreviatura del día de la semana. Su texto completo está disponible en la ayuda contextual y en la descripción accesible. La comparación de fecha pasada utiliza la zona `Europe/Madrid`; la marca no expresa estado de impartición.
 
 Cuando una actividad contiene `progress` con valor 0, 1 o 2, se muestra su progreso importado como Pendiente, En proceso o Completada. Es información de solo lectura y se conserva sin convertirla en el estado de la sesión.
+
+## Requisitos futuros pendientes
+
+Estos requisitos están anotados para desarrollo posterior; no están implementados. La prioridad actual es validar el guardado. El refinamiento visual continuará después, manteniendo la densidad y el aprovechamiento de la anchura.
+
+- **Tareas:** destacar en azul más intenso la porción correspondiente y añadir un botón pequeño de confirmación de que la tarea se ha presentado y abierto para que el alumnado la trabaje. No confundir esta confirmación docente con tarea entregada, completada o calificada. Tampoco debe publicar automáticamente en Aula Virtual.
+- **Exámenes:** destacar en naranja la porción correspondiente. Tres sesiones antes del examen, mostrar un recordatorio para avisar al alumnado y un botón para marcar que el aviso ya se ha dado. Contar sesiones del módulo, no tres días ni tres porciones. El alcance debe poder cruzar el límite entre UT. Antes de implementarlo, concretar el tratamiento de sesiones canceladas, reprogramaciones y exámenes con menos de tres sesiones anteriores disponibles.
+- **Datos explícitos:** identificar tarea o examen mediante un tipo estructurado, no deducirlo exclusivamente del título o del color. Las confirmaciones serán datos propios, distintos del estado de impartición; los detalles del modelo quedan pendientes de aprobación.
+
+## Evolución prevista del JSON
+
+El JSON operativo ya organiza módulo, unidad, sesiones y porciones con campos semánticos e identificadores estables. Sin embargo, `source.originalRows` conserva una instantánea histórica de importación con coordenadas y fórmulas Excel. La web no calcula esas fórmulas; la instantánea tampoco es el estado actual de las notas. Se mantiene por trazabilidad, no porque sea necesaria para editar el seguimiento.
+
+No migrar el formato mientras se diagnostica el guardado. Después, proponer separar la instantánea en un archivo de procedencia del repositorio privado y dejar solo su referencia y huella en el documento operativo. Mantener los identificadores y los vínculos de Calendar útiles, retirar redundancias por nivel y separar explícitamente el seguimiento general de sesión del seguimiento de cada porción, sin reinterpretar notas existentes automáticamente.
+
+Una migración posterior partirá de la última versión confirmada de GitHub, no de una nueva importación del Excel ni de una copia local antigua. Se probará sobre copia, con versión de esquema y conservación comprobada de todos los textos, estados, horarios, identificadores y datos desconocidos. Los recordatorios calculables no deben duplicarse como fechas fijas. Los nuevos tipos y confirmaciones se incorporarán después de aprobar su significado.
 
 ## Seguridad y ejecución
 

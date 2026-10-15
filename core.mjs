@@ -38,6 +38,32 @@ export class UnknownSaveError extends ApiError {
   }
 }
 
+/** UI-safe save feedback: never echo exception messages or response bodies. */
+export function saveErrorFeedback(error) {
+  if (error instanceof ConflictError) return {
+    code: 'CONFLICT', kind: 'warning', requiresReload: true,
+    message: 'GitHub contiene cambios posteriores a la versión que abriste. No se ha sobrescrito. Tu borrador sigue aquí: descárgalo antes de actualizar y revisar las diferencias.',
+  };
+  if (error instanceof UnknownSaveError) return {
+    code: 'SAVE_UNKNOWN', kind: 'warning', requiresReload: true,
+    message: 'No se puede confirmar si GitHub recibió el guardado. El borrador se conserva y el reenvío queda bloqueado. Descárgalo y actualiza para comprobar la versión remota antes de continuar.',
+  };
+  const explanations = new Map([
+    ['HTTP_401', 'GitHub no acepta el token para guardar. Comprueba que siga vigente. Antes de desconectar, descarga el borrador para conservar tus cambios.'],
+    ['HTTP_403', 'GitHub ha denegado el guardado. Leer el archivo no acredita permiso para escribir: comprueba Contents: lectura y escritura en el repositorio de datos. También puede deberse a límites de uso o restricciones del repositorio.'],
+    ['HTTP_404', 'GitHub no permite encontrar el archivo al guardar. Comprueba que el token tenga acceso a programacion-piloto-datos y permiso Contents: lectura y escritura.'],
+    ['HTTP_422', 'GitHub ha rechazado la actualización. Hay que revisar los datos enviados y las reglas del repositorio; cambiar el token no garantiza resolverlo.'],
+    ['HTTP_429', 'GitHub ha limitado temporalmente las peticiones. Conserva el borrador y espera antes de volver a intentarlo.'],
+    ['INVALID_DOCUMENT', 'El borrador no supera la validación y no se ha enviado. Descárgalo para revisar el formato.'],
+    ['MISSING_SHA', 'Falta la versión original del archivo. Descarga el borrador antes de actualizar y revisar las diferencias.'],
+  ]);
+  const code = explanations.has(error?.code) ? error.code : 'SAVE_ERROR';
+  return {
+    code, kind: 'error', requiresReload: false,
+    message: `${explanations.get(code) ?? 'No se ha podido guardar por un error inesperado.'} El borrador se conserva. No se ha realizado ningún reintento automático.`,
+  };
+}
+
 export function isValidDate(value) {
   if (!isText(value) || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const [year, month, day] = value.split('-').map(Number);
