@@ -277,3 +277,199 @@ textarea{resize:vertical;line-height:1.6}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}
 }
+
+/* Compact interface comparison. One document and one renderer, three layouts. */
+.topbar{height:56px;padding:0 22px}
+.brand{font-size:22px;gap:9px}
+.brand-mark{width:30px;height:32px;font-size:26px;border-radius:7px}
+.brand-subtitle{font-size:7px;margin-top:4px}
+.workspace{display:block;max-width:none;min-height:calc(100vh - 56px);--row-columns:28px 64px minmax(150px,.9fr) minmax(160px,1.3fr) minmax(100px,.7fr) 115px 190px;--row-gap:10px}
+.workspace-main{padding:0 22px 18px}
+.context-bar{display:flex;gap:15px;align-items:center;min-height:83px;padding:13px 0;border-bottom:1px solid var(--line)}
+.context-bar .module-code{width:38px;height:38px;flex:0 0 38px;font-size:15px;border-radius:6px}
+.module-context{display:flex;flex-direction:column;gap:4px;max-width:400px;min-width:0}
+.context-label{font-size:9px;letter-spacing:1.1px;color:var(--teal);font-weight:750;line-height:1.1}
+.module-context strong{font-size:12px;line-height:1.4}
+.unit-context{display:flex;flex-direction:column;gap:3px;border-left:1px solid #cbd7cd;padding-left:17px;min-width:80px}
+.unit-context h1{font-size:20px;line-height:1.2;font-weight:700;letter-spacing:-.4px}
+.context-bar .private-label{white-space:nowrap;font-size:10px}
+.workspace .stats{display:flex;gap:22px;align-items:center;background:none;border:0;border-radius:0;margin:0 0 0 auto;flex-shrink:0}
+.workspace .stat{padding:0;gap:5px;display:flex;flex-direction:column;align-items:flex-start;border:0}
+.workspace .stat-value{font-size:20px;line-height:1.15;letter-spacing:-.5px}
+.workspace .stat-label{font-size:10px;white-space:nowrap}
+.layout-toolbar{display:flex;align-items:center;gap:20px;padding:12px 0 9px;min-height:53px}
+.layout-picker{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.layout-label{font-size:9px;letter-spacing:1px;color:var(--muted);font-weight:700;margin-right:9px}
+.layout-button{border:1px solid #bdcfc2;background:#fffefa;border-radius:5px;color:#526b60;font-size:12px;font-weight:650;padding:8px 13px;line-height:1.1;min-height:32px;white-space:nowrap}
+.layout-button:hover{background:#e8f0e8}
+.layout-button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.layout-description{font-size:11px;color:var(--muted);line-height:1.4}
+.workspace .work-toolbar{padding:0 0 10px;gap:10px;flex-wrap:nowrap}
+.workspace .view-controls,.workspace .save-controls{gap:7px;width:auto}
+.workspace .button{font-size:11px;padding:7px 11px;min-height:31px}
+.workspace .save-state{font-size:11px;margin-right:7px}
+.workspace .list-heading{margin:12px 0 8px;align-items:center}
+.workspace .list-heading h2{font-size:13px}
+.workspace .list-heading p{font-size:10px;max-width:none}
+.workspace-message{margin:9px 0}
+.column-guide{display:grid;grid-template-columns:var(--row-columns);gap:var(--row-gap);padding:7px 12px;color:#708074;font-size:10px;font-weight:650;border:1px solid #d1dcd0;border-bottom:0;border-radius:5px 5px 0 0;background:#eaf0e7}
+.workspace .sessions{gap:0}
+.workspace .session{--session-tint:#eef5f7;--session-accent:#6693a3;border:1px solid #c6d3cd;border-top:2px solid #789087;border-radius:0;box-shadow:none;background:var(--white);overflow:hidden}
+.workspace .session:nth-child(3n+2){--session-tint:#f6f1e6;--session-accent:#b59658}
+.workspace .session:nth-child(3n){--session-tint:#f1eef7;--session-accent:#9a85ae}
+.workspace .session+.session{margin-top:-1px}
+.workspace .session:last-child{border-radius:0 0 5px 5px}
+.workspace .session-top{display:grid;grid-template-columns:var(--row-columns);column-gap:var(--row-gap);row-gap:5px;padding:9px 12px;align-items:center;background:var(--session-tint);min-height:62px}
+.workspace .session-toggle{width:28px;height:28px;min-width:28px;border:1px solid #b9ccc2;background:#fffefab3;font-size:18px;color:#315f55;border-radius:4px}
+.workspace .session-toggle:hover{background:#d2e6dc}
+.workspace .date-tile{padding:0 0 3px;gap:2px;border-bottom-width:3px;line-height:1.1}
+.workspace .date-day{font-size:16px;letter-spacing:-.3px;white-space:nowrap}
+.workspace .date-month{font-size:9px;margin:0;line-height:1}
+.workspace .session-description,.workspace .activity-description,.workspace .session-notes,.workspace .activity-notes-preview{min-width:0}
+.workspace .session-meta{font-size:9px;gap:4px;line-height:1.35;margin:0 0 3px;flex-wrap:wrap}
+.workspace .session-number{font-size:9px;letter-spacing:0}
+.workspace .session-title{font-size:12px;font-weight:700;line-height:1.45;display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;overflow-wrap:normal}
+.workspace .planned-preview,.workspace .activity-preview{font-size:12px;line-height:1.45;margin:0;color:#536b60;display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;overflow-wrap:normal;-webkit-line-clamp:unset}
+.workspace .notes-strip,.workspace .improvements-strip,.workspace .followup-hint{font-size:10px;line-height:1.5;margin:0;display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;color:#49675d}
+.workspace .improvements-strip{color:#8b5b26}
+.workspace .followup-hint{font-size:9px;color:#758375}
+.workspace .session-state{margin:0;min-width:0}
+.workspace .session-state label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.workspace .state-select{width:100%;font-size:11px;font-weight:500;min-height:30px;padding:5px;border-radius:4px}
+.workspace .row-actions{display:flex;align-items:center;gap:5px;justify-content:flex-end;white-space:nowrap;min-width:0}
+.workspace .edit-button{display:inline-flex;align-items:center;justify-content:center;gap:4px;font-size:11px;line-height:1.2;font-weight:600;padding:6px 8px;min-height:29px;border:1px solid #bdcfc4;border-radius:4px;background:#fffefa;color:#316e61;white-space:nowrap}
+.workspace .edit-button:hover{background:#e4eee6;border-color:#769f89}
+.workspace .edit-improvements{color:#876127;border-color:#d9c9a9}
+.workspace .edit-improvements:hover{background:#fff4d9;border-color:#b79a65}
+.workspace .edit-button.has-content::after{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.workspace .session-body{padding:0;border-top:1px solid #d2ddd2;background:#fffefa}
+.workspace .activities-label{padding:7px 12px;font-size:10px;letter-spacing:0;font-weight:500}
+.workspace .activity{padding:0;border-top:1px solid #e1e7dc}
+.workspace .activity:first-of-type{border-top:0}
+.workspace .activity-top{display:grid;grid-template-columns:var(--row-columns);gap:var(--row-gap);align-items:center;padding:5px 12px;min-height:38px}
+.workspace .activity-time{grid-column:1 / 3;font-size:10px;line-height:1.4;text-align:right;padding-right:4px;color:#6c7d72}
+.workspace .activity-description{grid-column:3;display:flex;align-items:center;gap:6px}
+.workspace .activity-title{font-size:11px;font-weight:550;line-height:1.45;margin:0;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;overflow-wrap:normal;min-width:0}
+.workspace .activity-preview{grid-column:4;font-size:11px}
+.workspace .activity-notes-preview{grid-column:5}
+.workspace .activity-top>.row-actions{grid-column:7}
+.workspace .activity-progress{font-size:8px;line-height:1.3;white-space:nowrap;margin:0;padding:2px 4px;flex-shrink:0}
+.workspace .workspace-footer{margin-top:13px;font-size:10px;flex-direction:row}
+
+/* 1. Spreadsheet-like rows and aligned content/plan/follow-up columns. */
+[data-layout="table"] .session-top>.planned-preview,[data-layout="table"] .session-notes,[data-layout="table"] .activity-preview,[data-layout="table"] .activity-notes-preview{border-left:1px solid #d5dfd5;padding-left:10px}
+[data-layout="table"] .activity:hover{background:#f6f8f1}
+
+/* 2. Horizontal bands: two-line previews and breathing room, not a sidebar. */
+.workspace[data-layout="bands"] .column-guide{display:none}
+.workspace[data-layout="bands"] .sessions{gap:9px}
+.workspace[data-layout="bands"] .session{border:1px solid #c6d3cd;border-left:4px solid var(--session-accent);border-radius:6px;margin:0}
+.workspace[data-layout="bands"] .session-top{padding:11px 12px;min-height:82px}
+.workspace[data-layout="bands"] .planned-preview,.workspace[data-layout="bands"] .activity-preview{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;max-height:3em}
+.workspace[data-layout="bands"] .session-title{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;max-height:3em}
+.workspace[data-layout="bands"] .activity-top{grid-template-columns:104px minmax(150px,.9fr) minmax(160px,1.3fr) minmax(100px,.7fr) 190px;min-height:47px;padding:7px 12px}
+.workspace[data-layout="bands"] .activity-time{grid-column:1}
+.workspace[data-layout="bands"] .activity-description{grid-column:2}
+.workspace[data-layout="bands"] .activity-preview{grid-column:3}
+.workspace[data-layout="bands"] .activity-notes-preview{grid-column:4}
+.workspace[data-layout="bands"] .activity-top>.row-actions{grid-column:5}
+.workspace[data-layout="bands"] .activity:nth-child(even){background:#f6f7f1}
+
+/* 3. Outline agenda: more room for the plan, notes behind their direct accesses. */
+.workspace[data-layout="agenda"]{--row-columns:28px 64px minmax(180px,.8fr) minmax(230px,1.8fr) 115px 190px}
+.workspace[data-layout="agenda"] .column-guide{display:none}
+.workspace[data-layout="agenda"] .session{border-left:0;border-right:0;border-top-color:#a9beb1}
+.workspace[data-layout="agenda"] .session-top{min-height:54px;padding:5px 12px}
+.workspace[data-layout="agenda"] .session-notes,.workspace[data-layout="agenda"] .activity-notes-preview{display:none}
+.workspace[data-layout="agenda"] .session-description{display:flex;flex-direction:column;gap:1px}
+.workspace[data-layout="agenda"] .session-meta{margin:0}
+.workspace[data-layout="agenda"] .activity-top{padding:2px 12px;min-height:33px}
+.workspace[data-layout="agenda"] .activity-top>.row-actions{grid-column:6}
+.workspace[data-layout="agenda"] .activity-top>.activity-preview{grid-column:4 / 6}
+.workspace[data-layout="agenda"] .activity-time{border-right:2px solid #d2dfd6;padding-right:12px}
+.workspace[data-layout="agenda"] .activity-title{font-weight:500}
+.workspace[data-layout="agenda"] .edit-button{background:transparent;border-color:transparent;min-height:27px;padding-top:4px;padding-bottom:4px}
+.workspace[data-layout="agenda"] .edit-button:hover{background:#e7eee7;border-color:#c0d1c5}
+
+/* Narrow windows keep context above sessions and never create a horizontal page. */
+@media(max-width:1190px){
+  .workspace{--row-columns:28px 53px minmax(130px,1fr) minmax(160px,1.4fr) 105px 180px;--row-gap:8px}
+  .workspace[data-layout="agenda"]{--row-columns:28px 53px minmax(140px,1fr) minmax(180px,1.6fr) 105px 180px}
+  .workspace .session-notes,.workspace .activity-notes-preview{display:none}
+  .column-guide>span:nth-child(5){display:none}
+  .workspace .activity-top>.row-actions{grid-column:6}
+  .workspace .activity-preview{grid-column:4 / 6}
+  .workspace .module-context{max-width:300px}
+  .workspace .stats{gap:14px}
+  .workspace .edit-button{font-size:10px;padding-left:6px;padding-right:6px}
+  .workspace[data-layout="bands"] .activity-top{grid-template-columns:89px minmax(130px,1fr) minmax(160px,1.4fr) 180px}
+  .workspace[data-layout="bands"] .activity-top>.row-actions{grid-column:4}
+  .workspace[data-layout="bands"] .activity-preview{grid-column:3}
+  .layout-description{font-size:10px}
+}
+@media(max-width:900px){
+  .workspace-main{padding:0 14px 15px}
+  .context-bar{gap:10px;flex-wrap:wrap;padding:12px 0}
+  .workspace .stats{margin-left:auto;gap:14px}
+  .workspace .stat-value{font-size:17px}
+  .module-context{flex:1}
+  .context-bar .private-label{display:none}
+  .layout-toolbar{align-items:flex-start;flex-direction:column;gap:6px;padding:10px 0}
+  .layout-description{font-size:10px}
+  .workspace .work-toolbar{flex-wrap:wrap}
+  .workspace .save-controls{margin-left:auto}
+  .workspace .list-heading p{font-size:9px;max-width:260px}
+  .workspace .column-guide{display:none}
+  .workspace .session-top{grid-template-columns:28px 53px minmax(0,1fr) 105px;gap:5px 8px;padding:8px}
+  .workspace .session-description{grid-column:3;grid-row:1}
+  .workspace .session-state{grid-column:4;grid-row:1;display:block}
+  .workspace .session-top>.planned-preview{grid-column:3 / 5;grid-row:2;border:0;padding:0}
+  .workspace .session-top>.row-actions{grid-column:3 / 5;grid-row:3;justify-content:flex-start}
+  .workspace .session-toggle,.workspace .date-tile{align-self:start}
+  .workspace .activity-top,.workspace[data-layout="bands"] .activity-top{grid-template-columns:89px minmax(0,1fr) 180px;gap:3px 8px;padding:6px 8px}
+  .workspace .activity-time,.workspace[data-layout="bands"] .activity-time{grid-column:1;grid-row:1}
+  .workspace .activity-description,.workspace[data-layout="bands"] .activity-description{grid-column:2;grid-row:1}
+  .workspace .activity-top>.row-actions,.workspace[data-layout="bands"] .activity-top>.row-actions,.workspace[data-layout="agenda"] .activity-top>.row-actions{grid-column:3;grid-row:1 / 3}
+  .workspace .activity-top>.activity-preview,.workspace[data-layout="bands"] .activity-top>.activity-preview,.workspace[data-layout="agenda"] .activity-top>.activity-preview{grid-column:2;grid-row:2;border:0;padding:0}
+  .workspace .workspace-footer{flex-direction:column;gap:4px}
+}
+@media(max-width:560px){
+  .topbar{padding:0 14px}
+  .topbar-right{gap:8px}
+  .topbar .connection-label{font-size:9px}
+  .brand-subtitle{display:none}
+  .workspace-main{padding:0 8px 12px}
+  .context-bar{gap:9px}
+  .workspace .module-context{max-width:none}
+  .module-context strong{font-size:10px}
+  .unit-context{min-width:60px;padding-left:9px}
+  .unit-context h1{font-size:18px}
+  .workspace .stats{flex-basis:100%;justify-content:flex-start;gap:19px;margin:0;padding-left:47px}
+  .workspace .stat{flex-direction:row;align-items:baseline;gap:5px}
+  .workspace .stat-value{font-size:14px}
+  .workspace .stat-label{font-size:9px}
+  .layout-picker{gap:4px;width:100%}
+  .layout-label{font-size:8px;margin-right:auto;letter-spacing:0;max-width:55px}
+  .layout-button{font-size:11px;padding:7px 10px;flex:1}
+  .workspace .save-controls{width:100%;gap:5px;justify-content:space-between}
+  .workspace .save-state{font-size:9px;white-space:normal;margin-right:auto}
+  .workspace .button{font-size:10px;padding:7px 9px}
+  .workspace .list-heading p{max-width:235px;font-size:8px}
+  .workspace .session-top{grid-template-columns:26px 42px minmax(0,1fr) 95px;gap:4px 5px;padding:7px}
+  .workspace .session-toggle{width:26px;height:27px;min-width:26px}
+  .workspace .date-day{font-size:14px}
+  .workspace .session-title{font-size:11px}
+  .workspace .session-meta{font-size:8px;gap:3px}
+  .workspace .session-meta .meta-separator{display:none}
+  .workspace .state-select{font-size:10px}
+  .workspace .planned-preview,.workspace .activity-preview{font-size:11px}
+  .workspace .activity-top,.workspace[data-layout="bands"] .activity-top{grid-template-columns:68px minmax(0,1fr);gap:3px 5px;padding:6px 7px}
+  .workspace .activity-time{font-size:9px}
+  .workspace .activity-top>.row-actions,.workspace[data-layout="bands"] .activity-top>.row-actions,.workspace[data-layout="agenda"] .activity-top>.row-actions{grid-column:2;grid-row:3;justify-content:flex-start}
+  .workspace .activity-title{font-size:11px}
+  .workspace .activity-progress{font-size:8px}
+  .workspace .edit-button{min-height:29px;font-size:10px}
+  .workspace[data-layout="bands"] .session-top{padding:8px 7px}
+  .workspace[data-layout="agenda"] .session-top{padding:5px 7px}
+  .workspace[data-layout="agenda"] .activity-top{min-height:0;padding:4px 7px}
+}

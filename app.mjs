@@ -5,6 +5,11 @@ const fields = ['observations', 'improvements', 'realized', 'pending'];
 const stateNames = ['', 'Impartida', 'Reprogramada', 'Cancelada'];
 const stateClasses = new Map([['Impartida', 'delivered'], ['Reprogramada', 'rescheduled'], ['Cancelada', 'cancelled']]);
 const progressNames = new Map([[0, 'Pendiente'], [1, 'En proceso'], [2, 'Completada']]);
+const layoutDescriptions = new Map([
+  ['table', 'Tabla · columnas alineadas y texto en una línea, como en Excel.'],
+  ['bands', 'Bandas · sesiones separadas y hasta dos líneas de descripción.'],
+  ['agenda', 'Agenda · máxima densidad y más espacio para lo previsto; notas en sus botones.'],
+]);
 const openSessions = new Set();
 let store = null;
 let savedDocument = null;
@@ -112,11 +117,39 @@ function addMeta(container, content, className = '') {
   container.append(node('span', className, content));
 }
 
-function editButton(sessionIndex, activityIndex, label = 'Editar notas') {
-  const button = node('button', 'edit-button', label);
+function editButton(sessionIndex, activityIndex, field) {
+  const session = draft.sessions[sessionIndex];
+  const activity = session.activities[activityIndex];
+  const label = field === 'improvements' ? 'Mejoras' : 'Observaciones';
+  const button = node('button', `edit-button edit-${field}${text(activity[field]).trim() ? ' has-content' : ''}`, label);
   button.type = 'button';
-  button.addEventListener('click', () => openEditor(sessionIndex, activityIndex));
+  button.setAttribute('aria-label', `${label} de la sesión ${session.number}, ${activityIndex === 0 ? 'primera porción' : `actividad ${activityIndex + 1}`}: ${activity.title || 'Sin título'}`);
+  button.title = field === 'improvements' ? 'Abrir directamente las mejoras' : 'Anotar observaciones y concretarlas en mejoras, realizado o pendiente';
+  button.addEventListener('click', () => openEditor(sessionIndex, activityIndex, field));
   return button;
+}
+
+function rowActions(sessionIndex, activityIndex) {
+  const actions = node('div', 'row-actions');
+  actions.append(editButton(sessionIndex, activityIndex, 'observations'), editButton(sessionIndex, activityIndex, 'improvements'));
+  return actions;
+}
+
+function notePreviews(activity, className) {
+  const notes = node('div', className);
+  for (const [field, label, previewClass] of [['observations', 'Obs.', 'notes-strip'], ['improvements', 'Mejoras', 'improvements-strip']]) {
+    if (!text(activity[field]).trim()) continue;
+    const preview = node('p', previewClass, `${label}: ${activity[field]}`);
+    preview.title = activity[field];
+    notes.append(preview);
+  }
+  const secondary = ['realized', 'pending'].filter((field) => text(activity[field]).trim());
+  if (secondary.length) {
+    const hint = node('span', 'followup-hint', 'Seguimiento');
+    hint.title = secondary.map((field) => `${field === 'realized' ? 'Realizado' : 'Pendiente'}: ${activity[field]}`).join('\n');
+    notes.append(hint);
+  }
+  return notes;
 }
 
 function makeStateSelect(session, index) {
@@ -148,16 +181,18 @@ function makeActivity(activity, sessionIndex, activityIndex) {
   const container = node('section', 'activity');
   const top = node('div', 'activity-top');
   const time = node('div', 'activity-time', `${activity.start}–${activity.end}`);
-  time.append(node('span', '', 'PORCIÓN DE SESIÓN'));
   const description = node('div', 'activity-description');
   const title = node('h4', 'activity-title', activity.title || 'Actividad');
+  title.title = activity.title || 'Actividad';
   description.append(title);
-  if (progressNames.has(activity.progress)) description.append(node('span', `activity-progress progress-${activity.progress}`, `Progreso: ${progressNames.get(activity.progress)}`));
-  if (activity.planned) description.append(node('p', 'activity-preview', activity.planned));
-  if (fields.some((field) => text(activity[field]).trim())) description.append(node('span', 'activity-notes', 'Con notas'));
-  const action = node('div', 'activity-edit');
-  action.append(editButton(sessionIndex, activityIndex, 'Abrir / editar'));
-  top.append(time, description, action);
+  if (progressNames.has(activity.progress)) {
+    const progress = node('span', `activity-progress progress-${activity.progress}`, progressNames.get(activity.progress));
+    progress.title = `Progreso importado: ${progressNames.get(activity.progress)} · Solo lectura`;
+    description.append(progress);
+  }
+  const planned = node('p', 'activity-preview', activity.planned || '');
+  planned.title = activity.planned || '';
+  top.append(time, description, planned, notePreviews(activity, 'activity-notes-preview'), rowActions(sessionIndex, activityIndex));
   container.append(top);
   return container;
 }
@@ -166,6 +201,7 @@ function makeSession(session, sessionIndex) {
   const first = session.activities[0];
   const isOpen = openSessions.has(session.id);
   const section = node('article', 'session');
+  section.dataset.sessionIndex = String(sessionIndex);
   const top = node('div', 'session-top');
   const toggle = node('button', 'session-toggle', isOpen ? '−' : '+');
   toggle.type = 'button';
@@ -180,22 +216,20 @@ function makeSession(session, sessionIndex) {
   dateTile.append(node('span', 'date-day', date.day), node('span', 'date-month', date.month));
   const description = node('div', 'session-description');
   const meta = node('div', 'session-meta');
-  addMeta(meta, `SESIÓN ${session.number}`, 'session-number');
+  addMeta(meta, `Sesión ${session.number}`, 'session-number');
   addMeta(meta, sessionTime(session));
   addMeta(meta, `${session.activities.length} porciones`);
-  description.append(meta, node('h3', 'session-title', first?.title || 'Sesión'));
-  if (first?.planned) description.append(node('p', 'planned-preview', first.planned));
-  if (first?.observations) description.append(node('p', 'notes-strip', `Observaciones: ${first.observations}`));
-  const portion = node('div', 'portion-meta');
-  if (first) {
-    portion.append(node('span', 'portion-tag', 'Primera porción'), node('span', '', `${first.start}–${first.end}`), editButton(sessionIndex, 0));
-  }
-  description.append(portion);
-  top.append(toggle, dateTile, description, makeStateSelect(session, sessionIndex));
+  if (first && session.activities.length > 1) addMeta(meta, `1.ª ${first.start}–${first.end}`, 'first-portion-time');
+  const title = node('h3', 'session-title', first?.title || 'Sesión');
+  title.title = first?.title || 'Sesión';
+  description.append(meta, title);
+  const planned = node('p', 'planned-preview', first?.planned || '');
+  planned.title = first?.planned || '';
+  top.append(toggle, dateTile, description, planned, notePreviews(first || {}, 'session-notes'), makeStateSelect(session, sessionIndex), rowActions(sessionIndex, 0));
   const body = node('div', 'session-body');
   body.id = `session-content-${sessionIndex}`;
   body.hidden = !isOpen;
-  body.append(node('p', 'activities-label', session.activities.length > 1 ? 'CONTINUACIÓN DE LA SESIÓN' : 'ESTA SESIÓN TIENE UNA ÚNICA PORCIÓN'));
+  if (session.activities.length === 1) body.append(node('p', 'activities-label', 'Esta sesión tiene una única porción.'));
   session.activities.slice(1).forEach((activity, index) => body.append(makeActivity(activity, sessionIndex, index + 1)));
   toggle.addEventListener('click', () => {
     if (busy) return;
@@ -215,7 +249,7 @@ function renderStats() {
   const summary = summarize(draft);
   const stats = $('stats');
   stats.replaceChildren();
-  for (const [value, label, highlight] of [[summary.totalSessions, 'sesiones previstas', false], [summary.deliveredSessions, 'sesiones impartidas', true], [minutesLabel(summary.totalMinutes), 'tiempo previsto', false]]) {
+  for (const [value, label, highlight] of [[summary.totalSessions, 'sesiones', false], [summary.deliveredSessions, 'impartidas', true], [minutesLabel(summary.totalMinutes), 'previstos', false]]) {
     const item = node('div', 'stat');
     item.append(node('span', `stat-value${highlight ? ' teal' : ''}`, value), node('span', 'stat-label', label));
     stats.append(item);
@@ -234,9 +268,6 @@ function render() {
   $('module-code').textContent = draft.module.code;
   $('module-name').textContent = draft.module.name;
   $('unit-code').textContent = draft.unit.code;
-  $('unit-navigation-title').textContent = draft.unit.title;
-  $('breadcrumb-module').textContent = draft.module.code;
-  $('breadcrumb-unit').textContent = draft.unit.code;
   $('unit-title').textContent = draft.unit.title;
   $('connection-label').replaceChildren(node('span', 'status-dot'), document.createTextNode('Conectado'));
   $('connection-label').classList.add('is-connected');
@@ -313,7 +344,7 @@ function disconnect() {
   openSessions.clear();
   $('sessions').replaceChildren();
   $('stats').replaceChildren();
-  ['module-code', 'module-name', 'unit-code', 'unit-navigation-title', 'breadcrumb-module', 'breadcrumb-unit', 'unit-title', 'loaded-version', 'editor-title', 'editor-planned', 'editor-time', 'editor-kicker', 'editor-progress'].forEach((id) => { $(id).textContent = ''; });
+  ['module-code', 'module-name', 'unit-code', 'unit-title', 'loaded-version', 'editor-title', 'editor-planned', 'editor-time', 'editor-kicker', 'editor-progress'].forEach((id) => { $(id).textContent = ''; });
   $('editor-details').replaceChildren();
   fields.forEach((field) => { $(field).value = ''; });
   $('token').value = '';
@@ -374,7 +405,7 @@ async function save() {
   }
 }
 
-function openEditor(sessionIndex, activityIndex) {
+function openEditor(sessionIndex, activityIndex, targetField = 'observations') {
   if (busy || !draft) return;
   const session = draft.sessions[sessionIndex];
   const activity = session.activities[activityIndex];
@@ -394,7 +425,9 @@ function openEditor(sessionIndex, activityIndex) {
   $('editor').querySelectorAll('details').forEach((element) => { element.open = false; });
   $('editor').showModal();
   $('editor').querySelector('.editor-content').scrollTop = 0;
-  $('observations').focus();
+  const target = $(targetField === 'improvements' ? 'improvements' : 'observations');
+  target.focus({ preventScroll: true });
+  target.scrollIntoView({ block: 'nearest', behavior: 'instant' });
   updateSaveState();
 }
 
@@ -441,6 +474,13 @@ function expand(mode) {
   renderSessions();
 }
 
+function selectLayout(layout) {
+  if (!layoutDescriptions.has(layout)) return;
+  $('workspace').dataset.layout = layout;
+  $('layout-description').textContent = layoutDescriptions.get(layout);
+  for (const name of layoutDescriptions.keys()) $('layout-' + name).setAttribute('aria-pressed', String(name === layout));
+}
+
 $('login-form').addEventListener('submit', connect);
 $('disconnect').addEventListener('click', disconnect);
 $('refresh').addEventListener('click', refresh);
@@ -448,6 +488,7 @@ $('save').addEventListener('click', save);
 $('download-draft').addEventListener('click', downloadDraft);
 $('collapse-all').addEventListener('click', () => expand('none'));
 $('expand-sessions').addEventListener('click', () => expand('sessions'));
+for (const name of layoutDescriptions.keys()) $('layout-' + name).addEventListener('click', () => selectLayout(name));
 $('editor-form').addEventListener('submit', applyEditor);
 $('close-editor').addEventListener('click', closeEditor);
 $('cancel-editor').addEventListener('click', closeEditor);
@@ -462,4 +503,5 @@ window.addEventListener('beforeunload', (event) => {
   event.preventDefault();
   event.returnValue = '';
 });
+selectLayout('table');
 updateSaveState();

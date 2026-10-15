@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css">
-  <script type="module" src="./app.mjs?v=20261015-2"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261015-3">
+  <script type="module" src="./app.mjs?v=20261015-3"></script>
 </head>
 <body>
   <header class="topbar">
@@ -42,24 +42,31 @@
       </section>
     </section>
 
-    <section id="workspace" class="workspace" hidden aria-labelledby="unit-title">
-      <aside class="sidebar" aria-label="Contexto del cuaderno">
-        <p class="eyebrow">MI CUADERNO</p>
-        <div class="module-card"><span id="module-code" class="module-code"></span><strong id="module-name"></strong><span class="private-label">Datos privados</span></div>
-        <p class="sidebar-label">UNIDAD ABIERTA</p>
-        <div class="unit-navigation"><span id="unit-code"></span><strong id="unit-navigation-title"></strong><span aria-hidden="true">↗</span></div>
-        <div class="sidebar-bottom"><strong>Un piloto, una unidad</strong><p>La planificación se consulta. El estado, las observaciones y las mejoras se pueden editar.</p><div class="source-path">miGUITel/<br>programacion-piloto-datos<br><span>LM/UT02.json</span></div><p class="small-note">No modifica Excel ni Calendar.</p></div>
-      </aside>
+    <section id="workspace" class="workspace" data-layout="table" hidden aria-labelledby="unit-title">
       <div class="workspace-main">
-        <div class="breadcrumb"><span id="breadcrumb-module"></span><span aria-hidden="true">/</span><span id="breadcrumb-unit"></span></div>
-        <header class="unit-heading"><div><p class="eyebrow">PLANIFICACIÓN Y SEGUIMIENTO</p><h1 id="unit-title"></h1><p class="unit-subtitle">Lo previsto, lo vivido y lo que conviene mejorar.</p></div><div class="heading-mark" aria-hidden="true">↘</div></header>
-        <div id="stats" class="stats" aria-label="Resumen de la unidad"></div>
-        <div class="work-toolbar"><div class="view-controls" aria-label="Desplegar sesiones"><button id="collapse-all" type="button" class="button button-small">Plegar sesiones</button><button id="expand-sessions" type="button" class="button button-small">Abrir sesiones</button></div><div class="save-controls"><span id="save-state" class="save-state" role="status" aria-live="polite"></span><button id="refresh" type="button" class="button button-small">Actualizar</button><button id="save" type="button" class="button button-primary">Guardar cambios</button></div></div>
+        <header class="context-bar" aria-label="Contexto del cuaderno">
+          <span id="module-code" class="module-code"></span>
+          <div class="module-context"><span class="context-label">MI CUADERNO</span><strong id="module-name"></strong></div>
+          <div class="unit-context"><span id="unit-code" class="context-label"></span><h1 id="unit-title" tabindex="-1"></h1></div>
+          <span class="private-label">Datos privados</span>
+          <div id="stats" class="stats" aria-label="Resumen de la unidad"></div>
+        </header>
+        <div class="layout-toolbar">
+          <div class="layout-picker" role="group" aria-label="Propuestas de interfaz">
+            <span class="layout-label">COMPARAR VISTAS</span>
+            <button id="layout-table" class="layout-button" type="button" aria-pressed="true" aria-describedby="layout-description">1 · Tabla</button>
+            <button id="layout-bands" class="layout-button" type="button" aria-pressed="false" aria-describedby="layout-description">2 · Bandas</button>
+            <button id="layout-agenda" class="layout-button" type="button" aria-pressed="false" aria-describedby="layout-description">3 · Agenda</button>
+          </div>
+          <p id="layout-description" class="layout-description" role="status">Columnas alineadas, como en Excel. Texto en una línea.</p>
+        </div>
+        <div class="work-toolbar"><div class="view-controls" role="group" aria-label="Desplegar sesiones"><button id="collapse-all" type="button" class="button button-small">Plegar todas</button><button id="expand-sessions" type="button" class="button button-small">Desplegar todas</button></div><div class="save-controls"><span id="save-state" class="save-state" role="status" aria-live="polite"></span><button id="refresh" type="button" class="button button-small">Actualizar</button><button id="save" type="button" class="button button-primary">Guardar cambios</button></div></div>
         <div id="workspace-message" class="message workspace-message" role="status" aria-live="polite" hidden></div>
         <div id="recovery-actions" class="recovery-actions" hidden><button id="download-draft" type="button" class="button button-small">Descargar borrador JSON</button><span>El borrador permanece aquí hasta que lo descartes o cierres la página.</span></div>
         <div class="list-heading"><h2>Sesiones</h2><p><span class="past-legend" aria-hidden="true"></span>Fecha anterior a hoy; no indica impartición ni retraso.</p></div>
+        <div class="column-guide" aria-hidden="true"><span></span><span>Fecha</span><span>Sesión / contenido</span><span>Descripción prevista</span><span>Seguimiento</span><span>Estado</span><span>Anotar</span></div>
         <div id="sessions" class="sessions"></div>
-        <footer class="workspace-footer"><span id="loaded-version"></span><span>Planificación de solo lectura · Guardado explícito</span></footer>
+        <footer class="workspace-footer"><span id="loaded-version"></span><span>Planificación de solo lectura · No modifica Excel ni Calendar · Guardado explícito</span></footer>
       </div>
     </section>
     <noscript><p class="noscript">Activa JavaScript para conectar con el repositorio privado. Esta página no contiene los datos del cuaderno.</p></noscript>
@@ -75,7 +82,7 @@
         <section class="planned-content" aria-labelledby="planned-label"><h3 id="planned-label">Descripción prevista</h3><p id="editor-planned"></p></section>
         <div class="editor-divider"></div>
         <p class="eyebrow">MI SEGUIMIENTO</p>
-        <label for="observations">Observaciones</label><p class="field-help">Qué ocurrió, qué funcionó y qué conviene recordar.</p><textarea id="observations" rows="5" placeholder="Añade contexto de esta porción de la sesión…"></textarea>
+        <label for="observations">Observaciones</label><p class="field-help">Anota libremente; después puedes concretarlo en mejoras, realizado o pendiente.</p><textarea id="observations" rows="5" placeholder="Añade contexto de esta porción de la sesión…"></textarea>
         <label for="improvements">Mejoras para la próxima vez</label><textarea id="improvements" rows="4" placeholder="Ajustes, ideas y decisiones para una próxima edición…"></textarea>
         <details class="secondary-fields"><summary>Realizado y pendiente <span>Opcional</span></summary><div><label for="realized">Realizado</label><textarea id="realized" rows="3"></textarea><label for="pending">Pendiente</label><textarea id="pending" rows="3"></textarea></div></details>
         <details class="technical-details"><summary>Detalles del registro</summary><dl id="editor-details"></dl></details>
