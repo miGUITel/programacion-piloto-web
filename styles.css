@@ -720,3 +720,74 @@ textarea{resize:vertical;line-height:1.6}
   .library-bar .stat-label{font-size:11px}
 }
 
+/* Module overview and task index: derived views, one draft and explicit save. */
+.workspace-views { display:flex; gap:6px; margin:8px 0; }
+.workspace-views .layout-button { padding:7px 18px; }
+.module-view-toolbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:16px 0 8px; }
+.module-view-toolbar h2 { font-size:19px; margin:0 auto 0 0; }
+.module-view-toolbar label { font-size:13px; font-weight:650; }
+.module-view-toolbar select { width:auto; min-width:130px; max-width:100%; padding:7px 10px; font-size:14px; }
+.module-legend { display:flex; align-items:center; gap:6px; font-size:12px; }
+.scope-note { font-size:12px; line-height:1.5; color:#617982; margin:7px 0 12px; }
+.module-grid-scroll { max-width:100%; overflow:auto; max-height:65vh; border:1px solid #ccd8d1; border-radius:8px; background:#fffefa; }
+.module-grid { border-collapse:separate; border-spacing:0; width:max-content; min-width:100%; font-size:12px; }
+.module-grid th,.module-grid td { border-bottom:1px solid #dbe3de; border-right:1px solid #e5eae6; padding:6px 4px; text-align:center; }
+.module-grid thead th { position:sticky; top:0; background:#eaf0eb; z-index:2; font-weight:600; }
+.module-grid thead tr:last-child .overview-date { top:29px; }
+.module-grid .overview-month { height:29px; padding:4px 8px; text-align:left; font-size:11px; }
+.module-grid .overview-unit { position:sticky; left:0; width:225px; min-width:225px; max-width:225px; text-align:left; background:#f5f6ee; z-index:1; padding:8px 12px; }
+.module-grid thead .overview-unit { z-index:3; }
+.unit-link { display:block; border:0; background:none; padding:0; text-align:left; width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#153443; font:inherit; font-weight:650; cursor:pointer; }
+.unit-link:hover { text-decoration:underline; }
+.overview-active,.overview-unavailable { display:block; color:#617982; font-size:10px; font-weight:400; margin-top:3px; }
+.module-grid .overview-date { min-width:54px; white-space:nowrap; }
+.overview-session.band-day { width:32px; min-width:32px; height:27px; font-size:12px; margin:2px; }
+.module-grid .is-today { background:#e0f2eb; }
+.overview-session.excluded-session { text-decoration:line-through; opacity:.6; }
+.overview-session.elapsed-session { border-bottom:3px solid #d7544d; }
+.tasks-list { display:grid; gap:7px; }
+.task-row { display:grid; grid-template-columns:minmax(180px,1fr) repeat(3,110px) 112px auto; gap:16px; align-items:center; padding:12px 14px; border:1px solid #cbd9e5; border-left:4px solid #216cba; border-radius:7px; background:#fffefa; font-size:13px; }
+.task-name { min-width:0; }
+.task-name strong { display:block; overflow-wrap:anywhere; line-height:1.4; }
+.task-name>span { display:block; color:#617982; font-size:11px; margin-top:4px; }
+.task-date { display:flex; flex-direction:column; gap:3px; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.task-field-label { font-size:10px; color:#617982; }
+.task-confirmations { display:flex; flex-direction:column; gap:5px; font-size:11px; color:#617982; }
+.task-confirmations .confirmed { color:#006e57; font-weight:650; }
+.task-date.correction-past { color:#a23813; }
+.task-editor-fields { border:1px solid #bdd0e4; border-radius:8px; padding:14px; margin:18px 0; background:#f1f7ff; }
+.task-editor-fields h3 { margin:0 0 8px; }
+.task-date-inputs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.task-date-inputs label { font-size:12px; min-width:0; }
+.task-date-inputs input { width:100%; min-width:0; font-size:13px; padding:8px 4px; }
+.task-editor-checks { display:grid; gap:8px; margin:14px 0; }
+.task-editor-checks label { display:flex; align-items:center; gap:8px; font-size:13px; }
+.task-editor-checks input { width:17px; height:17px; margin:0; }
+@media(max-width:1000px) {
+  .task-row { grid-template-columns:minmax(160px,1fr) repeat(3,95px); gap:12px; }
+  .task-confirmations { grid-column:1/4; flex-direction:row; }
+  .task-row>button { justify-self:end; }
+}
+@media(max-width:600px) {
+  .workspace-views .layout-button { min-height:44px; padding:8px 14px; }
+  .module-view-toolbar { gap:8px; }
+  .module-view-toolbar h2 { width:100%; margin-bottom:4px; }
+  .module-view-toolbar select { min-height:44px; font-size:16px; min-width:0; flex:1; }
+  .module-legend { width:100%; }
+  .scope-note { font-size:12px; }
+  .module-grid .overview-unit { min-width:112px; width:112px; max-width:112px; padding:6px; }
+  .unit-link { white-space:normal; overflow-wrap:anywhere; font-size:12px; }
+  .module-grid .overview-date { min-width:50px; }
+  .overview-session.band-day { height:44px; min-width:44px; width:44px; font-size:15px; }
+  .task-row { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px 6px; padding:12px 10px; font-size:14px; }
+  .task-name { grid-column:1/-1; }
+  .task-name>span { font-size:12px; }
+  .task-date { font-size:12px; }
+  .task-field-label { font-size:10px; white-space:normal; }
+  .task-confirmations { grid-column:1/3; flex-direction:column; font-size:12px; }
+  .task-row>button { width:100%; font-size:12px; min-height:44px; padding:8px; }
+  .task-date-inputs { grid-template-columns:1fr; }
+  .task-date-inputs input { font-size:16px; min-height:44px; }
+  .task-editor-checks label { min-height:44px; font-size:14px; }
+  .task-editor-checks input { width:21px; height:21px; }
+}

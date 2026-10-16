@@ -71,7 +71,31 @@ El recordatorio se muestra en la sesión umbral; cuando el umbral pertenece a ot
 
 **Marcar avisado** marca el borrador de la unidad del examen. Si pertenece a otra UT, el botón lo indica y abre esa unidad leyendo su versión actual; exige guardar o revisar cualquier borrador previo. Solo se marca si sigue siendo el mismo examen, con la misma fecha. Después requiere **Guardar cambios**, con la protección habitual de SHA y guardados inciertos. En una sesión de examen compartida por dos UT, la confirmación tiene un único destino determinista: la primera unidad por ruta que contenga una porción de ese examen. Las otras vistas consultan ese mismo dato.
 
-### Mejoras generales del módulo y de la unidad
+### Vista del módulo y gestor de tareas
+
+Los botones **Unidad**, **Módulo** y **Tareas** cambian la presentación sin volver a leer GitHub ni guardar o descartar el borrador. Las variantes Tabla, Bandas y Agenda siguen disponibles dentro de Unidad. El contexto es siempre el módulo de la unidad abierta, no una selección pendiente de abrir. El resumen superior indica la UT en Unidad y las UT leídas, sesiones únicas y tareas del módulo en las otras dos vistas.
+
+**Módulo** alinea las UT del catálogo en filas y las fechas con sesión en columnas compartidas, ordenadas y agrupadas por mes y año. Los días sin sesiones no ocupan columnas; no es una escala de duración continua. Si dos sesiones caen en el mismo día, aparecen ambas en su casilla. Cada número es el de sesión dentro de su UT. Se mantienen azul/naranja, hoy, fecha pasada y estados cancelada/reprogramada, sin confundirlos con preparación. Un filtro limita el mes; el contenido se desplaza horizontalmente manteniendo la etiqueta de UT fija. Pulsar una sesión abre su UT y despliega esa sesión; pulsar la UT abre su vista Unidad. No incorpora ni inventa UT fuera del catálogo. Las lecturas incompletas se indican y mantienen la fila sin datos; **Actualizar** reintenta las lecturas.
+
+**Tareas** reúne las porciones con tipo explícito task y las tareas marcadas solo a nivel de sesión, respetando las selecciones manuales de tipos. No interpreta títulos ni duplica las tareas explícitas como registros de sesión. Permite filtrar UT, Sin presentar o Sin corregir, y ordena por entrega cuando exista o, en su defecto, fecha de sesión. Las tareas de sesiones canceladas/reprogramadas siguen visibles con su estado para no perder seguimiento. La ausencia de fechas se representa con —, no como prueba de que no se ha publicado una tarea.
+
+**Editar tarea** abre el editor habitual, enfocado en sus fechas y confirmaciones. Si procede de otra UT, primero exige resolver el borrador previo y lee el documento y su SHA actuales; nunca escribe sobre la instantánea usada para dibujar la vista. Se comprueba que la tarea siga existiendo y marcada. **Aplicar al borrador** no escribe en GitHub; **Guardar cambios** guarda únicamente la UT abierta con sus protecciones habituales. No hay guardados múltiples o automáticos. Una edición se refleja inmediatamente en las tres vistas del mismo borrador.
+
+Metadatos opcionales: `activity.task: { publishedOn?, dueOn?, correctBy?, corrected? }`. Las fechas son días ISO `YYYY-MM-DD` válidos; `corrected` es booleano. Para una marca manual de tarea sin porciones task se usa el mismo objeto en `session.task`. La presentación sigue usando `taskPresented`, no otra copia. El editor conserva campos desconocidos, textos, identificadores, progreso e importaciones; borrar un campo retira únicamente ese campo, sin vaciar extensiones. No hay migración obligatoria ni cambios automáticos en las UT existentes. Si se retira una marca, los metadatos previos no se borran; vuelven a ser visibles al recuperar esa marca.
+
+Publicación, entrega, corrección prevista, presentación y corrección son conceptos distintos. La app no publica en Aula Virtual ni gestiona entregas o calificaciones individuales. La corrección prevista pasada sin confirmación se resalta, pero no implica retraso del alumnado. Ningún estado se infiere de Impartida o del progreso importado. Las fechas y confirmaciones son información del JSON privado, no de Markdown ni de un archivo separado de tareas.
+
+#### Prueba de usuario del bloque 2
+
+1. Guarda borradores pendientes, recarga y conecta. En **Módulo**, comprueba las UT disponibles, sus fechas alineadas y sus marcas; filtra un mes y pulsa una sesión para abrirla. Solo aparecen las UT ya incorporadas al piloto.
+2. En **Tareas**, comprueba que aparecen las que están marcadas como tarea y prueba los filtros de UT, Sin presentar y Sin corregir. Si no hay ninguna, marca una tarea real desde su porción o sesión y aplica al borrador; no se extraen automáticamente del título.
+3. Edita una tarea real: introduce únicamente fechas que conozcas y ajusta Presentada y Corregida a su estado real. Aplica y comprueba que la fila refleja los datos y avisa de cambios sin guardar. Cambia entre las tres vistas: no debe perderse nada. Si intentas abrir otra UT con cambios pendientes, debe pedir guardarlos.
+4. Pulsa **Guardar cambios**, espera la confirmación y **Actualizar**. Desconecta y vuelve a conectar: fechas, confirmaciones, observaciones y mejoras deben seguir presentes, sin mezclarse con otras UT o módulos. Restaura y guarda cualquier marca usada solo como prueba.
+5. En el teléfono, comprueba que la cuadrícula se desliza dentro de su zona sin ensanchar la página y que puedes leer una tarea, editar sus fechas y guardarla cómodamente.
+
+Las pruebas sintéticas cubren varias UT, varios años/meses, fechas compartidas, múltiples sesiones en un día, módulos ajenos, tareas múltiples, marcas manuales, fechas inválidas, notas Unicode/HTML literal, conservación de extensiones y guardado contra SHA. No se crean tareas ficticias en los datos reales.
+
+### Mejoras generales: almacenamiento
 
 El botón **Mejoras** junto al selector de módulo se refiere al módulo seleccionado; el botón junto al selector de unidad se refiere a la unidad abierta y solo se habilita cuando coincide con la selección. El diálogo muestra siempre ese destino antes de escribir. **Guardar mejoras** realiza un guardado independiente, confirmado mediante una nueva lectura de GitHub. Cerrar conserva el borrador en memoria. Mientras haya un borrador de mejoras o el diálogo esté abierto se bloquea el cambio de unidad; guardar, revisar o descartar permite continuar. Las notas de las sesiones y las sugerencias de la app mantienen sus propios guardados.
 

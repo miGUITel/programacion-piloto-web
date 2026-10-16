@@ -78,6 +78,16 @@ export function isValidDate(value) {
   return day <= [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
 }
 
+function validateTaskMetadata(target, path, errors) {
+  if (!Object.hasOwn(target, 'task')) return;
+  const task = target.task;
+  if (!task || typeof task !== 'object' || Array.isArray(task)) { errors.push(`${path}.task: debe ser un objeto.`); return; }
+  for (const field of ['publishedOn', 'dueOn', 'correctBy']) {
+    if (Object.hasOwn(task, field) && !isValidDate(task[field])) errors.push(`${path}.task.${field}: fecha no válida.`);
+  }
+  if (Object.hasOwn(task, 'corrected') && typeof task.corrected !== 'boolean') errors.push(`${path}.task.corrected: debe ser booleano.`);
+}
+
 export function timeToMinutes(value) {
   if (!isText(value) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) return null;
   return Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5));
@@ -197,6 +207,7 @@ export function validateDocument(doc, expectedEntry) {
     if (!STATES.has(session.state)) errors.push(`${path}.state: estado no permitido.`);
     if (Object.hasOwn(session, 'eventTypes') && (!Array.isArray(session.eventTypes) || session.eventTypes.some(type => !['task', 'exam'].includes(type)) || new Set(session.eventTypes).size !== session.eventTypes.length)) errors.push(`${path}.eventTypes: lista sin duplicados de task y/o exam.`);
     if (Object.hasOwn(session, 'taskPresented') && typeof session.taskPresented !== 'boolean') errors.push(`${path}.taskPresented: debe ser booleano.`);
+    validateTaskMetadata(session, path, errors);
     if (Object.hasOwn(session, 'examAnnouncedFor') && !isValidDate(session.examAnnouncedFor)) errors.push(`${path}.examAnnouncedFor: fecha de examen avisada no válida.`);
     if (!Array.isArray(session.activities) || session.activities.length === 0) {
       errors.push(`${path}.activities: requiere una primera porción Cabecera.`);
@@ -216,6 +227,7 @@ export function validateDocument(doc, expectedEntry) {
       }
       if (Object.hasOwn(activity, 'eventType') && !['task', 'exam'].includes(activity.eventType)) errors.push(`${activityPath}.eventType: debe ser task o exam, o estar ausente.`);
       if (Object.hasOwn(activity, 'taskPresented') && typeof activity.taskPresented !== 'boolean') errors.push(`${activityPath}.taskPresented: debe ser booleano.`);
+      validateTaskMetadata(activity, activityPath, errors);
       if (isV2) {
         if (Object.hasOwn(activity, 'sourceRow')) errors.push(`${activityPath}.sourceRow: no forma parte de schemaVersion 2.`);
         if (Object.hasOwn(activity, 'calendar')) {

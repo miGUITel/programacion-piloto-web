@@ -1,8 +1,10 @@
-import { validateCatalog, validateDocument, summarize, GithubStore, saveErrorFeedback } from './core.mjs?v=20261016-4';
+import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261016-5';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261016-1';
 import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261016-2';
 import { compactUnitLabel, madridToday, sessionBand } from './unit-tools.mjs?v=20261016-4';
 import { eventTypes, setSessionEventType, activityEventType, taskProgress, setTaskPresented, moduleTimeline, unitExamReminders } from './teaching.mjs?v=20261016-4';
+import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261016-5';
+import { createModuleViews } from './module-views-ui.mjs?v=20261016-5';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -33,6 +35,13 @@ let blockedSave = false;
 let failedSave = false;
 let editorTarget = null;
 let lastConfirmedAt = null;
+let currentView = 'unit';
+
+function moduleRecords() { return draft ? [...moduleDocuments.values(), { entry: activeEntry, document: draft }] : []; }
+function readTaskEditor() {
+  return { ...Object.fromEntries(taskDateFields.map(field => [field, $('task-' + field).value])),
+    presented: $('task-presented').checked, corrected: $('task-corrected').checked };
+}
 
 function node(tag, className, text) {
   const el = document.createElement(tag);
@@ -48,7 +57,9 @@ function dirty() { return Boolean(draft && JSON.stringify(draft) !== JSON.string
 function editorDirty() {
   if (!editorTarget || !$('editor').open || !draft) return false;
   const activity = draft.sessions[editorTarget.sessionIndex].activities[editorTarget.activityIndex];
-  return fields.some((field) => $(field).value !== text(activity[field])) || $('activity-event-type').value !== (activity.eventType || '');
+  const target = editorTarget.sessionTask ? draft.sessions[editorTarget.sessionIndex] : activity;
+  return fields.some((field) => $(field).value !== text(activity[field])) || $('activity-event-type').value !== (activity.eventType || '')
+    || (!$('task-fields').hidden && JSON.stringify(readTaskEditor()) !== JSON.stringify(taskDetails(target)));
 }
 
 function hasPendingChanges() { return dirty() || editorDirty(); }
@@ -199,6 +210,51 @@ async function openSelectedUnit() {
   if (busy || !connection || hasPendingChanges() || blockedSave || $('editor').open || generalNotesUI.hasPending() || generalNotesUI.isOpen()) return;
   setBusy(true);
   try { await loadSelectedDocument(); } finally { setBusy(false); }
+  selectWorkspaceView('unit');
+}
+
+/** Never edit a cached snapshot: load the target UT and its SHA first. */
+async function openModuleSource(path, sessionId, activityId, editTask = false) {
+  if (busy || !draft) return;
+  if (path !== activeEntry.path) {
+    if (hasPendingChanges() || blockedSave || $('editor').open || generalNotesUI.hasPending() || generalNotesUI.isOpen()) {
+      message('workspace-message', 'Guarda o revisa los cambios de la unidad abierta antes de abrir otra UT.', 'warning'); return;
+    }
+    const module = catalog.modules.find(item => item.code === activeEntry.moduleCode);
+    const unit = module?.units.find(item => item.path === path);
+    if (!unit) return;
+    setBusy(true);
+    try { $('module-select').value = module.code; fillUnits(unit.code); await loadSelectedDocument(); }
+    finally { setBusy(false); }
+    if (activeEntry.path !== path) return;
+  }
+  const index = sessionId ? draft.sessions.findIndex(session => session.id === sessionId) : -1;
+  if (editTask) {
+    const task = moduleTasks([{ entry: activeEntry, document: draft }], activeEntry.moduleCode)
+      .find(item => item.sessionId === sessionId && item.activityId === activityId);
+    if (!task) { message('workspace-message', 'La tarea ha cambiado desde la lectura del módulo. Revisa la planificación actual.', 'warning'); return; }
+    openEditor(task.sessionIndex, task.activityIndex, 'task');
+  } else {
+    selectWorkspaceView('unit');
+    if (index >= 0) {
+      openSessions.add(sessionId); renderSessions();
+      const section = $('sessions').querySelector(`[data-session-index="${index}"]`);
+      section?.scrollIntoView({ block: 'start', behavior: 'instant' });
+      section?.querySelector('.session-title')?.focus({ preventScroll: true });
+    }
+  }
+}
+
+function selectWorkspaceView(view) {
+  if (!['unit', 'module', 'tasks'].includes(view) || busy || $('editor').open) return;
+  currentView = view;
+  for (const name of ['unit', 'module', 'tasks']) {
+    $(name + '-view').hidden = name !== view;
+    $('view-' + name).setAttribute('aria-pressed', String(name === view));
+  }
+  $('session-view-controls').hidden = view !== 'unit';
+  renderStats();
+  if (draft) moduleViews.render();
 }
 
 async function refreshCatalog() {
@@ -515,7 +571,12 @@ function renderStats() {
   stats.hidden = false;
   stats.setAttribute('aria-label', `Resumen de ${draft.module.code} · ${draft.unit.code}`);
   stats.replaceChildren();
-  for (const [value, label, highlight] of [[summary.totalSessions, 'sesiones', false], [summary.deliveredSessions, 'impartidas', true], [minutesLabel(summary.totalMinutes), 'previstos', false]]) {
+  const records = moduleRecords();
+  const values = currentView === 'unit'
+    ? [[summary.totalSessions, 'sesiones', false], [summary.deliveredSessions, 'impartidas', true], [minutesLabel(summary.totalMinutes), 'previstos', false]]
+    : [[records.length, 'UT leídas', false], [new Set(records.flatMap(record => record.document.sessions.map(session => session.id))).size, 'sesiones', false], [moduleTasks(records, activeEntry.moduleCode).length, 'tareas', true]];
+  stats.setAttribute('aria-label', currentView === 'unit' ? `Resumen de ${draft.module.code} · ${draft.unit.code}` : `Resumen del módulo ${draft.module.code}, solo UT leídas`);
+  for (const [value, label, highlight] of values) {
     const item = node('div', 'stat');
     item.append(node('span', `stat-value${highlight ? ' teal' : ''}`, value), node('span', 'stat-label', label));
     stats.append(item);
@@ -540,6 +601,7 @@ function renderSessions() {
   if (!draft.sessions.length) container.append(node('p', 'empty-sessions', 'Este documento no contiene sesiones.'));
   draft.sessions.forEach((session, index) => container.append(makeSession(session, index)));
   renderSessionBand();
+  moduleViews.render(); renderStats();
   if (busy) $('workspace').querySelectorAll('button, input, textarea, select').forEach(element => { element.disabled = true; });
   updateSaveState();
 }
@@ -671,12 +733,21 @@ function disconnect() {
   openSessions.clear();
   $('sessions').replaceChildren();
   $('session-band').replaceChildren();
+  moduleViews.clear();
   $('exam-reminders').replaceChildren(); $('exam-reminders').hidden = true;
   $('stats').replaceChildren();
   $('stats').hidden = true;
   ['unit-title', 'loaded-version', 'editor-title', 'editor-planned', 'editor-time', 'editor-kicker', 'editor-progress'].forEach((id) => { $(id).textContent = ''; });
   $('editor-details').replaceChildren();
   fields.forEach((field) => { $(field).value = ''; });
+  taskDateFields.forEach(field => { $('task-' + field).value = ''; });
+  $('task-presented').checked = false; $('task-corrected').checked = false;
+  $('task-target-help').textContent = ''; $('task-fields').hidden = true;
+  currentView = 'unit';
+  for (const name of ['unit', 'module', 'tasks']) {
+    $(name + '-view').hidden = name !== 'unit'; $('view-' + name).setAttribute('aria-pressed', String(name === 'unit'));
+  }
+  $('session-view-controls').hidden = false;
   $('token').value = '';
   $('workspace').hidden = true;
   $('library-view').hidden = true;
@@ -738,7 +809,7 @@ function openEditor(sessionIndex, activityIndex, targetField = 'observations') {
   if (busy || !draft) return;
   const session = draft.sessions[sessionIndex];
   const activity = session.activities[activityIndex];
-  editorTarget = { sessionIndex, activityIndex };
+  editorTarget = { sessionIndex, activityIndex, sessionTask: taskTarget(session, activityIndex) === session };
   $('editor-kicker').textContent = `SESIÓN ${session.number} · ${activityIndex === 0 ? 'PRIMERA PORCIÓN' : 'ACTIVIDAD'}`;
   $('editor-title').textContent = activity.title || 'Actividad';
   $('editor-time').textContent = `${activity.start}–${activity.end} · ${dateInfo(session.date).full}`;
@@ -747,6 +818,10 @@ function openEditor(sessionIndex, activityIndex, targetField = 'observations') {
   $('editor-planned').textContent = activity.planned || 'Sin descripción prevista.';
   fields.forEach((field) => { $(field).value = text(activity[field]); });
   $('activity-event-type').value = activity.eventType || '';
+  const detailsTask = taskDetails(editorTarget.sessionTask ? session : activity);
+  taskDateFields.forEach(field => { $('task-' + field).value = detailsTask[field]; $('task-' + field).setCustomValidity(''); });
+  $('task-presented').checked = detailsTask.presented; $('task-corrected').checked = detailsTask.corrected;
+  syncTaskFields();
   const details = $('editor-details');
   details.replaceChildren();
   for (const [label, value] of [['Unidad', draft.unit.id], ['Sesión', session.id], ['Porción', activity.id], ['Tipo de porción', activity.kind], ['Evento de Calendar', activity.calendar?.uid ?? activity.metadata?.calendarUid], ['Fila de origen', activity.sourceRow]]) {
@@ -755,10 +830,17 @@ function openEditor(sessionIndex, activityIndex, targetField = 'observations') {
   $('editor').querySelectorAll('details').forEach((element) => { element.open = false; });
   $('editor').showModal();
   $('editor').querySelector('.editor-content').scrollTop = 0;
-  const target = $(targetField === 'improvements' ? 'improvements' : 'observations');
+  const target = $(targetField === 'task' ? 'task-publishedOn' : targetField === 'improvements' ? 'improvements' : 'observations');
   target.focus({ preventScroll: true });
   target.scrollIntoView({ block: 'nearest', behavior: 'instant' });
   updateSaveState();
+}
+
+function syncTaskFields() {
+  const manual = editorTarget?.sessionTask && !$('activity-event-type').value;
+  $('task-fields').hidden = $('activity-event-type').value !== 'task' && !manual;
+  $('task-target-help').textContent = manual ? 'Tarea marcada solo en la sesión: estos datos pertenecen a la sesión completa.' : 'Estos datos pertenecen únicamente a esta porción marcada como tarea.';
+  taskDateFields.forEach(field => { $('task-' + field).disabled = $('task-fields').hidden; });
 }
 
 function closeEditor() {
@@ -773,10 +855,20 @@ function closeEditor() {
 function applyEditor(event) {
   event.preventDefault();
   if (busy || !editorTarget || !draft) return;
-  const activity = draft.sessions[editorTarget.sessionIndex].activities[editorTarget.activityIndex];
+  const session = draft.sessions[editorTarget.sessionIndex];
+  const activity = session.activities[editorTarget.activityIndex];
+  if (!$('task-fields').hidden) {
+    for (const field of taskDateFields) {
+      const input = $('task-' + field);
+      input.setCustomValidity(input.value && !isValidDate(input.value) ? 'Indica una fecha válida de cuatro cifras de año.' : '');
+      if (!input.reportValidity()) return;
+    }
+  }
   fields.forEach((field) => { activity[field] = $(field).value; });
   if ($('activity-event-type').value) activity.eventType = $('activity-event-type').value;
   else delete activity.eventType;
+  const target = taskTarget(session, editorTarget.activityIndex);
+  if (target && !$('task-fields').hidden) applyTaskDetails(target, readTaskEditor());
   $('editor').close();
   editorTarget = null;
   fields.forEach((field) => { $(field).value = ''; });
@@ -824,6 +916,9 @@ $('save').addEventListener('click', save);
 $('download-draft').addEventListener('click', downloadDraft);
 $('collapse-all').addEventListener('click', () => expand('none'));
 $('expand-sessions').addEventListener('click', () => expand('sessions'));
+for (const name of ['unit', 'module', 'tasks']) $('view-' + name).addEventListener('click', () => selectWorkspaceView(name));
+$('activity-event-type').addEventListener('change', syncTaskFields);
+taskDateFields.forEach(field => $('task-' + field).addEventListener('input', () => $('task-' + field).setCustomValidity('')));
 for (const name of layoutDescriptions.keys()) $('layout-' + name).addEventListener('click', () => selectLayout(name));
 $('editor-form').addEventListener('submit', applyEditor);
 $('close-editor').addEventListener('click', closeEditor);
@@ -850,7 +945,12 @@ const generalNotesUI = createGeneralNotesUI({
     return module ? { moduleCode: module.code, title: module.name } : null;
   },
 });
-document.addEventListener('visibilitychange', () => { if (!document.hidden && draft) renderSessionBand(); });
-setInterval(() => { if (draft && $('session-band').dataset.today !== madridToday()) renderSessionBand(); }, 60000);
+const moduleViews = createModuleViews({
+  getState: () => ({ module: catalog?.modules.find(item => item.code === activeEntry?.moduleCode), records: moduleRecords(), failures: moduleLoadFailures, errors: teachingTimeline.errors, ready: moduleContextReady, today: madridToday(), activePath: activeEntry?.path, busy }),
+  onOpen: (path, sessionId) => openModuleSource(path, sessionId),
+  onEdit: task => openModuleSource(task.entry.path, task.sessionId, task.activityId, true),
+});
+document.addEventListener('visibilitychange', () => { if (!document.hidden && draft) { renderSessionBand(); moduleViews.render(); } });
+setInterval(() => { if (draft && $('session-band').dataset.today !== madridToday()) { renderSessionBand(); moduleViews.render(); } }, 60000);
 selectLayout('table');
 updateSaveState();
