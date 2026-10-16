@@ -211,6 +211,7 @@ export function validateDocument(doc, expectedEntry) {
       for (const field of TEXT_FIELDS) {
         if (!isText(activity[field])) errors.push(`${activityPath}.${field}: debe ser texto.`);
       }
+      if (Object.hasOwn(activity, 'eventType') && !['task', 'exam'].includes(activity.eventType)) errors.push(`${activityPath}.eventType: debe ser task o exam, o estar ausente.`);
       if (isV2) {
         if (Object.hasOwn(activity, 'sourceRow')) errors.push(`${activityPath}.sourceRow: no forma parte de schemaVersion 2.`);
         if (Object.hasOwn(activity, 'calendar')) {

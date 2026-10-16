@@ -14,6 +14,8 @@ La interfaz pública no constituye una protección de datos: el control de acces
 
 El selector compacto superior permite elegir módulo y unidad y pulsar **Abrir unidad**. La etiqueta **Abierta** identifica siempre el documento que se está viendo y que recibiría un guardado; cambiar una selección no cambia por sí solo el documento. Un módulo sin unidades se muestra como pendiente, sin generar archivos vacíos ni planificación ficticia. **Actualizar lista** relee el catálogo privado sin recargar ni sustituir la unidad abierta.
 
+Los selectores muestran solo el código del módulo y número más título breve de la unidad: `02 HTML`, por ejemplo. El título breve usa `shortTitle` si existe; en su ausencia, toma hasta tres palabras del primer segmento del título. El código completo y el título original no se modifican y siguen disponibles en la ayuda de la opción y en la cabecera.
+
 Si hay cambios sin guardar, un editor abierto o un guardado incierto, se bloquean el selector y la apertura de otra unidad. Primero se guardan o se revisan los cambios en la unidad actual. No se descartan borradores al navegar. Cada documento conserva su destino y control de versión independientes; una carga fallida deja intacto el documento anterior. Los nombres de los borradores descargados y los mensajes de commit identifican el módulo y la unidad correspondientes.
 
 La planificación es de solo lectura. El estado se edita en la sesión; observaciones, mejoras y los campos secundarios de seguimiento se editan en un panel lateral. Aplicar en el panel modifica el borrador en memoria. El botón Guardar cambios inicia la única operación explícita de escritura del documento académico. Las sugerencias de la app tienen su propio formulario y guardado independiente.
@@ -49,6 +51,20 @@ Hay exactamente dos niveles: las cabeceras de sesión y las filas compactas de s
 
 La fecha se muestra una vez en la cabecera, con abreviatura del día de la semana. Su texto completo está disponible en la ayuda contextual y en la descripción accesible. La comparación de fecha pasada utiliza la zona `Europe/Madrid`; la marca no expresa estado de impartición.
 
+### Banda de la unidad
+
+**La UT de un vistazo** muestra un cuadrado por sesión, ordenado por fecha, con el día del mes. Un cuadro de mes de dos letras aparece al inicio y en cada cambio de mes o año. La línea inferior oscura representa fechas pasadas y el contorno identifica hoy, según `Europe/Madrid`; ninguno expresa impartición. Al pulsar un día se salta a su sesión. En móvil la banda se desplaza horizontalmente sin ensanchar la página. Cambiar de las tres vistas mantiene la misma banda.
+
+Las porciones admiten `eventType: "task"` o `"exam"`; su ausencia significa sin marca. Se configura en **Marca en la banda de la UT** del editor existente y se conserva mediante **Aplicar al borrador → Guardar cambios**. Una sesión con una tarea se muestra azul; con examen, naranja; si reúne ambos, combina los colores. La ayuda y el nombre accesible explican las marcas. No se infieren tipos de títulos o colores, no se cambia el estado académico ni se añaden confirmaciones de presentación o avisos de examen. Los documentos ya guardados siguen siendo válidos sin este campo y no se migran automáticamente.
+
+### Mejoras generales del módulo y de la unidad
+
+El botón **Mejoras** junto al selector se refiere al módulo seleccionado; el botón junto al título de la unidad se refiere a la unidad abierta. El diálogo muestra siempre ese destino antes de escribir. **Guardar mejoras** realiza un guardado independiente, confirmado mediante una nueva lectura de GitHub. Cerrar conserva el borrador en memoria. Mientras haya un borrador de mejoras o el diálogo esté abierto se bloquea el cambio de unidad; guardar, revisar o descartar permite continuar. Las notas de las sesiones y las sugerencias de la app mantienen sus propios guardados.
+
+`general-notes.mjs` conserva un único archivo privado por módulo en `APP/mejoras/MÓDULO.json`: `{schemaVersion: 1, moduleCode, improvements, units: {UNIDAD: {id, improvements}}}`. `improvements` recoge las mejoras generales del módulo; cada entrada de `units` recoge las de esa unidad. No se copian fechas, sesiones, recursos ni estados de preparación. Los textos y campos desconocidos se conservan al editar otro ámbito. El archivo se crea en el primer guardado real del docente, sin rellenar registros ficticios.
+
+La primera lectura de un archivo inexistente confirma también acceso al catálogo del módulo antes de habilitar la creación. Las actualizaciones utilizan el SHA leído y no se reintentan automáticamente. Si el guardado queda incierto o hay conflicto, se conserva el borrador y se bloquea el reenvío. **Revisar GitHub** permite confirmar un envío recibido, recuperar una versión sin perder el borrador o comparar textos en conflicto. **Usar texto de GitHub** o **Conservar mi borrador** son elecciones explícitas; esta última requiere después un guardado manual. No hay almacenamiento local persistente ni trabajo sin conexión.
+
 Cuando una actividad contiene `progress` con valor 0, 1 o 2, se muestra su progreso importado como Pendiente, En proceso o Completada. Es información de solo lectura y se conserva sin convertirla en el estado de la sesión.
 
 ## Sugerencias sobre la aplicación
@@ -61,7 +77,7 @@ Cada envío crea exclusivamente `APP/sugerencias/<uuid>.json`, con formato 1, id
 
 Cerrar el formulario conserva su borrador en memoria sin guardar ni descartar el borrador académico. El punto junto a Sugerencias indica una propuesta pendiente. Ante un error se conserva el texto y se ofrece descargarlo. Desconectar o salir advierte si hay cambios pendientes; no hay recuperación automática después de cerrar o recargar. Una propuesta guardada permite iniciar otra mediante **Nueva sugerencia**.
 
-La verificación usa pruebas automatizadas y una interfaz con transporte ficticio para éxito, permisos insuficientes, límites, rechazo, respuesta perdida y colisión. No se envían sugerencias ficticias al registro real. La primera propuesta real del docente permitirá comprobar también su token desde la app desplegada.
+La verificación usa pruebas automatizadas y una interfaz con transporte ficticio para éxito, permisos insuficientes, límites, rechazo, respuesta perdida y colisión. No se envían sugerencias ficticias al registro real. El docente envió propuestas reales el 16/10/2026; sus archivos y textos se comprobaron directamente en GitHub.
 
 ## Requisitos futuros pendientes
 
@@ -72,7 +88,7 @@ Estos requisitos están anotados para desarrollo posterior; no están implementa
 - **Tareas:** destacar en azul más intenso la porción correspondiente y añadir un botón pequeño de confirmación de que la tarea se ha presentado y abierto para que el alumnado la trabaje. No confundir esta confirmación docente con tarea entregada, completada o calificada. Tampoco debe publicar automáticamente en Aula Virtual.
 - **Exámenes:** destacar en naranja la porción correspondiente. Tres sesiones antes del examen, mostrar un recordatorio para avisar al alumnado y un botón para marcar que el aviso ya se ha dado. Contar sesiones del módulo, no tres días ni tres porciones. El alcance debe poder cruzar el límite entre UT. Antes de implementarlo, concretar el tratamiento de sesiones canceladas, reprogramaciones y exámenes con menos de tres sesiones anteriores disponibles.
 - **Preparación de sesiones:** mostrar de un vistazo qué sesiones están preparadas. Valorar una pequeña marca en cada cabecera de sesión o una vista anual limpia que reúna las sesiones y su preparación. Queda abierto si se adopta una opción o ambas; si hay dos vistas, consultarán el mismo dato, sin registros paralelos. La preparación es distinta de la impartición, del progreso de las actividades y de la confirmación de apertura de una tarea. El control se refiere a la sesión completa, no a una marca repetida en cada porción. Antes de implementarlo, acordar cómo se marca una sesión preparada y qué implica cambiar su planificación después; no deducir preparación automáticamente de la existencia de recursos ni del estado Impartida.
-- **Datos explícitos:** identificar tarea o examen mediante un tipo estructurado, no deducirlo exclusivamente del título o del color. Las confirmaciones serán datos propios, distintos del estado de impartición; los detalles del modelo quedan pendientes de aprobación.
+- **Confirmaciones explícitas:** `eventType` ya identifica tareas y exámenes en la banda. Las futuras confirmaciones de presentación y aviso serán datos propios, distintos de ese tipo y del estado de impartición; sus detalles quedan pendientes de aprobación.
 
 ## Formato del JSON
 

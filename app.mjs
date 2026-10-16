@@ -1,5 +1,7 @@
-import { validateCatalog, validateDocument, summarize, GithubStore, saveErrorFeedback } from './core.mjs?v=20261015-6';
+import { validateCatalog, validateDocument, summarize, GithubStore, saveErrorFeedback } from './core.mjs?v=20261016-2';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261016-1';
+import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261016-2';
+import { compactUnitLabel, madridToday, sessionBand } from './unit-tools.mjs?v=20261016-2';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -40,7 +42,7 @@ function dirty() { return Boolean(draft && JSON.stringify(draft) !== JSON.string
 function editorDirty() {
   if (!editorTarget || !$('editor').open || !draft) return false;
   const activity = draft.sessions[editorTarget.sessionIndex].activities[editorTarget.activityIndex];
-  return fields.some((field) => $(field).value !== text(activity[field]));
+  return fields.some((field) => $(field).value !== text(activity[field])) || $('activity-event-type').value !== (activity.eventType || '');
 }
 
 function hasPendingChanges() { return dirty() || editorDirty(); }
@@ -89,6 +91,7 @@ function updateSaveState() {
   $('recovery-actions').hidden = !(dirty() || blockedSave || failedSave);
   updateNavigation();
   suggestionsUI.updateAvailability();
+  generalNotesUI.updateAvailability();
 }
 
 function selectedEntry() {
@@ -98,7 +101,7 @@ function selectedEntry() {
 }
 
 function updateNavigation() {
-  const editing = hasPendingChanges() || $('editor').open || blockedSave;
+  const editing = hasPendingChanges() || $('editor').open || blockedSave || generalNotesUI.hasPending() || generalNotesUI.isOpen();
   const selectedModule = catalog?.modules.find(item => item.code === $('module-select').value);
   const selected = selectedEntry();
   $('module-select').disabled = busy || editing || !catalog?.modules.length;
@@ -108,6 +111,7 @@ function updateNavigation() {
   $('active-document').textContent = activeEntry ? `Abierta: ${activeEntry.moduleCode} · ${activeEntry.unitCode}` : 'Ninguna unidad abierta';
   let help = 'Selecciona módulo y unidad; pulsa Abrir unidad para cargarla.';
   if (blockedSave) help = 'Conserva el borrador y actualiza la unidad abierta para revisar el guardado antes de cambiar de unidad.';
+  else if (generalNotesUI.hasPending() || generalNotesUI.isOpen()) help = 'Termina de revisar o guardar las mejoras generales antes de cambiar de unidad.';
   else if ($('editor').open) help = 'Termina de editar y guarda los cambios antes de abrir otra unidad.';
   else if (editing) help = 'Guarda tus cambios antes de abrir otra unidad. El borrador permanece en la unidad abierta.';
   else if (selectedModule && !selectedModule.units.length) help = `${selectedModule.code}: pendiente de incorporar su unidad. No hay planificación disponible en la app todavía.${activeEntry ? ` Sigue abierta ${activeEntry.moduleCode} · ${activeEntry.unitCode}.` : ''}`;
@@ -125,7 +129,8 @@ function fillUnits(preferredCode = '') {
     option.value = '';
     select.append(option);
   } else for (const unit of module.units) {
-    const option = node('option', '', `${unit.code} · ${unit.title}`);
+    const option = node('option', '', compactUnitLabel(unit));
+    option.title = `${unit.code} · ${unit.title}`;
     option.value = unit.code;
     select.append(option);
   }
@@ -142,7 +147,8 @@ function acceptCatalog(result) {
   const select = $('module-select');
   select.replaceChildren();
   for (const module of catalog.modules) {
-    const option = node('option', '', `${module.code} · ${module.name}`);
+    const option = node('option', '', module.code);
+    option.title = module.name;
     option.value = module.code;
     select.append(option);
   }
@@ -159,7 +165,7 @@ function acceptCatalog(result) {
 
 async function loadSelectedDocument() {
   const entry = selectedEntry();
-  if (!entry || !connection || hasPendingChanges() || blockedSave || $('editor').open || entry.path === activeEntry?.path) return;
+  if (!entry || !connection || hasPendingChanges() || blockedSave || $('editor').open || generalNotesUI.hasPending() || generalNotesUI.isOpen() || entry.path === activeEntry?.path) return;
   message('library-message', `Abriendo ${entry.moduleCode} · ${entry.unitCode}…`);
   try {
     const candidate = documentStores.get(entry.path) ?? connection.forDocument(entry);
@@ -180,13 +186,13 @@ async function loadSelectedDocument() {
 }
 
 async function openSelectedUnit() {
-  if (busy || !connection || hasPendingChanges() || blockedSave || $('editor').open) return;
+  if (busy || !connection || hasPendingChanges() || blockedSave || $('editor').open || generalNotesUI.hasPending() || generalNotesUI.isOpen()) return;
   setBusy(true);
   try { await loadSelectedDocument(); } finally { setBusy(false); }
 }
 
 async function refreshCatalog() {
-  if (busy || !connection || hasPendingChanges() || blockedSave || $('editor').open) return;
+  if (busy || !connection || hasPendingChanges() || blockedSave || $('editor').open || generalNotesUI.hasPending() || generalNotesUI.isOpen()) return;
   setBusy(true);
   message('library-message', 'Actualizando la lista de unidades…');
   try {
@@ -209,7 +215,7 @@ function minutesLabel(minutes) {
 
 function dateInfo(value) {
   const date = new Date(`${value}T12:00:00Z`);
-  const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const today = madridToday();
   const weekday = ['D', 'L', 'M', 'X', 'J', 'V', 'S'][date.getUTCDay()];
   return {
     day: `${weekday} ${date.getUTCDate()}`,
@@ -335,6 +341,7 @@ function makeSession(session, sessionIndex) {
   if (first && session.activities.length > 1) addMeta(meta, `1.ª ${first.start}–${first.end}`, 'first-portion-time');
   const title = node('h3', 'session-title', first?.title || 'Sesión');
   title.title = first?.title || 'Sesión';
+  title.tabIndex = -1;
   description.append(meta, title);
   const planned = node('p', 'planned-preview', first?.planned || '');
   planned.title = first?.planned || '';
@@ -374,7 +381,36 @@ function renderSessions() {
   container.replaceChildren();
   if (!draft.sessions.length) container.append(node('p', 'empty-sessions', 'Este documento no contiene sesiones.'));
   draft.sessions.forEach((session, index) => container.append(makeSession(session, index)));
+  renderSessionBand();
   updateSaveState();
+}
+
+function renderSessionBand() {
+  const container = $('session-band');
+  container.replaceChildren();
+  if (!draft) return;
+  container.dataset.today = madridToday();
+  for (const item of sessionBand(draft.sessions, container.dataset.today)) {
+    if (item.monthLabel) {
+      const month = node('li', 'band-month', item.monthLabel);
+      month.title = item.monthName; month.setAttribute('aria-label', item.monthName);
+      container.append(month);
+    }
+    const cell = node('li', `band-cell${item.past ? ' elapsed' : ''}${item.today ? ' today' : ''}`);
+    const button = node('button', `band-day${item.task ? ' has-task' : ''}${item.exam ? ' has-exam' : ''}`, item.day);
+    button.type = 'button';
+    const types = [item.task ? 'Tarea' : '', item.exam ? 'Examen' : ''].filter(Boolean).join(' y ');
+    const label = `Sesión ${item.number} · ${dateInfo(item.date).full}${types ? ` · ${types}` : ''}${item.today ? ' · Hoy' : ''}${item.past ? ' · Fecha pasada' : ''}`;
+    button.title = label; button.setAttribute('aria-label', label);
+    button.addEventListener('click', () => {
+      if (busy) return;
+      const section = $('sessions').querySelector(`[data-session-index="${item.index}"]`);
+      section?.scrollIntoView({ block: 'start', behavior: 'instant' });
+      section?.querySelector('.session-title')?.focus({ preventScroll: true });
+    });
+    cell.append(button); container.append(cell);
+  }
+  $('session-band-section').hidden = !draft.sessions.length;
 }
 
 function render() {
@@ -414,6 +450,7 @@ async function connect(event) {
   try {
     connection = new GithubStore({ token });
     suggestionsUI.connect(token);
+    generalNotesUI.connect(token);
     token = '';
     setBusy(true);
     message('login-message', 'Comprobando acceso y leyendo el catálogo privado…');
@@ -425,6 +462,7 @@ async function connect(event) {
     store = null;
     connection = null;
     suggestionsUI.disconnect();
+    generalNotesUI.disconnect();
     documentStores.clear();
     catalog = null;
     activeEntry = null;
@@ -455,8 +493,9 @@ async function connect(event) {
 
 function disconnect() {
   if (busy) return;
-  if ((hasPendingChanges() || suggestionsUI.hasPending()) && !window.confirm('Hay cambios o sugerencias sin guardar. Descárgalos si quieres conservarlos. ¿Quieres descartarlos y desconectar?')) return;
+  if ((hasPendingChanges() || suggestionsUI.hasPending() || generalNotesUI.hasPending()) && !window.confirm('Hay cambios, mejoras o sugerencias sin guardar. Descárgalos si quieres conservarlos. ¿Quieres descartarlos y desconectar?')) return;
   suggestionsUI.disconnect();
+  generalNotesUI.disconnect();
   $('editor').close();
   editorTarget = null;
   store = null;
@@ -472,6 +511,7 @@ function disconnect() {
   lastConfirmedAt = null;
   openSessions.clear();
   $('sessions').replaceChildren();
+  $('session-band').replaceChildren();
   $('stats').replaceChildren();
   ['module-code', 'module-name', 'unit-code', 'unit-title', 'loaded-version', 'editor-title', 'editor-planned', 'editor-time', 'editor-kicker', 'editor-progress'].forEach((id) => { $(id).textContent = ''; });
   $('editor-details').replaceChildren();
@@ -544,6 +584,7 @@ function openEditor(sessionIndex, activityIndex, targetField = 'observations') {
   $('editor-progress').textContent = progressNames.has(activity.progress) ? `Progreso importado: ${progressNames.get(activity.progress)} · Solo lectura` : '';
   $('editor-planned').textContent = activity.planned || 'Sin descripción prevista.';
   fields.forEach((field) => { $(field).value = text(activity[field]); });
+  $('activity-event-type').value = activity.eventType || '';
   const details = $('editor-details');
   details.replaceChildren();
   for (const [label, value] of [['Unidad', draft.unit.id], ['Sesión', session.id], ['Porción', activity.id], ['Tipo de porción', activity.kind], ['Evento de Calendar', activity.calendar?.uid ?? activity.metadata?.calendarUid], ['Fila de origen', activity.sourceRow]]) {
@@ -572,6 +613,8 @@ function applyEditor(event) {
   if (busy || !editorTarget || !draft) return;
   const activity = draft.sessions[editorTarget.sessionIndex].activities[editorTarget.activityIndex];
   fields.forEach((field) => { activity[field] = $(field).value; });
+  if ($('activity-event-type').value) activity.eventType = $('activity-event-type').value;
+  else delete activity.eventType;
   $('editor').close();
   editorTarget = null;
   fields.forEach((field) => { $(field).value = ''; });
@@ -630,10 +673,22 @@ $('editor').addEventListener('click', (event) => {
   if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) closeEditor();
 });
 window.addEventListener('beforeunload', (event) => {
-  if (!hasPendingChanges() && !suggestionsUI.hasPending() && !busy) return;
+  if (!hasPendingChanges() && !suggestionsUI.hasPending() && !generalNotesUI.hasPending() && !busy) return;
   event.preventDefault();
   event.returnValue = '';
 });
-const suggestionsUI = createSuggestionsUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState, isAcademicEditorOpen: () => $('editor').open });
+const suggestionsUI = createSuggestionsUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState, isAcademicEditorOpen: () => $('editor').open || generalNotesUI.isOpen() });
+const generalNotesUI = createGeneralNotesUI({
+  isBusy: () => busy, setBusy, onStateChange: updateSaveState,
+  otherEditorOpen: () => $('editor').open || $('suggestions-dialog').open,
+  getTarget(scope) {
+    if (!connection) return null;
+    if (scope === 'unit') return activeEntry && draft ? { ...activeEntry, title: draft.unit.title } : null;
+    const module = catalog?.modules.find(item => item.code === $('module-select').value);
+    return module ? { moduleCode: module.code, title: module.name } : null;
+  },
+});
+document.addEventListener('visibilitychange', () => { if (!document.hidden && draft) renderSessionBand(); });
+setInterval(() => { if (draft && $('session-band').dataset.today !== madridToday()) renderSessionBand(); }, 60000);
 selectLayout('table');
 updateSaveState();

@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261016-1">
-  <script type="module" src="./app.mjs?v=20261016-1"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261016-2">
+  <script type="module" src="./app.mjs?v=20261016-2"></script>
 </head>
 <body>
   <header class="topbar">
@@ -44,7 +44,7 @@
 
     <section id="library-view" class="library-bar" hidden aria-label="Elegir módulo y unidad">
       <div class="document-picker">
-        <div class="picker-field"><label for="module-select">Módulo</label><select id="module-select" aria-describedby="selection-help"></select></div>
+        <div class="picker-field module-picker"><label for="module-select">Módulo</label><select id="module-select" aria-describedby="selection-help"></select><button id="module-improvements" class="button button-small general-improvements" type="button" aria-label="Mejoras generales del módulo" aria-haspopup="dialog" aria-controls="general-notes-dialog" disabled>Mejoras</button></div>
         <div class="picker-field unit-picker"><label for="unit-select">Unidad</label><select id="unit-select" aria-describedby="selection-help"></select></div>
         <button id="open-unit" class="button button-primary button-small" type="button">Abrir unidad</button>
         <button id="refresh-catalog" class="button button-small" type="button">Actualizar lista</button>
@@ -59,10 +59,14 @@
         <header class="context-bar" aria-label="Contexto del cuaderno">
           <span id="module-code" class="module-code"></span>
           <div class="module-context"><span class="context-label">MI CUADERNO</span><strong id="module-name"></strong></div>
-          <div class="unit-context"><span id="unit-code" class="context-label"></span><h1 id="unit-title" tabindex="-1"></h1></div>
+          <div class="unit-context"><span id="unit-code" class="context-label"></span><div class="unit-title-row"><h1 id="unit-title" tabindex="-1"></h1><button id="unit-improvements" class="button button-small general-improvements" type="button" aria-label="Mejoras generales de la unidad abierta" aria-haspopup="dialog" aria-controls="general-notes-dialog" disabled>Mejoras</button></div></div>
           <span class="private-label">Datos privados</span>
           <div id="stats" class="stats" aria-label="Resumen de la unidad"></div>
         </header>
+        <section id="session-band-section" class="session-band-section" aria-labelledby="session-band-label">
+          <div class="band-caption"><h2 id="session-band-label">La UT de un vistazo</h2><p><span class="band-key task-key"></span>Tarea <span class="band-key exam-key"></span>Examen <span class="band-key elapsed-key"></span>Tiempo transcurrido</p></div>
+          <div class="session-band-scroll" tabindex="0" role="region" aria-label="Sesiones de la UT; desliza para ver todas"><ol id="session-band" class="session-band"></ol></div>
+        </section>
         <div class="layout-toolbar">
           <div class="layout-picker" role="group" aria-label="Propuestas de interfaz">
             <span class="layout-label">COMPARAR VISTAS</span>
@@ -94,6 +98,7 @@
         <section class="planned-content" aria-labelledby="planned-label"><h3 id="planned-label">Descripción prevista</h3><p id="editor-planned"></p></section>
         <div class="editor-divider"></div>
         <p class="eyebrow">MI SEGUIMIENTO</p>
+        <label for="activity-event-type">Marca en la banda de la UT</label><select id="activity-event-type"><option value="">Sin marca</option><option value="task">Tarea · azul</option><option value="exam">Examen · naranja</option></select><p class="field-help">Identifica esta porción en la banda. Aplica al borrador y guarda los cambios para conservarla.</p>
         <label for="observations">Observaciones</label><p class="field-help">Anota libremente; después puedes concretarlo en mejoras, realizado o pendiente.</p><textarea id="observations" rows="5" placeholder="Añade contexto de esta porción de la sesión…"></textarea>
         <label for="improvements">Mejoras para la próxima vez</label><textarea id="improvements" rows="4" placeholder="Ajustes, ideas y decisiones para una próxima edición…"></textarea>
         <details class="secondary-fields"><summary>Realizado y pendiente <span>Opcional</span></summary><div><label for="realized">Realizado</label><textarea id="realized" rows="3"></textarea><label for="pending">Pendiente</label><textarea id="pending" rows="3"></textarea></div></details>
@@ -106,7 +111,7 @@
     <form id="suggestions-form" class="suggestions-form">
       <header class="suggestions-header"><div><p class="eyebrow">MEJORAR LA APLICACIÓN</p><h2 id="suggestions-title">Tu idea para la app</h2></div><button id="close-suggestions" type="button" class="icon-button" aria-label="Cerrar sugerencias">×</button></header>
       <div class="suggestions-content">
-        <p id="suggestions-scope">Para mejoras, errores o ideas sobre esta web. Las notas de tus cursos y de la programación didáctica siguen en Observaciones y Mejoras de cada sesión.</p>
+        <p id="suggestions-scope">Para mejoras, errores o ideas sobre esta web. Para el planteamiento de tus cursos usa las Mejoras junto al módulo o la UT; para una sesión, sus propios botones.</p>
         <p class="field-help">Registro privado en GitHub, separado de las UT. Solo se envían los campos de este formulario, su identificador, fecha y estado. No incluyas contraseñas ni datos personales del alumnado.</p>
         <label for="suggestion-type">Tipo</label><select id="suggestion-type"><option value="mejora">Mejora</option><option value="error">Error</option><option value="idea">Idea</option></select>
         <label for="suggestion-title">Título breve</label><input id="suggestion-title" type="text" required maxlength="120" placeholder="¿Qué te gustaría mejorar?">
@@ -117,6 +122,20 @@
         <a class="suggestions-register-link" href="https://github.com/miGUITel/programacion-piloto-datos/tree/main/APP/sugerencias" target="_blank" rel="noopener noreferrer">Ver registro privado en GitHub ↗</a>
       </div>
       <footer class="suggestions-footer"><button id="hide-suggestions" class="button" type="button">Cerrar</button><button id="send-suggestion" class="button button-primary" type="submit">Guardar sugerencia</button><button id="new-suggestion" class="button button-primary" type="button" hidden>Nueva sugerencia</button></footer>
+    </form>
+  </dialog>
+  <dialog id="general-notes-dialog" class="suggestions-dialog" aria-labelledby="general-notes-title" aria-describedby="general-notes-context">
+    <form id="general-notes-form" class="suggestions-form">
+      <header class="suggestions-header"><div><p class="eyebrow">MEJORAS DE MI PROGRAMACIÓN</p><h2 id="general-notes-title"></h2></div><button id="close-general-notes" class="icon-button" type="button" aria-label="Cerrar mejoras generales">×</button></header>
+      <div class="suggestions-content">
+        <p id="general-notes-context"></p>
+        <label for="general-notes-text">Ideas y mejoras para próximas ediciones</label><textarea id="general-notes-text" rows="9" maxlength="20000" placeholder="Anota aquí las mejoras generales de este módulo o unidad…"></textarea>
+        <p class="field-help">Guardar mejoras confirma este texto en GitHub. Cerrar conserva el borrador mientras esta página siga abierta.</p>
+        <p id="general-notes-message" class="message" role="status" aria-live="polite" hidden></p>
+        <section id="general-notes-comparison" class="general-notes-comparison" hidden><label for="general-notes-remote">Texto que hay ahora en GitHub</label><textarea id="general-notes-remote" rows="6" readonly></textarea><div class="suggestions-recovery"><button id="use-remote-general-notes" type="button" class="button">Usar texto de GitHub</button><button id="keep-general-notes" type="button" class="button">Conservar mi borrador</button></div></section>
+        <div class="suggestions-recovery"><button id="reload-general-notes" type="button" class="button">Revisar GitHub</button><button id="download-general-notes" type="button" class="button" hidden>Descargar borrador</button><button id="discard-general-notes" type="button" class="button" hidden>Descartar borrador</button></div>
+      </div>
+      <footer class="suggestions-footer"><button id="hide-general-notes" class="button" type="button">Cerrar</button><button id="save-general-notes" class="button button-primary" type="submit">Guardar mejoras</button></footer>
     </form>
   </dialog>
 </body>
