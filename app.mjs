@@ -91,7 +91,6 @@ function updateSaveState() {
   $('recovery-actions').hidden = !(dirty() || blockedSave || failedSave);
   updateNavigation();
   suggestionsUI.updateAvailability();
-  generalNotesUI.updateAvailability();
 }
 
 function selectedEntry() {
@@ -108,16 +107,17 @@ function updateNavigation() {
   $('unit-select').disabled = busy || editing || !selectedModule?.units.length;
   $('open-unit').disabled = busy || editing || !selected || selected.path === activeEntry?.path;
   $('refresh-catalog').disabled = busy || editing || !connection;
-  $('active-document').textContent = activeEntry ? `Abierta: ${activeEntry.moduleCode} · ${activeEntry.unitCode}` : 'Ninguna unidad abierta';
-  let help = 'Selecciona módulo y unidad; pulsa Abrir unidad para cargarla.';
+  let help = '';
   if (blockedSave) help = 'Conserva el borrador y actualiza la unidad abierta para revisar el guardado antes de cambiar de unidad.';
   else if (generalNotesUI.hasPending() || generalNotesUI.isOpen()) help = 'Termina de revisar o guardar las mejoras generales antes de cambiar de unidad.';
   else if ($('editor').open) help = 'Termina de editar y guarda los cambios antes de abrir otra unidad.';
   else if (editing) help = 'Guarda tus cambios antes de abrir otra unidad. El borrador permanece en la unidad abierta.';
   else if (selectedModule && !selectedModule.units.length) help = `${selectedModule.code}: pendiente de incorporar su unidad. No hay planificación disponible en la app todavía.${activeEntry ? ` Sigue abierta ${activeEntry.moduleCode} · ${activeEntry.unitCode}.` : ''}`;
-  else if (selected?.path === activeEntry?.path && activeEntry) help = 'Unidad abierta. Los cambios se guardan únicamente en su documento.';
-  else if (activeEntry) help += ` Hasta entonces sigue abierta ${activeEntry.moduleCode} · ${activeEntry.unitCode}.`;
+  else if (activeEntry && selected?.path !== activeEntry.path) help = `En pantalla: ${activeEntry.moduleCode} · ${activeEntry.unitCode}. Pulsa Abrir unidad para mostrar la selección nueva.`;
+  else if (!activeEntry && selected) help = 'Pulsa Abrir unidad para cargarla.';
   $('selection-help').textContent = help;
+  $('selection-help').hidden = !help;
+  generalNotesUI.updateAvailability();
 }
 
 function fillUnits(preferredCode = '') {
@@ -368,6 +368,8 @@ function renderStats() {
   if (!draft) return;
   const summary = summarize(draft);
   const stats = $('stats');
+  stats.hidden = false;
+  stats.setAttribute('aria-label', `Resumen de ${draft.module.code} · ${draft.unit.code}`);
   stats.replaceChildren();
   for (const [value, label, highlight] of [[summary.totalSessions, 'sesiones', false], [summary.deliveredSessions, 'impartidas', true], [minutesLabel(summary.totalMinutes), 'previstos', false]]) {
     const item = node('div', 'stat');
@@ -414,10 +416,7 @@ function renderSessionBand() {
 }
 
 function render() {
-  $('module-code').textContent = draft.module.code;
-  $('module-name').textContent = draft.module.name;
-  $('unit-code').textContent = draft.unit.code;
-  $('unit-title').textContent = draft.unit.title;
+  $('unit-title').textContent = `${draft.module.code} · ${draft.unit.code} ${draft.unit.title}`;
   $('connection-label').replaceChildren(node('span', 'status-dot'), document.createTextNode('Conectado'));
   $('connection-label').classList.add('is-connected');
   $('disconnect').hidden = false;
@@ -513,7 +512,8 @@ function disconnect() {
   $('sessions').replaceChildren();
   $('session-band').replaceChildren();
   $('stats').replaceChildren();
-  ['module-code', 'module-name', 'unit-code', 'unit-title', 'loaded-version', 'editor-title', 'editor-planned', 'editor-time', 'editor-kicker', 'editor-progress'].forEach((id) => { $(id).textContent = ''; });
+  $('stats').hidden = true;
+  ['unit-title', 'loaded-version', 'editor-title', 'editor-planned', 'editor-time', 'editor-kicker', 'editor-progress'].forEach((id) => { $(id).textContent = ''; });
   $('editor-details').replaceChildren();
   fields.forEach((field) => { $(field).value = ''; });
   $('token').value = '';
@@ -683,7 +683,7 @@ const generalNotesUI = createGeneralNotesUI({
   otherEditorOpen: () => $('editor').open || $('suggestions-dialog').open,
   getTarget(scope) {
     if (!connection) return null;
-    if (scope === 'unit') return activeEntry && draft ? { ...activeEntry, title: draft.unit.title } : null;
+    if (scope === 'unit') return activeEntry && draft && selectedEntry()?.path === activeEntry.path ? { ...activeEntry, title: draft.unit.title } : null;
     const module = catalog?.modules.find(item => item.code === $('module-select').value);
     return module ? { moduleCode: module.code, title: module.name } : null;
   },

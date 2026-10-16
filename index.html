@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261016-2">
-  <script type="module" src="./app.mjs?v=20261016-2"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261016-3">
+  <script type="module" src="./app.mjs?v=20261016-3"></script>
 </head>
 <body>
   <header class="topbar">
@@ -45,26 +45,20 @@
     <section id="library-view" class="library-bar" hidden aria-label="Elegir módulo y unidad">
       <div class="document-picker">
         <div class="picker-field module-picker"><label for="module-select">Módulo</label><select id="module-select" aria-describedby="selection-help"></select><button id="module-improvements" class="button button-small general-improvements" type="button" aria-label="Mejoras generales del módulo" aria-haspopup="dialog" aria-controls="general-notes-dialog" disabled>Mejoras</button></div>
-        <div class="picker-field unit-picker"><label for="unit-select">Unidad</label><select id="unit-select" aria-describedby="selection-help"></select></div>
+        <div class="picker-field unit-picker"><label for="unit-select">Unidad</label><select id="unit-select" aria-describedby="selection-help"></select><button id="unit-improvements" class="button button-small general-improvements" type="button" aria-label="Mejoras generales de la unidad abierta" aria-haspopup="dialog" aria-controls="general-notes-dialog" disabled>Mejoras</button></div>
         <button id="open-unit" class="button button-primary button-small" type="button">Abrir unidad</button>
         <button id="refresh-catalog" class="button button-small" type="button">Actualizar lista</button>
-        <span id="active-document" class="active-document" role="status">Ninguna unidad abierta</span>
+        <div id="stats" class="stats" aria-label="Resumen de la unidad" hidden></div>
       </div>
-      <p id="selection-help" class="selection-help"></p>
+      <p id="selection-help" class="selection-help" role="status" hidden></p>
       <p id="library-message" class="message" role="status" aria-live="polite" hidden></p>
     </section>
 
     <section id="workspace" class="workspace" data-layout="table" hidden aria-labelledby="unit-title">
       <div class="workspace-main">
-        <header class="context-bar" aria-label="Contexto del cuaderno">
-          <span id="module-code" class="module-code"></span>
-          <div class="module-context"><span class="context-label">MI CUADERNO</span><strong id="module-name"></strong></div>
-          <div class="unit-context"><span id="unit-code" class="context-label"></span><div class="unit-title-row"><h1 id="unit-title" tabindex="-1"></h1><button id="unit-improvements" class="button button-small general-improvements" type="button" aria-label="Mejoras generales de la unidad abierta" aria-haspopup="dialog" aria-controls="general-notes-dialog" disabled>Mejoras</button></div></div>
-          <span class="private-label">Datos privados</span>
-          <div id="stats" class="stats" aria-label="Resumen de la unidad"></div>
-        </header>
-        <section id="session-band-section" class="session-band-section" aria-labelledby="session-band-label">
-          <div class="band-caption"><h2 id="session-band-label">La UT de un vistazo</h2><p><span class="band-key task-key"></span>Tarea <span class="band-key exam-key"></span>Examen <span class="band-key elapsed-key"></span>Tiempo transcurrido</p></div>
+        <h1 id="unit-title" class="visually-hidden" tabindex="-1"></h1>
+        <section id="session-band-section" class="session-band-section" aria-label="Sesiones de la unidad">
+          <div class="band-caption"><p><span class="band-key task-key"></span>Tarea <span class="band-key exam-key"></span>Examen <span class="band-key elapsed-key"></span>Tiempo transcurrido</p></div>
           <div class="session-band-scroll" tabindex="0" role="region" aria-label="Sesiones de la UT; desliza para ver todas"><ol id="session-band" class="session-band"></ol></div>
         </section>
         <div class="layout-toolbar">
