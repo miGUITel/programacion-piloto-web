@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261016-3">
-  <script type="module" src="./app.mjs?v=20261016-3"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261016-4">
+  <script type="module" src="./app.mjs?v=20261016-4"></script>
 </head>
 <body>
   <header class="topbar">
@@ -61,6 +61,7 @@
           <div class="band-caption"><p><span class="band-key task-key"></span>Tarea <span class="band-key exam-key"></span>Examen <span class="band-key elapsed-key"></span>Tiempo transcurrido</p></div>
           <div class="session-band-scroll" tabindex="0" role="region" aria-label="Sesiones de la UT; desliza para ver todas"><ol id="session-band" class="session-band"></ol></div>
         </section>
+        <div id="exam-reminders" class="exam-reminders" aria-live="polite" hidden></div>
         <div class="layout-toolbar">
           <div class="layout-picker" role="group" aria-label="Propuestas de interfaz">
             <span class="layout-label">COMPARAR VISTAS</span>
@@ -92,7 +93,7 @@
         <section class="planned-content" aria-labelledby="planned-label"><h3 id="planned-label">Descripción prevista</h3><p id="editor-planned"></p></section>
         <div class="editor-divider"></div>
         <p class="eyebrow">MI SEGUIMIENTO</p>
-        <label for="activity-event-type">Marca en la banda de la UT</label><select id="activity-event-type"><option value="">Sin marca</option><option value="task">Tarea · azul</option><option value="exam">Examen · naranja</option></select><p class="field-help">Identifica esta porción en la banda. Aplica al borrador y guarda los cambios para conservarla.</p>
+        <label for="activity-event-type">Marca en la banda de la UT</label><select id="activity-event-type"><option value="">Sin marca</option><option value="task">Tarea · azul</option><option value="exam">Examen · naranja</option></select><p class="field-help">El tipo previsto colorea automáticamente la porción, su sesión y la banda. Las casillas de la sesión permiten ajustar sus marcas manualmente; ↶ recupera las previstas. Aplica al borrador y guarda los cambios.</p>
         <label for="observations">Observaciones</label><p class="field-help">Anota libremente; después puedes concretarlo en mejoras, realizado o pendiente.</p><textarea id="observations" rows="5" placeholder="Añade contexto de esta porción de la sesión…"></textarea>
         <label for="improvements">Mejoras para la próxima vez</label><textarea id="improvements" rows="4" placeholder="Ajustes, ideas y decisiones para una próxima edición…"></textarea>
         <details class="secondary-fields"><summary>Realizado y pendiente <span>Opcional</span></summary><div><label for="realized">Realizado</label><textarea id="realized" rows="3"></textarea><label for="pending">Pendiente</label><textarea id="pending" rows="3"></textarea></div></details>

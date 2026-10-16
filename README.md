@@ -1,6 +1,6 @@
 # Interfaz del piloto
 
-Cliente estático, sin compilación ni dependencias externas, preparado para GitHub Pages. `index.html`, `styles.css`, `app.mjs`, `core.mjs`, `suggestions.mjs`, `suggestions-ui.mjs` y `.nojekyll` forman la aplicación. Este directorio no contiene documentos docentes ni datos de muestra.
+Cliente estático, sin compilación ni dependencias externas, preparado para GitHub Pages. `index.html`, `styles.css`, `app.mjs`, `core.mjs`, `teaching.mjs`, `unit-tools.mjs`, `general-notes.mjs`, `general-notes-ui.mjs`, `suggestions.mjs`, `suggestions-ui.mjs` y `.nojekyll` forman la aplicación. Este directorio no contiene documentos docentes ni datos de muestra.
 
 ## Acceso
 
@@ -55,7 +55,21 @@ La fecha se muestra una vez en la cabecera, con abreviatura del día de la seman
 
 La banda no tiene título visible y muestra una casilla compacta por sesión, ordenada por fecha, con el día del mes. Sus casillas tienen 22 píxeles de alto en escritorio y 32 en móvil. Un cuadro de mes de dos letras aparece al inicio y en cada cambio de mes o año. La línea inferior oscura representa fechas pasadas y el contorno identifica hoy, según `Europe/Madrid`; ninguno expresa impartición. Al pulsar un día se salta a su sesión. En móvil la banda se desplaza horizontalmente sin ensanchar la página. Cambiar de las tres vistas mantiene la misma banda.
 
-Las porciones admiten `eventType: "task"` o `"exam"`; su ausencia significa sin marca. Se configura en **Marca en la banda de la UT** del editor existente y se conserva mediante **Aplicar al borrador → Guardar cambios**. Una sesión con una tarea se muestra azul; con examen, naranja; si reúne ambos, combina los colores. La ayuda y el nombre accesible explican las marcas. No se infieren tipos de títulos o colores, no se cambia el estado académico ni se añaden confirmaciones de presentación o avisos de examen. Los documentos ya guardados siguen siendo válidos sin este campo y no se migran automáticamente.
+Las porciones admiten `eventType: "task"` o `"exam"`; su ausencia significa sin marca. Al diseñar una UT se indicará este tipo explícito en cada porción correspondiente. La app genera automáticamente sus colores: azul para tareas, naranja para exámenes, tanto en la porción como en la sesión y la banda. Si una sesión reúne ambos, la banda combina los colores. El editor permite ajustar el tipo previsto mediante **Marca en la banda de la UT → Aplicar al borrador → Guardar cambios**. No se deduce el tipo del título. Los documentos anteriores siguen siendo válidos sin estos campos y no se migran ni reclasifican automáticamente.
+
+Cada sesión tiene casillas **Tarea** y **Examen** para ajustar las marcas directamente. La selección manual se conserva en `session.eventTypes`; una lista vacía suprime las dos marcas y su ausencia usa los tipos previstos de las porciones. Si las casillas vuelven a coincidir con lo previsto, se retira automáticamente la selección manual. **↶** vuelve explícitamente a lo previsto. Cambiar una marca no modifica títulos, textos, horarios, estado de impartición ni progreso. Una selección manual que desactive un tipo también suprime su color de las porciones, sin borrar sus tipos previstos.
+
+### Presentación de tareas y avisos de examen
+
+**Presentada** confirma que el docente ha presentado y abierto la tarea para trabajarla en clase. Las porciones de tarea tienen su propia casilla (`activity.taskPresented`). En la cabecera, la confirmación afecta a todas las tareas previstas de esa sesión y muestra un contador cuando hay más de una; puede estar parcialmente marcada. Si la tarea solo está marcada a nivel de sesión, se conserva en `session.taskPresented`. No expresa entrega, realización, calificación ni publicación automática en Aula Virtual. Desmarcar permite corregir una confirmación. Todo queda en el borrador hasta pulsar **Guardar cambios**.
+
+**Avisado** confirma que se ha informado al alumnado de un examen. Se conserva `session.examAnnouncedFor` con la fecha concreta del examen. Si cambia esa fecha, la confirmación anterior deja de ser válida para la nueva y el aviso reaparece; no se borra la referencia anterior silenciosamente. No se deduce la confirmación del estado Impartida ni se marca automáticamente.
+
+Los recordatorios aparecen tres sesiones del módulo antes del examen. Se consultan las otras UT del mismo módulo del catálogo, con lecturas independientes y sin sobrescribir el borrador abierto. Se ordenan por fecha y hora, se cuentan identificadores de sesión únicos y se excluyen Cancelada y la fecha original de Reprogramada; una nueva sesión reprogramada cuenta en su nueva posición. Una sesión límite compartida por dos UT cuenta una sola vez. Fechas o estados incompatibles para un mismo identificador detienen el cálculo con un aviso. Un examen cancelado o reprogramado no genera un recordatorio para su fecha original.
+
+El recordatorio se muestra en la sesión umbral; cuando el umbral pertenece a otra UT anterior, aparece arriba de la unidad del examen o de las sesiones intermedias. Cada examen aparece una sola vez por vista. Con menos de tres sesiones anteriores disponibles, se ofrece desde la primera y se explica la limitación. El alcance es el de las UT disponibles en la app; no se inventan sesiones no importadas. Si falla la lectura de una UT, se indica que los avisos están incompletos y se ofrece **Revisar avisos**; no se usa un cálculo parcial como si fuera completo.
+
+**Marcar avisado** marca el borrador de la unidad del examen. Si pertenece a otra UT, el botón lo indica y abre esa unidad leyendo su versión actual; exige guardar o revisar cualquier borrador previo. Solo se marca si sigue siendo el mismo examen, con la misma fecha. Después requiere **Guardar cambios**, con la protección habitual de SHA y guardados inciertos. En una sesión de examen compartida por dos UT, la confirmación tiene un único destino determinista: la primera unidad por ruta que contenga una porción de ese examen. Las otras vistas consultan ese mismo dato.
 
 ### Mejoras generales del módulo y de la unidad
 
@@ -85,10 +99,7 @@ Estos requisitos están anotados para desarrollo posterior; no están implementa
 
 - **Accesos de seguimiento más estrechos:** reducir la anchura de los botones Observaciones y Mejoras. Valorar sustituir sus textos por iconos distinguibles, con nombres accesibles y ayuda para identificar su función. Conservar ambos accesos y una zona de pulsación cómoda, especialmente en móvil; ahorrar anchura no debe dificultar su uso táctil. La elección de iconos o texto abreviado queda pendiente de validar.
 - **Vista ampliada de sesión:** abrir una vista dedicada de la sesión al hacer clic o tocar cualquier zona de su representación que no tenga otra funcionalidad. Los botones, desplegables, enlaces y demás controles conservarán su acción propia sin abrir además esta vista. Quedan pendientes de definir su contenido, distribución, edición y navegación, así como su relación con el despliegue actual de actividades; no implementar todavía.
-- **Tareas:** destacar en azul más intenso la porción correspondiente y añadir un botón pequeño de confirmación de que la tarea se ha presentado y abierto para que el alumnado la trabaje. No confundir esta confirmación docente con tarea entregada, completada o calificada. Tampoco debe publicar automáticamente en Aula Virtual.
-- **Exámenes:** destacar en naranja la porción correspondiente. Tres sesiones antes del examen, mostrar un recordatorio para avisar al alumnado y un botón para marcar que el aviso ya se ha dado. Contar sesiones del módulo, no tres días ni tres porciones. El alcance debe poder cruzar el límite entre UT. Antes de implementarlo, concretar el tratamiento de sesiones canceladas, reprogramaciones y exámenes con menos de tres sesiones anteriores disponibles.
 - **Preparación de sesiones:** mostrar de un vistazo qué sesiones están preparadas. Valorar una pequeña marca en cada cabecera de sesión o una vista anual limpia que reúna las sesiones y su preparación. Queda abierto si se adopta una opción o ambas; si hay dos vistas, consultarán el mismo dato, sin registros paralelos. La preparación es distinta de la impartición, del progreso de las actividades y de la confirmación de apertura de una tarea. El control se refiere a la sesión completa, no a una marca repetida en cada porción. Antes de implementarlo, acordar cómo se marca una sesión preparada y qué implica cambiar su planificación después; no deducir preparación automáticamente de la existencia de recursos ni del estado Impartida.
-- **Confirmaciones explícitas:** `eventType` ya identifica tareas y exámenes en la banda. Las futuras confirmaciones de presentación y aviso serán datos propios, distintos de ese tipo y del estado de impartición; sus detalles quedan pendientes de aprobación.
 
 ## Formato del JSON
 
@@ -103,6 +114,18 @@ La conversión parte de la última versión confirmada de GitHub y verifica que 
 Para futuros cambios, conservar la estructura semántica y los campos desconocidos; separar explícitamente nuevos conceptos sin redistribuir notas automáticamente. Los recordatorios calculables no deben duplicarse como fechas fijas. Los nuevos tipos y confirmaciones se incorporarán después de aprobar su significado. No existe sincronización con Excel; la autoridad de cada documento se rige por las instrucciones privadas acordadas con el docente, no por la mera presencia del módulo en el selector.
 
 ## Comprobaciones de navegación
+
+### Prueba de usuario: tareas y avisos
+
+1. Guardar cualquier borrador pendiente, recargar y conectar. Elegir una UT conocida; comprobar que sus observaciones, mejoras y estados anteriores siguen presentes.
+2. En una porción que corresponda realmente a una tarea o examen, ajustar su tipo previsto desde el editor, aplicar y comprobar el color de la porción, de la sesión y de la banda. Azul corresponde a tarea y naranja a examen.
+3. Probar las casillas Tarea y Examen directamente en una sesión, incluida la combinación de ambas. Comprobar que no cambian sus textos ni su estado. Usar ↶ para recuperar las marcas previstas.
+4. Marcar y desmarcar Presentada en una tarea, dejándola al final en su estado real. Si hay varias, comprobar las casillas individuales y el contador de la cabecera. No debe cambiar Impartida ni el progreso importado.
+5. En un examen previsto, localizar el recordatorio tres sesiones lectivas antes, contar sesiones y no porciones ni días. Si faltan sesiones disponibles, comprobar la advertencia. Marcar Avisado, comprobar que desaparece el recordatorio y desmarcar para verlo reaparecer; dejar al final la confirmación real.
+6. Guardar, esperar la confirmación y pulsar Actualizar. Desconectar, volver a conectar y comprobar marcas y confirmaciones. Cambiar de módulo o UT y volver para verificar que no se mezclan datos. Las observaciones y mejoras deben conservarse.
+7. Repetir una casilla en el teléfono y comprobar legibilidad, pulsación, color y guardado. Restaurar cualquier marca usada solo para la prueba y guardar.
+
+El cruce entre UT, las sesiones compartidas, cancelaciones, reprogramaciones, cambio de fecha de examen, datos insuficientes, falta de permisos y conflictos se verifican también con datos sintéticos. No cambiar planificación real ni provocar fallos contra GitHub solo para reproducir esos casos. En un recordatorio de otra UT, guardar primero cualquier borrador; el botón indica y abre la unidad del examen para marcarlo y guardarlo allí.
 
 Las pruebas automatizadas comprueban catálogo, rutas, identidad, aislamiento de versiones y destinos, fallos de acceso y guardados inciertos. En el entorno sintético se comprueban también: bloqueo del selector con un borrador pendiente; guardar en una unidad, abrir otra y volver sin mezclar notas; cambio entre dos UT del mismo módulo; módulo sin unidades; fallo de carga conservando la unidad anterior; y limpieza de la conexión. No introducir unidades ni anotaciones ficticias en el repositorio privado real para estas pruebas.
 

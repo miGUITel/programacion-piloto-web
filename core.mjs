@@ -195,6 +195,9 @@ export function validateDocument(doc, expectedEntry) {
     else numbers.add(session.number);
     if (!isValidDate(session.date)) errors.push(`${path}.date: debe ser una fecha válida con formato YYYY-MM-DD.`);
     if (!STATES.has(session.state)) errors.push(`${path}.state: estado no permitido.`);
+    if (Object.hasOwn(session, 'eventTypes') && (!Array.isArray(session.eventTypes) || session.eventTypes.some(type => !['task', 'exam'].includes(type)) || new Set(session.eventTypes).size !== session.eventTypes.length)) errors.push(`${path}.eventTypes: lista sin duplicados de task y/o exam.`);
+    if (Object.hasOwn(session, 'taskPresented') && typeof session.taskPresented !== 'boolean') errors.push(`${path}.taskPresented: debe ser booleano.`);
+    if (Object.hasOwn(session, 'examAnnouncedFor') && !isValidDate(session.examAnnouncedFor)) errors.push(`${path}.examAnnouncedFor: fecha de examen avisada no válida.`);
     if (!Array.isArray(session.activities) || session.activities.length === 0) {
       errors.push(`${path}.activities: requiere una primera porción Cabecera.`);
       return;
@@ -212,6 +215,7 @@ export function validateDocument(doc, expectedEntry) {
         if (!isText(activity[field])) errors.push(`${activityPath}.${field}: debe ser texto.`);
       }
       if (Object.hasOwn(activity, 'eventType') && !['task', 'exam'].includes(activity.eventType)) errors.push(`${activityPath}.eventType: debe ser task o exam, o estar ausente.`);
+      if (Object.hasOwn(activity, 'taskPresented') && typeof activity.taskPresented !== 'boolean') errors.push(`${activityPath}.taskPresented: debe ser booleano.`);
       if (isV2) {
         if (Object.hasOwn(activity, 'sourceRow')) errors.push(`${activityPath}.sourceRow: no forma parte de schemaVersion 2.`);
         if (Object.hasOwn(activity, 'calendar')) {

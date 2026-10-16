@@ -1,3 +1,5 @@
+import { eventTypes } from './teaching.mjs?v=20261016-4';
+
 /** Presentation helpers. Codes, titles, dates and academic states remain unchanged. */
 export function compactUnitLabel(unit) {
   const [, digits, suffix] = unit.code.match(/^(?:UT|RA|B)(\d+)([A-Z]?)$/);
@@ -26,8 +28,8 @@ export function sessionBand(sessions, today = madridToday()) {
         day: String(Number(session.date.slice(8))), monthLabel,
         monthName: new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${session.date}T12:00:00Z`)),
         past: session.date < today, today: session.date === today,
-        task: session.activities.some(activity => activity.eventType === 'task'),
-        exam: session.activities.some(activity => activity.eventType === 'exam'),
+        task: eventTypes(session).includes('task'),
+        exam: eventTypes(session).includes('exam'),
       };
     });
 }

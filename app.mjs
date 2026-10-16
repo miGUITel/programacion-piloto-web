@@ -1,7 +1,8 @@
-import { validateCatalog, validateDocument, summarize, GithubStore, saveErrorFeedback } from './core.mjs?v=20261016-2';
+import { validateCatalog, validateDocument, summarize, GithubStore, saveErrorFeedback } from './core.mjs?v=20261016-4';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261016-1';
 import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261016-2';
-import { compactUnitLabel, madridToday, sessionBand } from './unit-tools.mjs?v=20261016-2';
+import { compactUnitLabel, madridToday, sessionBand } from './unit-tools.mjs?v=20261016-4';
+import { eventTypes, setSessionEventType, activityEventType, taskProgress, setTaskPresented, moduleTimeline, unitExamReminders } from './teaching.mjs?v=20261016-4';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -15,6 +16,11 @@ const layoutDescriptions = new Map([
 ]);
 const openSessions = new Set();
 const documentStores = new Map();
+const moduleDocuments = new Map();
+let moduleLoadFailures = [];
+let moduleContextReady = false;
+let teachingTimeline = { sessions: [], exams: [], errors: [] };
+let examReminders = [];
 let store = null;
 let connection = null;
 let catalog = null;
@@ -176,8 +182,12 @@ async function loadSelectedDocument() {
     if (typeof result.sha !== 'string' || !result.sha) throw new Error('MissingVersion');
     store = candidate;
     activeEntry = Object.freeze({ ...entry });
+    moduleContextReady = false;
+    moduleLoadFailures = [];
+    moduleDocuments.clear();
     openSessions.clear();
     acceptLoaded(result);
+    await loadModuleContext();
     message('library-message');
     $('unit-title').focus({ preventScroll: true });
   } catch {
@@ -197,10 +207,37 @@ async function refreshCatalog() {
   message('library-message', 'Actualizando la lista de unidades…');
   try {
     acceptCatalog(await connection.loadCatalog());
+    if (draft) await loadModuleContext();
     message('library-message', 'Lista actualizada. La unidad abierta no ha cambiado.');
   } catch {
     message('library-message', 'No se ha podido actualizar la lista. Se conservan la lista anterior y la unidad abierta.', 'error');
   } finally { setBusy(false); }
+}
+
+async function loadModuleContext() {
+  if (!connection || !activeEntry || !catalog) return;
+  const module = catalog.modules.find(item => item.code === activeEntry.moduleCode);
+  const entries = (module?.units ?? []).filter(unit => unit.path !== activeEntry.path).map(unit => ({ moduleCode: module.code, unitCode: unit.code, unitId: unit.id, path: unit.path }));
+  moduleDocuments.clear(); moduleLoadFailures = []; moduleContextReady = false;
+  const results = await Promise.allSettled(entries.map(async entry => {
+    const candidate = documentStores.get(entry.path) ?? connection.forDocument(entry);
+    documentStores.set(entry.path, candidate);
+    const result = await candidate.load();
+    checked(result.document, entry);
+    return { entry, document: result.document };
+  }));
+  results.forEach((result, index) => {
+    if (result.status === 'fulfilled') moduleDocuments.set(entries[index].path, result.value);
+    else moduleLoadFailures.push(entries[index].unitCode);
+  });
+  moduleContextReady = true;
+  renderSessions();
+}
+
+async function retryExamContext() {
+  if (busy || !draft || $('editor').open || generalNotesUI.isOpen()) return;
+  setBusy(true);
+  try { await loadModuleContext(); } finally { setBusy(false); }
 }
 
 function confirmationTime() {
@@ -290,7 +327,8 @@ function makeStateSelect(session, index) {
     select.className = `state-select ${stateClasses.get(select.value) || ''}`;
     failedSave = false;
     renderStats();
-    updateSaveState();
+    renderSessions();
+    $('session-state-' + index)?.focus({ preventScroll: true });
   });
   section.append(label, select);
   return section;
@@ -298,12 +336,17 @@ function makeStateSelect(session, index) {
 
 function makeActivity(activity, sessionIndex, activityIndex) {
   const container = node('section', 'activity');
+  const type = activityEventType(draft.sessions[sessionIndex], activity);
+  if (type) container.classList.add('activity-' + type);
   const top = node('div', 'activity-top');
   const time = node('div', 'activity-time', `${activity.start}–${activity.end}`);
   const description = node('div', 'activity-description');
   const title = node('h4', 'activity-title', activity.title || 'Actividad');
   title.title = activity.title || 'Actividad';
   description.append(title);
+  if (type === 'task') {
+    description.append(teachingCheckbox('Presentada', `task-presented-${sessionIndex}-portion-${activityIndex}`, activity.taskPresented === true, `Tarea presentada y abierta: ${activity.title}`, checked => setTaskPresented(draft.sessions[sessionIndex], checked, activity.id)));
+  }
   if (progressNames.has(activity.progress)) {
     const progress = node('span', `activity-progress progress-${activity.progress}`, progressNames.get(activity.progress));
     progress.title = `Progreso importado: ${progressNames.get(activity.progress)} · Solo lectura`;
@@ -316,12 +359,111 @@ function makeActivity(activity, sessionIndex, activityIndex) {
   return container;
 }
 
+function changeTeaching(update, focusId) {
+  if (busy || !draft) return;
+  update(); failedSave = false;
+  renderSessions();
+  if (focusId) $(focusId)?.focus({ preventScroll: true });
+}
+
+function teachingCheckbox(label, id, selected, help, change) {
+  const wrapper = node('label', 'teaching-check');
+  const input = node('input'); input.type = 'checkbox'; input.id = id;
+  input.checked = selected; input.disabled = busy;
+  input.setAttribute('aria-label', help); input.title = help;
+  input.addEventListener('change', () => changeTeaching(() => change(input.checked), id));
+  wrapper.title = help; wrapper.append(input, node('span', '', label));
+  return wrapper;
+}
+
+function makeTeachingControls(session, sessionIndex) {
+  const controls = node('div', 'teaching-controls');
+  controls.setAttribute('role', 'group'); controls.setAttribute('aria-label', `Tareas y examen de la sesión ${session.number}`);
+  const selected = eventTypes(session);
+  for (const [type, label] of [['task', 'Tarea'], ['exam', 'Examen']]) {
+    controls.append(teachingCheckbox(label, `teaching-${type}-${sessionIndex}`, selected.includes(type), `${label} en la sesión ${session.number}`, checked => setSessionEventType(session, type, checked)));
+  }
+  if (Object.hasOwn(session, 'eventTypes')) {
+    const reset = node('button', 'teaching-reset', '↶'); reset.type = 'button';
+    reset.title = 'Volver a las marcas automáticas de la planificación'; reset.setAttribute('aria-label', `Restablecer marcas previstas de la sesión ${session.number}`);
+    reset.addEventListener('click', () => changeTeaching(() => { delete session.eventTypes; }, `teaching-task-${sessionIndex}`));
+    controls.append(reset);
+  }
+  if (selected.includes('task')) {
+    const progress = taskProgress(session);
+    const control = teachingCheckbox(progress.total === 1 ? 'Presentada' : `Presentadas ${progress.presented}/${progress.total}`, `task-presented-${sessionIndex}`, progress.presented === progress.total, `Todas las tareas presentadas y abiertas para trabajar en la sesión ${session.number}`, checked => setTaskPresented(session, checked));
+    control.querySelector('input').indeterminate = progress.presented > 0 && progress.presented < progress.total;
+    controls.append(control);
+  }
+  if (selected.includes('exam')) {
+    const exam = teachingTimeline.exams.find(item => item.id === session.id);
+    if (exam && exam.source.entry.path !== activeEntry.path) {
+      if (exam.announced) controls.append(node('span', 'teaching-confirmed', 'Avisado ✓'));
+      else {
+        const action = node('button', 'teaching-reset', `Avisar en ${exam.source.entry.unitCode}`);
+        action.type = 'button'; action.disabled = busy;
+        action.title = 'El aviso de esta sesión compartida se conserva en la unidad que inicia el examen.';
+        action.addEventListener('click', () => markExamReminder(exam)); controls.append(action);
+      }
+    } else {
+      controls.append(teachingCheckbox('Avisado', `exam-announced-${sessionIndex}`, session.examAnnouncedFor === session.date, `Aviso al alumnado del examen de la sesión ${session.number}, ${dateInfo(session.date).full}`, checked => {
+        if (checked) session.examAnnouncedFor = session.date; else delete session.examAnnouncedFor;
+      }));
+    }
+  }
+  return controls;
+}
+
+function makeExamReminder(exam) {
+  const reminder = node('div', 'exam-reminder');
+  reminder.setAttribute('role', 'note');
+  const label = `Avisar del examen · ${exam.source.entry.unitCode} · ${dateInfo(exam.date).full}`;
+  const details = node('div', 'exam-reminder-text');
+  details.append(node('strong', '', label));
+  const explanation = exam.shortfall
+    ? `Solo hay ${exam.availableBefore} sesiones anteriores disponibles; el aviso se muestra desde la primera.`
+    : 'Tres sesiones lectivas antes. Se cuentan las UT disponibles del módulo.';
+  details.append(node('span', '', `${exam.changedDate ? 'La fecha ha cambiado: confirma el nuevo aviso. ' : ''}${explanation}`));
+  reminder.append(details);
+  const action = node('button', 'button button-small', exam.source.entry.path === activeEntry.path ? 'Marcar avisado' : `Marcar avisado en ${exam.source.entry.unitCode}`);
+  action.type = 'button'; action.disabled = busy;
+  action.setAttribute('aria-label', `Marcar avisado el examen de ${exam.source.entry.unitCode} del ${exam.date}`);
+  action.addEventListener('click', () => markExamReminder(exam));
+  reminder.append(action);
+  return reminder;
+}
+
+async function markExamReminder(exam) {
+  if (busy || !draft) return;
+  if (exam.source.entry.path !== activeEntry.path) {
+    if (hasPendingChanges() || blockedSave || $('editor').open || generalNotesUI.hasPending() || generalNotesUI.isOpen()) {
+      message('workspace-message', 'Guarda o revisa el borrador actual antes de abrir la unidad del examen y marcar su aviso.', 'warning'); return;
+    }
+    setBusy(true);
+    try {
+      $('module-select').value = exam.source.entry.moduleCode;
+      fillUnits(exam.source.entry.unitCode);
+      await loadSelectedDocument();
+    } finally { setBusy(false); }
+    if (activeEntry.path !== exam.source.entry.path) return;
+  }
+  const session = draft.sessions.find(item => item.id === exam.id);
+  if (!session || session.date !== exam.date || !eventTypes(session).includes('exam') || ['Cancelada', 'Reprogramada'].includes(session.state)) {
+    message('workspace-message', 'La planificación del examen ha cambiado. Revisa la sesión antes de confirmar el aviso.', 'warning'); return;
+  }
+  changeTeaching(() => { session.examAnnouncedFor = session.date; });
+  message('workspace-message', 'Aviso marcado en el borrador del examen. Pulsa Guardar cambios para conservarlo.');
+}
+
 function makeSession(session, sessionIndex) {
   const first = session.activities[0];
   const isOpen = openSessions.has(session.id);
   const section = node('article', 'session');
+  const types = eventTypes(session);
+  types.forEach(type => section.classList.add('session-' + type));
   section.dataset.sessionIndex = String(sessionIndex);
   const top = node('div', 'session-top');
+  top.dataset.eventType = activityEventType(session, first);
   const toggle = node('button', 'session-toggle', isOpen ? '−' : '+');
   toggle.type = 'button';
   toggle.setAttribute('aria-label', `${isOpen ? 'Plegar' : 'Abrir'} sesión ${session.number}`);
@@ -342,7 +484,7 @@ function makeSession(session, sessionIndex) {
   const title = node('h3', 'session-title', first?.title || 'Sesión');
   title.title = first?.title || 'Sesión';
   title.tabIndex = -1;
-  description.append(meta, title);
+  description.append(meta, title, makeTeachingControls(session, sessionIndex));
   const planned = node('p', 'planned-preview', first?.planned || '');
   planned.title = first?.planned || '';
   top.append(toggle, dateTile, description, planned, notePreviews(first || {}, 'session-notes'), makeStateSelect(session, sessionIndex), rowActions(sessionIndex, 0));
@@ -360,7 +502,9 @@ function makeSession(session, sessionIndex) {
     toggle.setAttribute('aria-expanded', String(next));
     toggle.setAttribute('aria-label', `${next ? 'Plegar' : 'Abrir'} sesión ${session.number}`);
   });
-  section.append(top, body);
+  section.append(top);
+  examReminders.filter(exam => exam.placement === session.id).forEach(exam => section.append(makeExamReminder(exam)));
+  section.append(body);
   return section;
 }
 
@@ -379,11 +523,24 @@ function renderStats() {
 }
 
 function renderSessions() {
+  const records = [...moduleDocuments.values(), { entry: activeEntry, document: draft }];
+  teachingTimeline = moduleTimeline(records, draft.module.code);
+  examReminders = moduleContextReady && !moduleLoadFailures.length ? unitExamReminders(teachingTimeline, activeEntry.path) : [];
+  const reminders = $('exam-reminders'); reminders.replaceChildren();
+  if (moduleLoadFailures.length || teachingTimeline.errors.length) {
+    const warning = node('div', 'exam-reminder');
+    warning.append(node('span', '', moduleLoadFailures.length ? `No se han podido consultar ${moduleLoadFailures.join(', ')}. Los avisos de examen no están completos.` : 'Hay sesiones compartidas con fechas o estados incompatibles. Revisa la planificación antes de calcular los avisos.'));
+    const retry = node('button', 'button button-small', 'Revisar avisos'); retry.type = 'button'; retry.disabled = busy;
+    retry.addEventListener('click', retryExamContext); warning.append(retry); reminders.append(warning);
+  }
+  examReminders.filter(exam => exam.placement === 'top').forEach(exam => reminders.append(makeExamReminder(exam)));
+  reminders.hidden = !reminders.childElementCount;
   const container = $('sessions');
   container.replaceChildren();
   if (!draft.sessions.length) container.append(node('p', 'empty-sessions', 'Este documento no contiene sesiones.'));
   draft.sessions.forEach((session, index) => container.append(makeSession(session, index)));
   renderSessionBand();
+  if (busy) $('workspace').querySelectorAll('button, input, textarea, select').forEach(element => { element.disabled = true; });
   updateSaveState();
 }
 
@@ -401,6 +558,7 @@ function renderSessionBand() {
     const cell = node('li', `band-cell${item.past ? ' elapsed' : ''}${item.today ? ' today' : ''}`);
     const button = node('button', `band-day${item.task ? ' has-task' : ''}${item.exam ? ' has-exam' : ''}`, item.day);
     button.type = 'button';
+    button.disabled = busy;
     const types = [item.task ? 'Tarea' : '', item.exam ? 'Examen' : ''].filter(Boolean).join(' y ');
     const label = `Sesión ${item.number} · ${dateInfo(item.date).full}${types ? ` · ${types}` : ''}${item.today ? ' · Hoy' : ''}${item.past ? ' · Fecha pasada' : ''}`;
     button.title = label; button.setAttribute('aria-label', label);
@@ -500,6 +658,8 @@ function disconnect() {
   store = null;
   connection = null;
   documentStores.clear();
+  moduleDocuments.clear(); moduleLoadFailures = []; moduleContextReady = false;
+  teachingTimeline = { sessions: [], exams: [], errors: [] }; examReminders = [];
   catalog = null;
   activeEntry = null;
   savedDocument = null;
@@ -511,6 +671,7 @@ function disconnect() {
   openSessions.clear();
   $('sessions').replaceChildren();
   $('session-band').replaceChildren();
+  $('exam-reminders').replaceChildren(); $('exam-reminders').hidden = true;
   $('stats').replaceChildren();
   $('stats').hidden = true;
   ['unit-title', 'loaded-version', 'editor-title', 'editor-planned', 'editor-time', 'editor-kicker', 'editor-progress'].forEach((id) => { $(id).textContent = ''; });
@@ -538,6 +699,7 @@ async function refresh() {
   message('workspace-message', 'Leyendo de nuevo la versión de GitHub…');
   try {
     acceptLoaded(await store.load());
+    await loadModuleContext();
     message('workspace-message', 'Versión actualizada desde GitHub.');
   } catch {
     message('workspace-message', 'No se ha podido actualizar. El contenido y el borrador que tenías permanecen intactos. Comprueba la conexión y vuelve a intentarlo.', 'error');
