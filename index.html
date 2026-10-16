@@ -8,13 +8,13 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261015-7">
-  <script type="module" src="./app.mjs?v=20261015-6"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261016-1">
+  <script type="module" src="./app.mjs?v=20261016-1"></script>
 </head>
 <body>
   <header class="topbar">
     <a class="brand" href="./" aria-label="Cuaderno, inicio"><span class="brand-mark" aria-hidden="true">c.</span><span>cuaderno<span class="brand-subtitle">PROGRAMACIÓN DOCENTE</span></span></a>
-    <div class="topbar-right"><span class="pilot-tag">PILOTO</span><span id="connection-label" class="connection-label"><span class="status-dot" aria-hidden="true"></span>Sin conectar</span><button id="disconnect" type="button" class="button button-ghost" hidden>Desconectar</button></div>
+    <div class="topbar-right"><div class="pilot-actions"><span class="pilot-tag">PILOTO</span><button id="open-suggestions" type="button" class="button button-ghost" aria-haspopup="dialog" aria-controls="suggestions-dialog" title="Conecta con GitHub para enviar una sugerencia" disabled>Sugerencias</button></div><span id="connection-label" class="connection-label"><span class="status-dot" aria-hidden="true"></span>Sin conectar</span><button id="disconnect" type="button" class="button button-ghost" hidden>Desconectar</button></div>
   </header>
 
   <main>
@@ -100,6 +100,23 @@
         <details class="technical-details"><summary>Detalles del registro</summary><dl id="editor-details"></dl></details>
       </div>
       <footer class="editor-footer"><p>Aplicar actualiza el borrador.<br>Después, pulsa Guardar cambios.</p><button id="cancel-editor" type="button" class="button">Cancelar</button><button class="button button-primary" type="submit">Aplicar al borrador</button></footer>
+    </form>
+  </dialog>
+  <dialog id="suggestions-dialog" class="suggestions-dialog" aria-labelledby="suggestions-title" aria-describedby="suggestions-scope">
+    <form id="suggestions-form" class="suggestions-form">
+      <header class="suggestions-header"><div><p class="eyebrow">MEJORAR LA APLICACIÓN</p><h2 id="suggestions-title">Tu idea para la app</h2></div><button id="close-suggestions" type="button" class="icon-button" aria-label="Cerrar sugerencias">×</button></header>
+      <div class="suggestions-content">
+        <p id="suggestions-scope">Para mejoras, errores o ideas sobre esta web. Las notas de tus cursos y de la programación didáctica siguen en Observaciones y Mejoras de cada sesión.</p>
+        <p class="field-help">Registro privado en GitHub, separado de las UT. Solo se envían los campos de este formulario, su identificador, fecha y estado. No incluyas contraseñas ni datos personales del alumnado.</p>
+        <label for="suggestion-type">Tipo</label><select id="suggestion-type"><option value="mejora">Mejora</option><option value="error">Error</option><option value="idea">Idea</option></select>
+        <label for="suggestion-title">Título breve</label><input id="suggestion-title" type="text" required maxlength="120" placeholder="¿Qué te gustaría mejorar?">
+        <label for="suggestion-description">Descripción</label><textarea id="suggestion-description" rows="5" required maxlength="5000" placeholder="Cuenta qué ocurre o qué propones. Si es un error, indica los pasos para reproducirlo."></textarea>
+        <p class="field-help">Cerrar conserva el borrador mientras esta página siga abierta. No se guarda automáticamente.</p>
+        <p id="suggestion-message" class="message" role="status" aria-live="polite" hidden></p>
+        <div class="suggestions-recovery"><button id="verify-suggestion" class="button" type="button" hidden>Comprobar guardado</button><button id="download-suggestion" class="button" type="button" hidden>Descargar borrador</button><a id="saved-suggestion-link" target="_blank" rel="noopener noreferrer" hidden>Ver sugerencia en GitHub ↗</a></div>
+        <a class="suggestions-register-link" href="https://github.com/miGUITel/programacion-piloto-datos/tree/main/APP/sugerencias" target="_blank" rel="noopener noreferrer">Ver registro privado en GitHub ↗</a>
+      </div>
+      <footer class="suggestions-footer"><button id="hide-suggestions" class="button" type="button">Cerrar</button><button id="send-suggestion" class="button button-primary" type="submit">Guardar sugerencia</button><button id="new-suggestion" class="button button-primary" type="button" hidden>Nueva sugerencia</button></footer>
     </form>
   </dialog>
 </body>

@@ -1,4 +1,5 @@
 import { validateCatalog, validateDocument, summarize, GithubStore, saveErrorFeedback } from './core.mjs?v=20261015-6';
+import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261016-1';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -87,6 +88,7 @@ function updateSaveState() {
   $('download-draft').disabled = busy || !draft;
   $('recovery-actions').hidden = !(dirty() || blockedSave || failedSave);
   updateNavigation();
+  suggestionsUI.updateAvailability();
 }
 
 function selectedEntry() {
@@ -411,6 +413,7 @@ async function connect(event) {
   if (!token) return;
   try {
     connection = new GithubStore({ token });
+    suggestionsUI.connect(token);
     token = '';
     setBusy(true);
     message('login-message', 'Comprobando acceso y leyendo el catálogo privado…');
@@ -421,6 +424,7 @@ async function connect(event) {
     token = '';
     store = null;
     connection = null;
+    suggestionsUI.disconnect();
     documentStores.clear();
     catalog = null;
     activeEntry = null;
@@ -451,7 +455,8 @@ async function connect(event) {
 
 function disconnect() {
   if (busy) return;
-  if (hasPendingChanges() && !window.confirm('Hay cambios sin guardar. ¿Quieres descartarlos y desconectar?')) return;
+  if ((hasPendingChanges() || suggestionsUI.hasPending()) && !window.confirm('Hay cambios o sugerencias sin guardar. Descárgalos si quieres conservarlos. ¿Quieres descartarlos y desconectar?')) return;
+  suggestionsUI.disconnect();
   $('editor').close();
   editorTarget = null;
   store = null;
@@ -625,9 +630,10 @@ $('editor').addEventListener('click', (event) => {
   if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) closeEditor();
 });
 window.addEventListener('beforeunload', (event) => {
-  if (!hasPendingChanges() && !busy) return;
+  if (!hasPendingChanges() && !suggestionsUI.hasPending() && !busy) return;
   event.preventDefault();
   event.returnValue = '';
 });
+const suggestionsUI = createSuggestionsUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState, isAcademicEditorOpen: () => $('editor').open });
 selectLayout('table');
 updateSaveState();

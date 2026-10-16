@@ -1,6 +1,6 @@
 # Interfaz del piloto
 
-Cliente estático, sin compilación ni dependencias externas, preparado para GitHub Pages. `index.html`, `styles.css`, `app.mjs`, `core.mjs` y `.nojekyll` forman la aplicación. Este directorio no contiene documentos docentes ni datos de muestra.
+Cliente estático, sin compilación ni dependencias externas, preparado para GitHub Pages. `index.html`, `styles.css`, `app.mjs`, `core.mjs`, `suggestions.mjs`, `suggestions-ui.mjs` y `.nojekyll` forman la aplicación. Este directorio no contiene documentos docentes ni datos de muestra.
 
 ## Acceso
 
@@ -16,7 +16,7 @@ El selector compacto superior permite elegir módulo y unidad y pulsar **Abrir u
 
 Si hay cambios sin guardar, un editor abierto o un guardado incierto, se bloquean el selector y la apertura de otra unidad. Primero se guardan o se revisan los cambios en la unidad actual. No se descartan borradores al navegar. Cada documento conserva su destino y control de versión independientes; una carga fallida deja intacto el documento anterior. Los nombres de los borradores descargados y los mensajes de commit identifican el módulo y la unidad correspondientes.
 
-La planificación es de solo lectura. El estado se edita en la sesión; observaciones, mejoras y los campos secundarios de seguimiento se editan en un panel lateral. Aplicar en el panel modifica el borrador en memoria. El botón Guardar cambios inicia la única operación explícita de escritura.
+La planificación es de solo lectura. El estado se edita en la sesión; observaciones, mejoras y los campos secundarios de seguimiento se editan en un panel lateral. Aplicar en el panel modifica el borrador en memoria. El botón Guardar cambios inicia la única operación explícita de escritura del documento académico. Las sugerencias de la app tienen su propio formulario y guardado independiente.
 
 Se conserva el documento leído y su SHA. Un guardado utiliza esa versión; no se reemplaza automáticamente por una versión más reciente. Si existe conflicto, el borrador permanece disponible, se bloquea el guardado y se ofrece su descarga como JSON. También se bloquea el reenvío cuando no puede confirmarse el resultado de una escritura. Actualizar exige confirmación si descartaría un borrador y solo lo reemplaza después de una lectura válida. No hay reintentos automáticos.
 
@@ -51,10 +51,24 @@ La fecha se muestra una vez en la cabecera, con abreviatura del día de la seman
 
 Cuando una actividad contiene `progress` con valor 0, 1 o 2, se muestra su progreso importado como Pendiente, En proceso o Completada. Es información de solo lectura y se conserva sin convertirla en el estado de la sesión.
 
+## Sugerencias sobre la aplicación
+
+El botón **Sugerencias**, junto a **Piloto**, abre un formulario después de conectar con GitHub. Recoge tipo (mejora, error o idea), título y descripción sobre la propia app, nunca notas académicas de la UT abierta. Reutiliza el permiso Contents de lectura y escritura en `miGUITel/programacion-piloto-datos`; no necesita habilitar Issues ni conceder permisos nuevos.
+
+Cada envío crea exclusivamente `APP/sugerencias/<uuid>.json`, con formato 1, identificador, fecha de creación UTC, tipo, título, descripción y estado inicial `pendiente`. No incorpora automáticamente módulo, UT, URL, datos de sesión ni credenciales. La app no modifica ni elimina propuestas existentes; el historial Git conserva cada creación. El enlace **Ver registro privado en GitHub** permite consultar los archivos con la sesión de GitHub correspondiente.
+
+**Guardar sugerencia** crea el archivo y vuelve a leerlo para confirmar el contenido antes de anunciar éxito. La confirmación incluye un enlace al registro. Una respuesta incierta bloquea el reenvío y muestra **Comprobar guardado**; esa acción solo lee y conserva el mismo identificador. Un registro distinto no se sobrescribe. Un resultado 404 no prueba por sí solo que el acceso al repositorio siga vigente: la comprobación exige leer correctamente `APP/sugerencias/README.md` antes de habilitar el reenvío con el mismo identificador. Si falla esa lectura se mantiene el bloqueo. Cualquier nuevo intento sigue siendo de creación y no puede sustituir el archivo existente.
+
+Cerrar el formulario conserva su borrador en memoria sin guardar ni descartar el borrador académico. El punto junto a Sugerencias indica una propuesta pendiente. Ante un error se conserva el texto y se ofrece descargarlo. Desconectar o salir advierte si hay cambios pendientes; no hay recuperación automática después de cerrar o recargar. Una propuesta guardada permite iniciar otra mediante **Nueva sugerencia**.
+
+La verificación usa pruebas automatizadas y una interfaz con transporte ficticio para éxito, permisos insuficientes, límites, rechazo, respuesta perdida y colisión. No se envían sugerencias ficticias al registro real. La primera propuesta real del docente permitirá comprobar también su token desde la app desplegada.
+
 ## Requisitos futuros pendientes
 
 Estos requisitos están anotados para desarrollo posterior; no están implementados. La escritura en GitHub y su recuperación tras reconectar ya están confirmadas. El refinamiento visual continuará después, manteniendo la densidad y el aprovechamiento de la anchura.
 
+- **Accesos de seguimiento más estrechos:** reducir la anchura de los botones Observaciones y Mejoras. Valorar sustituir sus textos por iconos distinguibles, con nombres accesibles y ayuda para identificar su función. Conservar ambos accesos y una zona de pulsación cómoda, especialmente en móvil; ahorrar anchura no debe dificultar su uso táctil. La elección de iconos o texto abreviado queda pendiente de validar.
+- **Vista ampliada de sesión:** abrir una vista dedicada de la sesión al hacer clic o tocar cualquier zona de su representación que no tenga otra funcionalidad. Los botones, desplegables, enlaces y demás controles conservarán su acción propia sin abrir además esta vista. Quedan pendientes de definir su contenido, distribución, edición y navegación, así como su relación con el despliegue actual de actividades; no implementar todavía.
 - **Tareas:** destacar en azul más intenso la porción correspondiente y añadir un botón pequeño de confirmación de que la tarea se ha presentado y abierto para que el alumnado la trabaje. No confundir esta confirmación docente con tarea entregada, completada o calificada. Tampoco debe publicar automáticamente en Aula Virtual.
 - **Exámenes:** destacar en naranja la porción correspondiente. Tres sesiones antes del examen, mostrar un recordatorio para avisar al alumnado y un botón para marcar que el aviso ya se ha dado. Contar sesiones del módulo, no tres días ni tres porciones. El alcance debe poder cruzar el límite entre UT. Antes de implementarlo, concretar el tratamiento de sesiones canceladas, reprogramaciones y exámenes con menos de tres sesiones anteriores disponibles.
 - **Preparación de sesiones:** mostrar de un vistazo qué sesiones están preparadas. Valorar una pequeña marca en cada cabecera de sesión o una vista anual limpia que reúna las sesiones y su preparación. Queda abierto si se adopta una opción o ambas; si hay dos vistas, consultarán el mismo dato, sin registros paralelos. La preparación es distinta de la impartición, del progreso de las actividades y de la confirmación de apertura de una tarea. El control se refiere a la sesión completa, no a una marca repetida en cada porción. Antes de implementarlo, acordar cómo se marca una sesión preparada y qué implica cambiar su planificación después; no deducir preparación automáticamente de la existencia de recursos ni del estado Impartida.
