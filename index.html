@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261017-1">
-  <script type="module" src="./app.mjs?v=20261017-1"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261017-2">
+  <script type="module" src="./app.mjs?v=20261017-2"></script>
 </head>
 <body>
   <header class="topbar">
@@ -78,9 +78,9 @@
           <p class="scope-note">Cada columna es una fecha con sesión; se omiten los días sin sesiones. Número de sesión dentro de cada UT. Tachado: cancelada o reprogramada; subrayado rojo: fecha pasada, no indica impartición.</p>
         </section>
         <section id="tasks-view" aria-label="Gestor de tareas" hidden>
-          <div class="module-view-toolbar"><h2>Tareas del módulo</h2><label for="tasks-unit">Unidad</label><select id="tasks-unit"></select><label for="tasks-status">Mostrar</label><select id="tasks-status"><option value="all">Todas</option><option value="unpresented">Sin presentar</option><option value="uncorrected">Sin corregir</option></select><span id="tasks-count" class="scope-note"></span></div>
+          <div class="module-view-toolbar"><h2>Todas las tareas</h2><label for="tasks-module">Módulo</label><select id="tasks-module"></select><label for="tasks-unit">Unidad</label><select id="tasks-unit"></select><label for="tasks-status">Mostrar</label><select id="tasks-status"><option value="all">Todos los estados</option><option value="planned">Planificadas · por presentar</option><option value="presented">Presentadas</option><option value="to-correct">Por corregir</option><option value="corrected">Corregidas</option></select><span id="tasks-count" class="scope-note"></span><button id="retry-tasks" type="button" class="button button-small">Actualizar tareas</button></div>
           <p id="tasks-scope" class="scope-note"></p>
-          <p class="scope-note">Fechas sin indicar: —. Presentada no significa publicada; entrega no confirma entregas del alumnado. Editar aplica al borrador de su UT; después, Guardar cambios.</p>
+          <p class="scope-note">Por corregir: presentada, no corregida y con fecha de aviso llegada. Fechas sin indicar: —. Editar o marcar Corregida aplica al borrador de su UT; después, Guardar cambios.</p>
           <div id="tasks-list" class="tasks-list"></div>
         </section>
         <footer class="workspace-footer"><span id="loaded-version"></span><span>Planificación de solo lectura · No modifica Excel ni Calendar · Guardado explícito</span></footer>
@@ -100,13 +100,20 @@
         <div class="editor-divider"></div>
         <p class="eyebrow">MI SEGUIMIENTO</p>
         <label for="activity-event-type">Marca en la banda de la UT</label><select id="activity-event-type"><option value="">Sin marca</option><option value="task">Tarea · azul</option><option value="exam">Examen · naranja</option></select><p class="field-help">El tipo previsto colorea automáticamente la porción, su sesión y la banda. Las casillas de la sesión permiten ajustar sus marcas manualmente; ↶ recupera las previstas. Aplica al borrador y guarda los cambios.</p>
-        <section id="task-fields" class="task-editor-fields" aria-label="Seguimiento de la tarea" hidden><h3>Tarea</h3><p id="task-target-help" class="field-help"></p><div class="task-date-inputs"><label>Publicación<input id="task-publishedOn" type="date"></label><label>Entrega<input id="task-dueOn" type="date"></label><label>Corrección prevista<input id="task-correctBy" type="date"></label></div><div class="task-editor-checks"><label><input id="task-presented" type="checkbox">Presentada y abierta para trabajar</label><label><input id="task-corrected" type="checkbox">Corregida</label></div><p class="field-help">No se publica en Aula Virtual ni se modifica ninguna calificación. Deja vacías las fechas que no hayas fijado.</p></section>
+<section id="task-fields" class="task-editor-fields" aria-label="Seguimiento de la tarea" hidden><h3>Tarea</h3><p id="task-target-help" class="field-help"></p><div class="task-date-inputs"><label>Publicación<input id="task-publishedOn" type="date"></label><label>Presentación<input id="task-presentedOn" type="date"></label><label>Entrega<input id="task-dueOn" type="date"></label><label>Aviso de corrección<input id="task-correctBy" type="date"></label></div><div class="task-editor-checks"><label><input id="task-presented" type="checkbox">Presentada y abierta para trabajar</label><label><input id="task-corrected" type="checkbox">Corregida</label></div><p class="field-help">Al presentar, confirma entrega y aviso de corrección. No se publica en Aula Virtual ni se modifica ninguna calificación. Las tareas antiguas sin fechas se conservan.</p></section>
         <label for="observations">Observaciones</label><p class="field-help">Anota libremente; después puedes concretarlo en mejoras, realizado o pendiente.</p><textarea id="observations" rows="5" placeholder="Añade contexto de esta porción de la sesión…"></textarea>
         <label for="improvements">Mejoras para la próxima vez</label><textarea id="improvements" rows="4" placeholder="Ajustes, ideas y decisiones para una próxima edición…"></textarea>
         <details class="secondary-fields"><summary>Realizado y pendiente <span>Opcional</span></summary><div><label for="realized">Realizado</label><textarea id="realized" rows="3"></textarea><label for="pending">Pendiente</label><textarea id="pending" rows="3"></textarea></div></details>
         <details class="technical-details"><summary>Detalles del registro</summary><dl id="editor-details"></dl></details>
       </div>
       <footer class="editor-footer"><p>Aplicar actualiza el borrador.<br>Después, pulsa Guardar cambios.</p><button id="cancel-editor" type="button" class="button">Cancelar</button><button class="button button-primary" type="submit">Aplicar al borrador</button></footer>
+    </form>
+  </dialog>
+  <dialog id="presentation-dialog" class="suggestions-dialog" aria-labelledby="presentation-title">
+    <form id="presentation-form" class="suggestions-form">
+      <header class="suggestions-header"><h2 id="presentation-title">Presentar tarea</h2></header>
+      <div class="suggestions-content"><p class="field-help">Confirma las dos fechas de cada tarea. Cancelar no marca ninguna como presentada. Después, guarda los cambios de la UT.</p><div id="presentation-items"></div><p id="presentation-error" class="message error" role="alert"></p></div>
+      <footer class="suggestions-footer"><button id="presentation-cancel" type="button" class="button">Cancelar</button><button type="submit" class="button button-primary">Confirmar presentación</button></footer>
     </form>
   </dialog>
   <dialog id="suggestions-dialog" class="suggestions-dialog" aria-labelledby="suggestions-title" aria-describedby="suggestions-scope">

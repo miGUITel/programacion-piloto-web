@@ -1,10 +1,12 @@
-import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261016-5';
+import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261017-2';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261016-1';
 import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261016-2';
 import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261017-1';
-import { eventTypes, setSessionEventType, activityEventType, taskProgress, setTaskPresented, moduleTimeline, unitExamReminders } from './teaching.mjs?v=20261016-4';
-import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261016-5';
-import { createModuleViews } from './module-views-ui.mjs?v=20261016-5';
+import { eventTypes, setSessionEventType, activityEventType, taskProgress, moduleTimeline, unitExamReminders } from './teaching.mjs?v=20261016-4';
+import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261017-2';
+import { createModuleViews } from './module-views-ui.mjs?v=20261017-2';
+import { presentationTargets, applyPresentation, setTaskCorrected } from './task-cycle.mjs?v=20261017-2';
+import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261017-2';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -32,7 +34,10 @@ let editorTarget = null;
 let lastConfirmedAt = null;
 let currentView = 'unit';
 
-function moduleRecords() { return draft ? [...moduleDocuments.values(), { entry: activeEntry, document: draft }] : []; }
+// The cache contains all catalog modules. Only the active UT is editable.
+function libraryRecords() { return draft ? [...moduleDocuments.values(), { entry: activeEntry, document: draft }] : []; }
+function moduleRecords() { return libraryRecords().filter(record => record.entry.moduleCode === activeEntry?.moduleCode); }
+function moduleFailures() { return moduleLoadFailures.filter(entry => entry.moduleCode === activeEntry?.moduleCode).map(entry => entry.unitCode); }
 function readTaskEditor() {
   return { ...Object.fromEntries(taskDateFields.map(field => [field, $('task-' + field).value])),
     presented: $('task-presented').checked, corrected: $('task-corrected').checked };
@@ -57,7 +62,7 @@ function editorDirty() {
     || (!$('task-fields').hidden && JSON.stringify(readTaskEditor()) !== JSON.stringify(taskDetails(target)));
 }
 
-function hasPendingChanges() { return dirty() || editorDirty(); }
+function hasPendingChanges() { return dirty() || editorDirty() || presentationUI.isOpen(); }
 
 function checked(value, entry = activeEntry) {
   const errors = validateDocument(value, entry ?? undefined);
@@ -96,8 +101,8 @@ function updateSaveState() {
   } else {
     state.textContent = lastConfirmedAt ? `Guardado · ${lastConfirmedAt}` : 'Sin cambios pendientes';
   }
-  $('save').disabled = busy || !draft || !dirty() || blockedSave || $('editor').open;
-  $('refresh').disabled = busy || !draft || $('editor').open;
+  $('save').disabled = busy || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen();
+  $('refresh').disabled = busy || !draft || $('editor').open || presentationUI.isOpen();
   $('disconnect').disabled = busy;
   $('download-draft').disabled = busy || !draft;
   $('recovery-actions').hidden = !(dirty() || blockedSave || failedSave);
@@ -210,20 +215,25 @@ async function openSelectedUnit() {
 }
 
 /** Never edit a cached snapshot: load the target UT and its SHA first. */
-async function openModuleSource(path, sessionId, activityId, editTask = false) {
-  if (busy || !draft) return;
+async function ensureSourceUnit(path) {
+  if (busy || !draft || $('editor').open || presentationUI.isOpen() || generalNotesUI.isOpen()) return false;
   if (path !== activeEntry.path) {
     if (hasPendingChanges() || blockedSave || $('editor').open || generalNotesUI.hasPending() || generalNotesUI.isOpen()) {
-      message('workspace-message', 'Guarda o revisa los cambios de la unidad abierta antes de abrir otra UT.', 'warning'); return;
+      message('workspace-message', 'Guarda o revisa los cambios de la unidad abierta antes de abrir otra UT.', 'warning'); return false;
     }
-    const module = catalog.modules.find(item => item.code === activeEntry.moduleCode);
+    const module = catalog.modules.find(item => item.units.some(unit => unit.path === path));
     const unit = module?.units.find(item => item.path === path);
-    if (!unit) return;
+    if (!unit) return false;
     setBusy(true);
     try { $('module-select').value = module.code; fillUnits(unit.code); await loadSelectedDocument(); }
     finally { setBusy(false); }
-    if (activeEntry.path !== path) return;
+    if (activeEntry.path !== path) return false;
   }
+  return true;
+}
+
+async function openModuleSource(path, sessionId, activityId, editTask = false) {
+  if (!await ensureSourceUnit(path)) return;
   const index = sessionId ? draft.sessions.findIndex(session => session.id === sessionId) : -1;
   if (editTask) {
     const task = moduleTasks([{ entry: activeEntry, document: draft }], activeEntry.moduleCode)
@@ -239,6 +249,16 @@ async function openModuleSource(path, sessionId, activityId, editTask = false) {
       section?.querySelector('.session-title')?.focus({ preventScroll: true });
     }
   }
+}
+
+async function correctTask(task, value) {
+  if (!await ensureSourceUnit(task.entry.path)) { moduleViews.render(); return; }
+  const current = moduleTasks([{ entry: activeEntry, document: draft }]).find(item => item.key === task.key);
+  if (!current) { message('workspace-message', 'La tarea ha cambiado. Revisa su UT antes de confirmar la corrección.', 'warning'); moduleViews.render(); return; }
+  const target = taskTarget(draft.sessions[current.sessionIndex], current.activityIndex);
+  if (!target) return;
+  changeTeaching(() => setTaskCorrected(target, value));
+  message('workspace-message', `Corrección ${value ? 'marcada' : 'desmarcada'} en el borrador de ${activeEntry.moduleCode} · ${activeEntry.unitCode}. Pulsa Guardar cambios.`);
 }
 
 function selectWorkspaceView(view) {
@@ -268,8 +288,7 @@ async function refreshCatalog() {
 
 async function loadModuleContext() {
   if (!connection || !activeEntry || !catalog) return;
-  const module = catalog.modules.find(item => item.code === activeEntry.moduleCode);
-  const entries = (module?.units ?? []).filter(unit => unit.path !== activeEntry.path).map(unit => ({ moduleCode: module.code, unitCode: unit.code, unitId: unit.id, path: unit.path }));
+  const entries = catalog.modules.flatMap(module => module.units.filter(unit => unit.path !== activeEntry.path).map(unit => ({ moduleCode: module.code, unitCode: unit.code, unitId: unit.id, path: unit.path })));
   moduleDocuments.clear(); moduleLoadFailures = []; moduleContextReady = false;
   const results = await Promise.allSettled(entries.map(async entry => {
     const candidate = documentStores.get(entry.path) ?? connection.forDocument(entry);
@@ -280,14 +299,14 @@ async function loadModuleContext() {
   }));
   results.forEach((result, index) => {
     if (result.status === 'fulfilled') moduleDocuments.set(entries[index].path, result.value);
-    else moduleLoadFailures.push(entries[index].unitCode);
+    else moduleLoadFailures.push(entries[index]);
   });
   moduleContextReady = true;
   renderSessions();
 }
 
 async function retryExamContext() {
-  if (busy || !draft || $('editor').open || generalNotesUI.isOpen()) return;
+  if (busy || !draft || $('editor').open || presentationUI.isOpen() || generalNotesUI.isOpen()) return;
   setBusy(true);
   try { await loadModuleContext(); } finally { setBusy(false); }
 }
@@ -403,7 +422,8 @@ function makeActivity(activity, sessionIndex, activityIndex) {
   title.title = activity.title || 'Actividad';
   description.append(title);
   if (type === 'task') {
-    description.append(teachingCheckbox('Presentada', `task-presented-${sessionIndex}-portion-${activityIndex}`, activity.taskPresented === true, `Tarea presentada y abierta: ${activity.title}`, checked => setTaskPresented(draft.sessions[sessionIndex], checked, activity.id)));
+    const id = `task-presented-${sessionIndex}-portion-${activityIndex}`;
+    description.append(teachingCheckbox('Presentada', id, activity.taskPresented === true, `Tarea presentada y abierta: ${activity.title}`, checked => requestPresentation(sessionIndex, checked, activity.id, id), true));
   }
   if (progressNames.has(activity.progress)) {
     const progress = node('span', `activity-progress progress-${activity.progress}`, progressNames.get(activity.progress));
@@ -424,14 +444,39 @@ function changeTeaching(update, focusId) {
   if (focusId) $(focusId)?.focus({ preventScroll: true });
 }
 
-function teachingCheckbox(label, id, selected, help, change) {
+function teachingCheckbox(label, id, selected, help, change, controlled = false) {
   const wrapper = node('label', 'teaching-check');
   const input = node('input'); input.type = 'checkbox'; input.id = id;
   input.checked = selected; input.disabled = busy;
   input.setAttribute('aria-label', help); input.title = help;
-  input.addEventListener('change', () => changeTeaching(() => change(input.checked), id));
+  input.addEventListener('change', () => controlled ? change(input.checked) : changeTeaching(() => change(input.checked), id));
   wrapper.title = help; wrapper.append(input, node('span', '', label));
   return wrapper;
+}
+
+function requestPresentation(sessionIndex, value, activityId, focusId) {
+  if (busy || !draft || $('editor').open || presentationUI.isOpen()) return;
+  const session = draft.sessions[sessionIndex];
+  if (!value) {
+    changeTeaching(() => {
+      const typed = session.activities.filter(activity => activity.eventType === 'task');
+      const targets = typed.length ? typed.filter(activity => !activityId || activity.id === activityId) : [session];
+      targets.forEach(target => { delete target.taskPresented; });
+    }, focusId);
+    return;
+  }
+  // Repaint the native checkbox from the unchanged model before opening the modal.
+  renderSessions();
+  const targets = presentationTargets(session, activityId);
+  presentationUI.open({ path: activeEntry.path, sessionId: session.id, focusId }, targets, session);
+  updateSaveState();
+}
+
+async function presentTask(task, value) {
+  if (!await ensureSourceUnit(task.entry.path)) { moduleViews.render(); return; }
+  const current = moduleTasks([{ entry: activeEntry, document: draft }]).find(item => item.key === task.key);
+  if (!current) { message('workspace-message', 'La tarea ha cambiado. Revisa su UT.', 'warning'); return; }
+  requestPresentation(current.sessionIndex, value, current.sessionOnly ? undefined : current.activityId);
 }
 
 function makeTeachingControls(session, sessionIndex) {
@@ -449,7 +494,8 @@ function makeTeachingControls(session, sessionIndex) {
   }
   if (selected.includes('task')) {
     const progress = taskProgress(session);
-    const control = teachingCheckbox(progress.total === 1 ? 'Presentada' : `Presentadas ${progress.presented}/${progress.total}`, `task-presented-${sessionIndex}`, progress.presented === progress.total, `Todas las tareas presentadas y abiertas para trabajar en la sesión ${session.number}`, checked => setTaskPresented(session, checked));
+    const id = `task-presented-${sessionIndex}`;
+    const control = teachingCheckbox(progress.total === 1 ? 'Presentada' : `Presentadas ${progress.presented}/${progress.total}`, id, progress.presented === progress.total, `Todas las tareas presentadas y abiertas para trabajar en la sesión ${session.number}`, checked => requestPresentation(sessionIndex, checked, undefined, id), true);
     control.querySelector('input').indeterminate = progress.presented > 0 && progress.presented < progress.total;
     controls.append(control);
   }
@@ -574,11 +620,11 @@ function renderStats() {
   stats.hidden = false;
   stats.setAttribute('aria-label', `Resumen de ${draft.module.code} · ${draft.unit.code}`);
   stats.replaceChildren();
-  const records = moduleRecords();
+  const records = currentView === 'tasks' ? libraryRecords() : moduleRecords();
   const values = currentView === 'unit'
     ? [[summary.totalSessions, 'sesiones', false], [summary.deliveredSessions, 'impartidas', true], [minutesLabel(summary.totalMinutes), 'previstos', false]]
-    : [[records.length, 'UT leídas', false], [new Set(records.flatMap(record => record.document.sessions.map(session => session.id))).size, 'sesiones', false], [moduleTasks(records, activeEntry.moduleCode).length, 'tareas', true]];
-  stats.setAttribute('aria-label', currentView === 'unit' ? `Resumen de ${draft.module.code} · ${draft.unit.code}` : `Resumen del módulo ${draft.module.code}, solo UT leídas`);
+    : [[records.length, 'UT leídas', false], [new Set(records.flatMap(record => record.document.sessions.map(session => record.entry.moduleCode + ':' + session.id))).size, 'sesiones', false], [moduleTasks(records).length, 'tareas', true]];
+  stats.setAttribute('aria-label', currentView === 'unit' ? `Resumen de ${draft.module.code} · ${draft.unit.code}` : currentView === 'tasks' ? 'Resumen de todos los módulos, solo UT leídas' : `Resumen del módulo ${draft.module.code}, solo UT leídas`);
   for (const [value, label, highlight] of values) {
     const item = node('div', 'stat');
     item.append(node('span', `stat-value${highlight ? ' teal' : ''}`, value), node('span', 'stat-label', label));
@@ -587,13 +633,14 @@ function renderStats() {
 }
 
 function renderSessions() {
-  const records = [...moduleDocuments.values(), { entry: activeEntry, document: draft }];
+  const records = moduleRecords();
+  const failures = moduleFailures();
   teachingTimeline = moduleTimeline(records, draft.module.code);
-  examReminders = moduleContextReady && !moduleLoadFailures.length ? unitExamReminders(teachingTimeline, activeEntry.path) : [];
+  examReminders = moduleContextReady && !failures.length ? unitExamReminders(teachingTimeline, activeEntry.path) : [];
   const reminders = $('exam-reminders'); reminders.replaceChildren();
-  if (moduleLoadFailures.length || teachingTimeline.errors.length) {
+  if (failures.length || teachingTimeline.errors.length) {
     const warning = node('div', 'exam-reminder');
-    warning.append(node('span', '', moduleLoadFailures.length ? `No se han podido consultar ${moduleLoadFailures.join(', ')}. Los avisos de examen no están completos.` : 'Hay sesiones compartidas con fechas o estados incompatibles. Revisa la planificación antes de calcular los avisos.'));
+    warning.append(node('span', '', failures.length ? `No se han podido consultar ${failures.join(', ')}. Los avisos de examen no están completos.` : 'Hay sesiones compartidas con fechas o estados incompatibles. Revisa la planificación antes de calcular los avisos.'));
     const retry = node('button', 'button button-small', 'Revisar avisos'); retry.type = 'button'; retry.disabled = busy;
     retry.addEventListener('click', retryExamContext); warning.append(retry); reminders.append(warning);
   }
@@ -719,6 +766,7 @@ function disconnect() {
   if ((hasPendingChanges() || suggestionsUI.hasPending() || generalNotesUI.hasPending()) && !window.confirm('Hay cambios, mejoras o sugerencias sin guardar. Descárgalos si quieres conservarlos. ¿Quieres descartarlos y desconectar?')) return;
   suggestionsUI.disconnect();
   generalNotesUI.disconnect();
+  presentationUI.clear();
   $('editor').close();
   editorTarget = null;
   store = null;
@@ -768,7 +816,7 @@ function disconnect() {
 }
 
 async function refresh() {
-  if (busy || !store || $('editor').open) return;
+  if (busy || !store || $('editor').open || presentationUI.isOpen()) return;
   if (dirty() && !window.confirm('Actualizar descartará el borrador y cargará la versión de GitHub. Descarga primero el borrador si quieres conservarlo. ¿Continuar?')) return;
   setBusy(true);
   message('workspace-message', 'Leyendo de nuevo la versión de GitHub…');
@@ -784,7 +832,7 @@ async function refresh() {
 }
 
 async function save() {
-  if (busy || !store || !draft || !dirty() || blockedSave || $('editor').open) return;
+  if (busy || !store || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen()) return;
   const errors = validateDocument(draft, activeEntry);
   if (!Array.isArray(errors) || errors.length) {
     failedSave = true;
@@ -810,10 +858,11 @@ async function save() {
 }
 
 function openEditor(sessionIndex, activityIndex, targetField = 'observations') {
-  if (busy || !draft) return;
+  if (busy || !draft || presentationUI.isOpen()) return;
   const session = draft.sessions[sessionIndex];
   const activity = session.activities[activityIndex];
-  editorTarget = { sessionIndex, activityIndex, sessionTask: taskTarget(session, activityIndex) === session };
+  editorTarget = { sessionIndex, activityIndex, sessionTask: taskTarget(session, activityIndex) === session,
+    wasPresented: taskDetails(taskTarget(session, activityIndex)).presented };
   $('editor-kicker').textContent = `SESIÓN ${session.number} · ${activityIndex === 0 ? 'PRIMERA PORCIÓN' : 'ACTIVIDAD'}`;
   $('editor-title').textContent = activity.title || 'Actividad';
   $('editor-time').textContent = `${activity.start}–${activity.end} · ${dateInfo(session.date).full}`;
@@ -834,7 +883,7 @@ function openEditor(sessionIndex, activityIndex, targetField = 'observations') {
   $('editor').querySelectorAll('details').forEach((element) => { element.open = false; });
   $('editor').showModal();
   $('editor').querySelector('.editor-content').scrollTop = 0;
-  const target = $(targetField === 'task' ? 'task-publishedOn' : targetField === 'improvements' ? 'improvements' : 'observations');
+  const target = $(targetField === 'task' ? 'task-dueOn' : targetField === 'improvements' ? 'improvements' : 'observations');
   target.focus({ preventScroll: true });
   target.scrollIntoView({ block: 'nearest', behavior: 'instant' });
   updateSaveState();
@@ -845,6 +894,14 @@ function syncTaskFields() {
   $('task-fields').hidden = $('activity-event-type').value !== 'task' && !manual;
   $('task-target-help').textContent = manual ? 'Tarea marcada solo en la sesión: estos datos pertenecen a la sesión completa.' : 'Estos datos pertenecen únicamente a esta porción marcada como tarea.';
   taskDateFields.forEach(field => { $('task-' + field).disabled = $('task-fields').hidden; });
+  syncPresentationRequired();
+}
+
+function syncPresentationRequired() {
+  const session = editorTarget && draft.sessions[editorTarget.sessionIndex];
+  const target = session && (editorTarget.sessionTask && !$('activity-event-type').value ? session : session.activities[editorTarget.activityIndex]);
+  const required = !$('task-fields').hidden && $('task-presented').checked && !taskDetails(target).presented;
+  for (const field of ['dueOn', 'correctBy']) $('task-' + field).required = required;
 }
 
 function closeEditor() {
@@ -872,7 +929,11 @@ function applyEditor(event) {
   if ($('activity-event-type').value) activity.eventType = $('activity-event-type').value;
   else delete activity.eventType;
   const target = taskTarget(session, editorTarget.activityIndex);
-  if (target && !$('task-fields').hidden) applyTaskDetails(target, readTaskEditor());
+  if (target && !$('task-fields').hidden) {
+    const values = readTaskEditor();
+    if (values.presented && !taskDetails(target).presented && !values.presentedOn) values.presentedOn = madridToday();
+    applyTaskDetails(target, values);
+  }
   $('editor').close();
   editorTarget = null;
   fields.forEach((field) => { $(field).value = ''; });
@@ -924,6 +985,7 @@ $('download-draft').addEventListener('click', downloadDraft);
 $('toggle-sessions').addEventListener('click', toggleAllSessions);
 for (const name of ['unit', 'module', 'tasks']) $('view-' + name).addEventListener('click', () => selectWorkspaceView(name));
 $('activity-event-type').addEventListener('change', syncTaskFields);
+$('task-presented').addEventListener('change', syncPresentationRequired);
 taskDateFields.forEach(field => $('task-' + field).addEventListener('input', () => $('task-' + field).setCustomValidity('')));
 $('editor-form').addEventListener('submit', applyEditor);
 $('close-editor').addEventListener('click', closeEditor);
@@ -939,10 +1001,21 @@ window.addEventListener('beforeunload', (event) => {
   event.preventDefault();
   event.returnValue = '';
 });
-const suggestionsUI = createSuggestionsUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState, isAcademicEditorOpen: () => $('editor').open || generalNotesUI.isOpen() });
+const presentationUI = createTaskPresentationUI({
+  onConfirm(context, values) {
+    if (busy || !draft || context.path !== activeEntry.path) return false;
+    const session = draft.sessions.find(item => item.id === context.sessionId);
+    if (!session || !applyPresentation(session, values)) return false;
+    failedSave = false;
+    message('workspace-message', 'Presentación y fechas aplicadas al borrador. Pulsa Guardar cambios para conservarlas.');
+    return true;
+  },
+  onClose(focusId) { if (draft) renderSessions(); if (focusId) $(focusId)?.focus({ preventScroll: true }); }
+});
+const suggestionsUI = createSuggestionsUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState, isAcademicEditorOpen: () => $('editor').open || presentationUI.isOpen() || generalNotesUI.isOpen() });
 const generalNotesUI = createGeneralNotesUI({
   isBusy: () => busy, setBusy, onStateChange: updateSaveState,
-  otherEditorOpen: () => $('editor').open || $('suggestions-dialog').open,
+  otherEditorOpen: () => $('editor').open || presentationUI.isOpen() || $('suggestions-dialog').open,
   getTarget(scope) {
     if (!connection) return null;
     if (scope === 'unit') return activeEntry && draft && selectedEntry()?.path === activeEntry.path ? { ...activeEntry, title: draft.unit.title } : null;
@@ -951,9 +1024,10 @@ const generalNotesUI = createGeneralNotesUI({
   },
 });
 const moduleViews = createModuleViews({
-  getState: () => ({ module: catalog?.modules.find(item => item.code === activeEntry?.moduleCode), records: moduleRecords(), failures: moduleLoadFailures, errors: teachingTimeline.errors, ready: moduleContextReady, today: madridToday(), activePath: activeEntry?.path, busy }),
+  getState: () => ({ module: catalog?.modules.find(item => item.code === activeEntry?.moduleCode), records: moduleRecords(), allRecords: libraryRecords(), catalog, failures: moduleFailures(), allFailures: moduleLoadFailures, errors: teachingTimeline.errors, ready: moduleContextReady, today: madridToday(), activePath: activeEntry?.path, busy }),
   onOpen: (path, sessionId) => openModuleSource(path, sessionId),
   onEdit: task => openModuleSource(task.entry.path, task.sessionId, task.activityId, true),
+  onCorrected: correctTask, onPresented: presentTask, onRetry: retryExamContext,
 });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && draft) { renderSessionBand(); moduleViews.render(); } });
 setInterval(() => { if (draft && $('session-band').dataset.today !== madridToday()) { renderSessionBand(); moduleViews.render(); } }, 60000);

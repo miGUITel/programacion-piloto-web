@@ -1,6 +1,7 @@
 import { eventTypes } from './teaching.mjs?v=20261016-4';
+import { taskState } from './task-cycle.mjs?v=20261017-2';
 
-export const taskDateFields = ['publishedOn', 'dueOn', 'correctBy'];
+export const taskDateFields = ['publishedOn', 'presentedOn', 'dueOn', 'correctBy'];
 
 /** Manual session-only tasks have a single record, not a fabricated activity. */
 export function taskTarget(session, activityIndex) {
@@ -38,21 +39,23 @@ export function moduleOverview(module, records, month = '') {
 }
 
 /** Derived index only: source references always point back to the unit JSON. */
-export function moduleTasks(records, moduleCode) {
+export function moduleTasks(records, moduleCode, today) {
   const tasks = [];
   for (const { entry, document } of records) {
-    if (entry.moduleCode !== moduleCode || document.module.code !== moduleCode) continue;
+    if ((moduleCode && entry.moduleCode !== moduleCode) || document.module.code !== entry.moduleCode) continue;
     document.sessions.forEach((session, sessionIndex) => {
       if (!eventTypes(session).includes('task')) return;
       const typed = session.activities.map((activity, index) => ({ activity, index })).filter(x => x.activity.eventType === 'task');
       const targets = typed.length ? typed : [{ activity: session.activities[0], index: 0, sessionOnly: true }];
       targets.forEach(({ activity, index, sessionOnly }) => {
         const target = sessionOnly ? session : activity;
+        const details = taskDetails(target);
         tasks.push({ key: JSON.stringify([entry.path, session.id, sessionOnly ? null : activity.id]),
           entry, unitTitle: document.unit.title, sessionId: session.id, sessionIndex,
           activityId: activity.id, activityIndex: index, sessionOnly: !!sessionOnly,
           title: activity.title || 'Tarea sin título', date: session.date, number: session.number,
-          state: session.state, ...taskDetails(target) });
+          state: session.state, ...details, status: taskState(details, today),
+          missingDates: details.presented && (!details.dueOn || !details.correctBy) });
       });
     });
   }
@@ -60,8 +63,10 @@ export function moduleTasks(records, moduleCode) {
     || a.entry.path.localeCompare(b.entry.path) || a.key.localeCompare(b.key));
 }
 
-export function filterTasks(tasks, { unitPath = '', status = 'all' } = {}) {
-  return tasks.filter(task => (!unitPath || task.entry.path === unitPath)
+export function filterTasks(tasks, { moduleCode = '', unitPath = '', status = 'all' } = {}) {
+  return tasks.filter(task => (!moduleCode || task.entry.moduleCode === moduleCode) && (!unitPath || task.entry.path === unitPath)
     && (status !== 'unpresented' || !task.presented)
-    && (status !== 'uncorrected' || !task.corrected));
+    && (status !== 'uncorrected' || !task.corrected)
+    && (!['planned', 'presented', 'to-correct', 'corrected'].includes(status) || task.status === status))
+    .sort((a, b) => (status === 'to-correct' ? a.correctBy.localeCompare(b.correctBy) : status === 'planned' ? a.date.localeCompare(b.date) : (a.dueOn || a.date).localeCompare(b.dueOn || b.date)) || a.key.localeCompare(b.key));
 }

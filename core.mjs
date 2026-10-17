@@ -82,7 +82,7 @@ function validateTaskMetadata(target, path, errors) {
   if (!Object.hasOwn(target, 'task')) return;
   const task = target.task;
   if (!task || typeof task !== 'object' || Array.isArray(task)) { errors.push(`${path}.task: debe ser un objeto.`); return; }
-  for (const field of ['publishedOn', 'dueOn', 'correctBy']) {
+  for (const field of ['publishedOn', 'presentedOn', 'dueOn', 'correctBy']) {
     if (Object.hasOwn(task, field) && !isValidDate(task[field])) errors.push(`${path}.task.${field}: fecha no válida.`);
   }
   if (Object.hasOwn(task, 'corrected') && typeof task.corrected !== 'boolean') errors.push(`${path}.task.corrected: debe ser booleano.`);

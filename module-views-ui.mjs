@@ -1,5 +1,6 @@
-import { moduleOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261016-5';
+import { moduleOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261017-2';
 import { eventTypes } from './teaching.mjs?v=20261016-4';
+import { taskStates } from './task-cycle.mjs?v=20261017-2';
 
 const $ = id => document.getElementById(id);
 function el(tag, className, text) {
@@ -18,21 +19,22 @@ function monthName(month) {
   return new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(month + '-15T12:00:00Z'));
 }
 
-export function createModuleViews({ getState, onOpen, onEdit }) {
+export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPresented, onRetry }) {
   let filterModule = '';
 
   function render() {
-    const { module, records, failures, errors, ready, today, activePath, busy } = getState();
+    const { module, records, allRecords, catalog, failures, allFailures, errors, ready, today, activePath, busy } = getState();
     if (!module) return;
     if (filterModule !== module.code) {
-      $('overview-month').value = ''; $('tasks-unit').value = ''; $('tasks-status').value = 'all';
+      $('overview-month').value = '';
       filterModule = module.code;
     }
     const missing = (failures.length ? ` No se han podido leer: ${failures.join(', ')}.` : '')
       + (errors?.length ? ' Hay fechas o estados incompatibles en sesiones compartidas: revisa la planificación.' : '');
     const scope = `${module.code} · ${records.length}/${module.units.length} UT del piloto.${missing}${!ready ? ' Cargando otras unidades…' : ''} No incluye las UT que aún no se han incorporado.`;
     $('module-scope').textContent = scope;
-    $('tasks-scope').textContent = scope;
+    const total = catalog.modules.reduce((count, item) => count + item.units.length, 0);
+    $('tasks-scope').textContent = `${allRecords.length}/${total} UT leídas de todos los módulos del piloto.${!ready ? ' Cargando…' : ''}${allFailures.length ? ` Lista incompleta: no se han podido leer ${allFailures.map(entry => entry.moduleCode + ' · ' + entry.unitCode).join(', ')}.` : ''} No incluye UT aún no incorporadas.`;
     const overview = moduleOverview(module, records, $('overview-month').value);
     fillSelect($('overview-month'), [['', 'Todas las fechas'], ...overview.months.map(month => [month, monthName(month)])], $('overview-month').value);
     // If a refreshed catalog removed the selected month, render the valid selection.
@@ -77,37 +79,54 @@ export function createModuleViews({ getState, onOpen, onEdit }) {
     table.append(body);
     $('overview-empty').hidden = model.dates.length > 0;
 
-    fillSelect($('tasks-unit'), [['', 'Todas las UT'], ...module.units.map(unit => [unit.path, unit.code])], $('tasks-unit').value);
-    const tasks = moduleTasks(records, module.code);
-    const visible = filterTasks(tasks, { unitPath: $('tasks-unit').value, status: $('tasks-status').value });
+    fillSelect($('tasks-module'), [['', 'Todos los módulos'], ...catalog.modules.map(item => [item.code, item.code])], $('tasks-module').value);
+    const units = catalog.modules.filter(item => !$('tasks-module').value || item.code === $('tasks-module').value).flatMap(item => item.units.map(unit => [unit.path, `${item.code} · ${unit.code}`]));
+    fillSelect($('tasks-unit'), [['', 'Todas las UT'], ...units], $('tasks-unit').value);
+    const tasks = moduleTasks(allRecords, undefined, today);
+    const visible = filterTasks(tasks, { moduleCode: $('tasks-module').value, unitPath: $('tasks-unit').value, status: $('tasks-status').value });
     $('tasks-count').textContent = `${visible.length} de ${tasks.length} tareas`;
+    const due = tasks.filter(task => task.status === 'to-correct').length;
+    $('view-tasks').textContent = `Tareas${due ? ' · ' + due : ''}${allFailures.length ? ' !' : ''}`;
+    $('view-tasks').setAttribute('aria-label', `Tareas de todos los módulos${due ? ` · ${due} por corregir` : ''}${allFailures.length ? ' · Lista incompleta' : ''}`);
     const list = $('tasks-list'); list.replaceChildren();
     for (const task of visible) {
-      const row = el('article', 'task-row'); row.setAttribute('aria-label', task.title);
-      const title = el('div', 'task-name'); title.append(el('strong', '', task.title), el('span', '', `${task.entry.unitCode} · Sesión ${task.number} · ${shortDate(task.date)}${task.sessionOnly ? ' · Marca de sesión' : ''}${task.state ? ' · ' + task.state : ''}`));
+      const overdue = task.status === 'to-correct' && task.correctBy < today;
+      const row = el('article', `task-row task-compact${task.corrected ? ' is-corrected' : overdue ? ' is-overdue' : task.presented ? ' is-presented' : ''}`); row.setAttribute('aria-label', `${task.entry.moduleCode} · ${task.title}`);
+      row.title = `${taskStates[task.status]} · ${task.entry.moduleCode} · ${task.entry.unitCode} · Sesión ${task.number} · ${shortDate(task.date)} · Entrega: ${shortDate(task.dueOn)}${task.state ? ' · ' + task.state : ''}`;
+      const title = el('div', 'task-name');
+      const source = el('span', 'task-source', `${task.entry.moduleCode} · ${task.entry.unitCode}`);
+      const name = el('strong', '', task.title); name.title = task.title;
+      title.append(source, name, el('span', 'visually-hidden', taskStates[task.status]));
+      if (task.missingDates) { const missing = el('span', 'task-missing-dates', '!'); missing.title = 'Tarea presentada con fechas pendientes de completar'; missing.setAttribute('aria-label', missing.title); title.append(missing); }
       row.append(title);
-      for (const [field, label] of [['publishedOn', 'Publicación'], ['dueOn', 'Entrega'], ['correctBy', 'Corregir antes de']]) {
-        const value = el('div', 'task-date');
-        value.append(el('span', 'task-field-label', label), el('span', '', shortDate(task[field])));
-        if (field === 'correctBy' && task[field] && task[field] < today && !task.corrected) {
-          value.classList.add('correction-past'); value.title = 'La fecha prevista de corrección ha pasado y no está marcada como corregida.';
-        }
-        row.append(value);
+      for (const [letter, selected, date, label, action] of [
+        ['P', task.presented, task.presentedOn, 'Presentada', onPresented],
+        ['C', task.corrected, task.correctBy, 'Corregida', onCorrected]
+      ]) {
+        const control = el('div', 'task-inline-control');
+        const confirmation = el('label', 'task-toggle'); const checkbox = el('input'); checkbox.type = 'checkbox'; checkbox.checked = selected;
+        checkbox.setAttribute('aria-label', `${label}: ${task.entry.moduleCode} · ${task.entry.unitCode} · ${task.title}`);
+        confirmation.title = `${label} · ${taskStates[task.status]}`;
+        checkbox.addEventListener('change', () => { const checked = checkbox.checked; checkbox.checked = selected; action(task, checked); });
+        const symbol = el('span', '', letter); symbol.setAttribute('aria-hidden', 'true'); confirmation.append(checkbox, symbol);
+        const value = el('time', 'task-inline-date', date ? `${date.slice(8)}/${date.slice(5, 7)}` : '—'); if (date) value.dateTime = date;
+        value.title = `${letter === 'P' ? 'Fecha de presentación' : 'Fecha de aviso de corrección'}: ${shortDate(date)}`;
+        value.setAttribute('aria-label', value.title); control.append(confirmation, value); row.append(control);
       }
-      const state = el('div', 'task-confirmations');
-      state.append(el('span', task.presented ? 'confirmed' : '', task.presented ? 'Presentada ✓' : 'Sin presentar'), el('span', task.corrected ? 'confirmed' : '', task.corrected ? 'Corregida ✓' : 'Sin corregir')); row.append(state);
-      const edit = el('button', 'button button-small', 'Editar tarea'); edit.type = 'button'; edit.setAttribute('aria-label', `Editar tarea de ${task.entry.unitCode}, sesión ${task.number}: ${task.title}`);
+      const edit = el('button', 'button button-small task-edit', '✎'); edit.type = 'button'; edit.title = 'Editar tarea'; edit.setAttribute('aria-label', `Editar tarea de ${task.entry.moduleCode} · ${task.entry.unitCode}, sesión ${task.number}: ${task.title}`);
       edit.addEventListener('click', () => onEdit(task)); row.append(edit); list.append(row);
     }
     if (!visible.length) list.append(el('p', 'empty-sessions', tasks.length ? 'No hay tareas con estos filtros.' : 'No hay tareas marcadas en las UT leídas. Marca su porción como Tarea o utiliza la casilla de la sesión.'));
-    if (busy) for (const root of [$('module-view'), $('tasks-view')]) root.querySelectorAll('button,select').forEach(element => { element.disabled = true; });
+    if (busy) for (const root of [$('module-view'), $('tasks-view')]) root.querySelectorAll('button,select,input').forEach(element => { element.disabled = true; });
   }
 
-  ['overview-month', 'tasks-unit', 'tasks-status'].forEach(id => $(id).addEventListener('change', render));
+  ['overview-month', 'tasks-module', 'tasks-unit', 'tasks-status'].forEach(id => $(id).addEventListener('change', render));
+  $('retry-tasks').addEventListener('click', onRetry);
   return { render, clear() {
     filterModule = ''; $('module-grid').replaceChildren(); $('tasks-list').replaceChildren();
     for (const id of ['module-scope', 'tasks-scope', 'tasks-count']) $(id).textContent = '';
-    for (const id of ['overview-month', 'tasks-unit']) $(id).replaceChildren();
+    for (const id of ['overview-month', 'tasks-module', 'tasks-unit']) $(id).replaceChildren();
     $('tasks-status').value = 'all';
+    $('view-tasks').textContent = 'Tareas'; $('view-tasks').setAttribute('aria-label', 'Tareas de todos los módulos');
   } };
 }
