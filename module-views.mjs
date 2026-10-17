@@ -1,6 +1,6 @@
-import { eventTypes } from './teaching.mjs?v=20261017-4';
-import { taskState } from './task-cycle.mjs?v=20261017-4';
-import { hasTaskPlan, visiblePlanTasks } from './task-plan.mjs?v=20261017-4';
+import { eventTypes } from './teaching.mjs?v=20261017-5';
+import { taskState } from './task-cycle.mjs?v=20261017-5';
+import { hasTaskPlan, visiblePlanTasks } from './task-plan.mjs?v=20261017-5';
 
 export const taskDateFields = ['presentedOn', 'dueOn', 'correctBy'];
 
@@ -51,7 +51,8 @@ export function moduleTasks(records, moduleCode, today) {
       if ((moduleCode && entry.moduleCode !== moduleCode) || document.moduleCode !== entry.moduleCode) continue;
       for (const target of document.tasks) {
         const details = taskDetails(target);
-        tasks.push({ key: JSON.stringify([entry.path, 'task', target.id]), registryTaskId: target.id, type: target.type, code: target.code,
+        if (document.schemaVersion === 2 && target.approved !== true && !target.taskPresented && !target.task?.corrected) continue;
+        tasks.push({ key: JSON.stringify([entry.moduleCode, 'task', target.id]), registryTaskId: target.id, type: target.type, code: target.code,
           entry: { ...entry, unitCode: target.unitCode }, title: target.title, date: details.presentedOn || '', number: null,
           ...details, status: taskState(details, today), missingDates: details.presented && (!details.dueOn || !details.correctBy) });
       }
@@ -60,14 +61,13 @@ export function moduleTasks(records, moduleCode, today) {
     if ((moduleCode && entry.moduleCode !== moduleCode) || document.module.code !== entry.moduleCode) continue;
     if (hasTaskPlan(document)) {
       for (const target of visiblePlanTasks(document)) {
-        const sessionIndex = document.sessions.findIndex(session => session.id === target.presentation.sessionId);
-        const session = document.sessions[sessionIndex]; if (!session) continue;
-        const activityIndex = target.presentation.activityId ? session.activities.findIndex(activity => activity.id === target.presentation.activityId) : 0;
-        if (activityIndex < 0) continue;
+        const sessionIndex = document.sessions.findIndex(session => session.id === target.presentation?.sessionId);
+        const session = document.sessions[sessionIndex];
+        const activityIndex = session ? target.presentation.activityId ? session.activities.findIndex(activity => activity.id === target.presentation.activityId) : 0 : -1;
         const details = taskDetails(target);
-        tasks.push({ key: JSON.stringify([entry.path, 'task', target.id]), officialTaskId: target.id, code: target.code, type: target.type || 'task',
-          entry, unitTitle: document.unit.title, sessionId: session.id, sessionIndex, activityId: session.activities[activityIndex].id, activityIndex,
-          title: target.title, date: session.date, number: session.number, state: session.state, ...details,
+        tasks.push({ key: JSON.stringify([entry.moduleCode, 'task', target.id]), officialTaskId: target.id, code: target.code, type: target.type || 'task',
+          entry, unitTitle: document.unit.title, sessionId: session?.id, sessionIndex, activityId: session?.activities[activityIndex]?.id, activityIndex,
+          unassigned: !session, title: target.title, date: session?.date || '', number: session?.number ?? null, state: session?.state, ...details,
           status: taskState(details, today), missingDates: details.presented && (!details.dueOn || !details.correctBy) });
       }
       continue;

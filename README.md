@@ -221,7 +221,7 @@ Las sugerencias sobre selectores compactos de módulo y UT, mejoras generales, b
 
 ### Transición al uso diario y ampliación — propuesta en análisis
 
-El paso 1 dispone de una [especificación de destino en el repositorio privado de datos](https://github.com/miGUITel/programacion-piloto-datos/blob/main/docs/MODELO_DATOS_UT.md). Define campos y reglas; sus versiones objetivo todavía no están implementadas ni activadas. El paso 2 independiza Tareas y Unidad sin migrar datos ni activar el esquema nuevo. Después de la validación de uso, corresponde preparar la compatibilidad del modelo y la importación verificada.
+El paso 1 dispone de una [especificación de destino en el repositorio privado de datos](https://github.com/miGUITel/programacion-piloto-datos/blob/main/docs/MODELO_DATOS_UT.md). El paso 2 independiza Tareas y Unidad. El paso 3 añade compatibilidad con unidades v3 y registros de tareas v2, conservando la lectura y guardado de los formatos anteriores. Abrir un documento no cambia su versión. La importación y activación de una primera UT corresponden al paso 4.
 
 El 17/10/2026 el docente propone incorporar las UT preparadas de todos los módulos y utilizar la app para su seguimiento diario. Solicita únicamente análisis y anotación: no se autoriza una importación ni un cambio de fuente de verdad mediante este registro.
 
@@ -232,6 +232,18 @@ Para cada alcance migrado y validado, acordar una fuente única de trabajo diari
 Ampliaciones de visión global propuestas: configuración de módulos, metodología, planificación anual y acceso a recursos por UT. Mantener también pendientes la definición de preparación de sesiones y su vista global, y la vista ampliada de sesión. Calendar y Aula Virtual siguen siendo servicios separados; no hay sincronización o publicación automática. La app requiere conexión y guardado explícito; la recuperación de borradores tras cerrar o recargar no está implementada.
 
 ## Formato del JSON
+
+### Compatibilidad preparada para la ampliación
+
+Se admiten unidades 1/2/3 y registros históricos 1/2. En unidad v3, `type` es explícito y el código oficial es texto, conservando excepciones y ceros. `presentation` puede faltar: la tarea aprobada aparece en Tareas con la indicación accesible «Sin sesión de presentación asignada» y puede presentar/corregir su seguimiento sin crear una sesión ficticia. El aviso del examen requiere una sesión prevista conocida.
+
+En v3 la visibilidad depende de `approved: true` o de seguimiento real presentado/corregido. Reabrir `unit.preparation` no oculta la lista ya aprobada y una nueva tarea no se aprueba al leerla. La versión anterior conserva su regla compatible. La identidad global de una tarea oficial es módulo e ID, independiente de su archivo para permitir un traslado explícito sin duplicarla. Los duplicados y referencias de trabajo pendientes se señalan; un duplicado no se puede editar desde Tareas hasta conciliarlo.
+
+Se validan y conservan objetivos, contenidos, notas particulares, carga con unidad de medida, referencias curriculares y a recursos, preparación de materiales y sesiones. No se infieren estos datos al leer ni se han añadido aún sus pantallas de gestión. Cada examen v3 conserva su aviso en `announcement.examDate`; varios exámenes de una sesión tienen confirmaciones independientes. Al desmarcar se retira solo la fecha de confirmación y se conservan extensiones desconocidas. Los avisos antiguos de sesión permanecen compatibles, sin asignarlos automáticamente a varios exámenes. Las porciones de sesiones compartidas v3 se comprueban también entre UT.
+
+La preparación de importación es una herramienta separada de la app: exige inventario de las celdas y dependencias relevantes, correspondencias explícitas de tareas y evidencia de actualidad para cada lote. Genera una propuesta con versiones esperadas y archivos de procedencia; no publica por sí sola ni reemplaza un JSON operativo por el Excel. El procedimiento técnico y las herramientas se mantienen junto al proyecto local.
+
+Verificación del paso 3: 156 pruebas de JavaScript y cuatro pruebas del lector Excel satisfactorias, incluido un recorrido completo con OOXML ficticio. La lectura de compatibilidad de los seis documentos académicos actuales conserva sus 19 tareas únicas y todos sus objetos sin mutarlos. Prueba de navegador aislada: tarea v3 aprobada sin sesión, propuesta de hoy en las tres fechas, guardado/relectura, y confirmación de uno de dos exámenes de la misma sesión sin confirmar el otro. Esta evidencia acredita preparación técnica; los Excel reales no se han auditado ni migrado en este paso.
 
 ### Lista oficial de tareas y preparación
 

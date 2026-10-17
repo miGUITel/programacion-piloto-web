@@ -1,7 +1,7 @@
-import { moduleOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261017-4';
-import { eventTypes } from './teaching.mjs?v=20261017-4';
-import { taskStates } from './task-cycle.mjs?v=20261017-4';
-import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261017-4';
+import { moduleOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261017-5';
+import { eventTypes } from './teaching.mjs?v=20261017-5';
+import { taskStates } from './task-cycle.mjs?v=20261017-5';
+import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261017-5';
 
 const $ = id => document.getElementById(id);
 function el(tag, className, text) {
@@ -43,7 +43,7 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
   }
 
   function render() {
-    const { module, records, allRecords, taskRecords, registryFailures, catalog, failures, allFailures, errors, ready, today, activePath, busy } = getState();
+    const { module, records, allRecords, taskRecords, registryFailures, integrityIssues = [], catalog, failures, allFailures, errors, ready, today, activePath, busy } = getState();
     if (!module) return;
     if (filterModule !== module.code) {
       $('overview-month').value = '';
@@ -107,10 +107,11 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
     const units = [...unitMap].filter(([key]) => !$('tasks-module').value || key.startsWith($('tasks-module').value + ':'));
     fillSelect($('tasks-unit'), [['', 'Todas'], ...units], $('tasks-unit').value);
     if (registryFailures.length) $('tasks-scope').textContent += ` No se han podido leer las tareas históricas de ${registryFailures.join(', ')}.`;
+    if (integrityIssues.length) $('tasks-scope').textContent += ` ${integrityIssues.length} incidencias de identidad o referencias: requieren revisar la conciliación.`;
     const visible = filterTasks(tasks, { moduleCode: $('tasks-module').value, unitPath: $('tasks-unit').value, status: $('tasks-status').value });
     $('tasks-count').textContent = `${visible.length}/${tasks.length}`;
     $('tasks-count').setAttribute('aria-label', `${visible.length} de ${tasks.length} tareas`);
-    const drafts = allRecords.filter(record => hasTaskPlan(record.document) && record.document.unit.preparation !== 'ready');
+    const drafts = allRecords.filter(record => hasTaskPlan(record.document) && record.document.unit.preparation !== 'ready' && record.document.schemaVersion !== 3);
     if (drafts.length) $('tasks-scope').textContent += ` ${drafts.length} UT sin preparación confirmada: sus nuevas tareas aparecerán al darlas por preparadas en el proyecto; se conserva el seguimiento previo.`;
     const due = tasks.filter(task => task.status === 'to-correct').length;
     $('view-tasks').textContent = `Tareas${due ? ' · ' + due : ''}${allFailures.length || registryFailures.length ? ' !' : ''}`;
@@ -120,13 +121,14 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
       const overdue = task.status === 'to-correct';
       const heading = taskHeading(task.entry.moduleCode, task.code, task.title);
       const row = el('article', `task-row task-compact${task.type === 'exam' ? ' is-exam' : ''}${task.corrected ? ' is-corrected' : overdue ? ' is-overdue' : task.presented ? ' is-presented' : ''}`); row.setAttribute('aria-label', heading);
-      row.title = `${task.type === 'exam' ? 'Examen' : 'Tarea'} · ${taskStates[task.status]} · ${task.entry.moduleCode} · ${task.entry.unitCode}${task.registryTaskId ? ' · Registro histórico sin sesiones importadas' : ' · Sesión ' + task.number} · ${shortDate(task.date)} · Entrega: ${shortDate(task.dueOn)}${task.state ? ' · ' + task.state : ''}`;
+      row.title = `${task.type === 'exam' ? 'Examen' : 'Tarea'} · ${taskStates[task.status]} · ${task.entry.moduleCode} · ${task.entry.unitCode}${task.registryTaskId ? ' · Registro histórico sin sesiones importadas' : task.unassigned ? ' · Sin sesión asignada' : ' · Sesión ' + task.number} · ${shortDate(task.date)} · Entrega: ${shortDate(task.dueOn)}${task.state ? ' · ' + task.state : ''}`;
       row.dataset.taskKey = task.key;
       const title = el('div', 'task-name');
       const source = el('span', 'task-source', `${task.entry.moduleCode} · ${task.code || 'Sin código'} ·`);
       source.title = task.code ? `Módulo ${task.entry.moduleCode} · ${task.type === 'exam' ? 'Examen' : 'Tarea'} ${task.code}` : 'Equivalencia y código oficial pendientes de confirmar; se conserva el título anterior.';
       const name = el('strong', '', task.title); name.title = task.title;
       title.append(source, name, el('span', 'visually-hidden', taskStates[task.status]));
+      if (task.unassigned) { const missing = el('span', 'task-missing-dates', '◷'); missing.title = 'Sin sesión de presentación asignada'; missing.setAttribute('aria-label', missing.title); title.append(missing); }
       if (task.missingDates) { const missing = el('span', 'task-missing-dates', '!'); missing.title = 'Tarea presentada con fechas pendientes de completar'; missing.setAttribute('aria-label', missing.title); title.append(missing); }
       row.append(title);
       for (const [letter, selected, date, label, action] of [

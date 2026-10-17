@@ -1,3 +1,5 @@
+import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261017-5';
+
 const OWNER = 'miGUITel';
 const REPOSITORY = 'programacion-piloto-datos';
 const BRANCH = 'main';
@@ -133,6 +135,8 @@ export function validateCatalog(catalog) {
   if (!isObject(catalog)) return ['El catálogo debe ser un objeto JSON.'];
   validateJson(catalog, 'catalog', errors);
   if (catalog.schemaVersion !== 1) errors.push('catalog.schemaVersion: debe ser 1.');
+  if (Object.hasOwn(catalog, 'courseId') && !nonemptyText(catalog.courseId)) errors.push('catalog.courseId: texto de curso no vacío requerido.');
+  if (Object.hasOwn(catalog, 'timeZone') && catalog.timeZone !== 'Europe/Madrid') errors.push('catalog.timeZone: debe ser Europe/Madrid.');
   if (!Array.isArray(catalog.modules)) return [...errors, 'catalog.modules: debe ser una lista.'];
   const modules = new Set();
   const identities = new Set();
@@ -166,8 +170,9 @@ export function validateDocument(doc, expectedEntry) {
   const errors = [];
   if (!isObject(doc)) return ['El documento debe ser un objeto JSON.'];
   validateJson(doc, 'document', errors);
-  if (doc.schemaVersion !== 1 && doc.schemaVersion !== 2) errors.push('schemaVersion: debe ser 1 o 2.');
-  const isV2 = doc.schemaVersion === 2;
+  if (![1, 2, 3].includes(doc.schemaVersion)) errors.push('schemaVersion: debe ser 1, 2 o 3.');
+  const isV2 = doc.schemaVersion === 2 || doc.schemaVersion === 3;
+  const isV3 = doc.schemaVersion === 3;
   if (doc.pilot !== true) errors.push('pilot: debe ser true.');
   if (!isObject(doc.module) || !MODULE_CODES.has(doc.module.code) || !nonemptyText(doc.module.name)) errors.push('module: requiere un code admitido y name no vacío.');
   if (!isObject(doc.unit) || !isUnitCode(doc.unit.code) || doc.unit.id !== `${doc.module?.code}-${doc.unit.code}` || !nonemptyText(doc.unit.title)) errors.push('unit: requiere code válido, id MÓDULO-UNIDAD coherente y title no vacío.');
@@ -256,25 +261,29 @@ export function validateDocument(doc, expectedEntry) {
         if (!isObject(task)) { errors.push(`${path}: debe ser un objeto.`); return; }
         checkId(task.id, `${path}.id`);
         if (task.type !== undefined && !['task', 'exam'].includes(task.type)) errors.push(`${path}.type: debe ser task o exam.`);
-        if (!isText(task.code) || !(task.type === 'exam' ? /^\d{2}(?:\d{2})?$/ : /^\d{4}$/).test(task.code)) errors.push(`${path}.code: código oficial no válido.`);
-        if (codes.has(task.code)) errors.push(`${path}.code: código de tarea duplicado.`);
-        codes.add(task.code);
+        if (isV3) validateExtendedTask(task, path, errors, isValidDate);
+        else if (!isText(task.code) || !(task.type === 'exam' ? /^\d{2}(?:\d{2})?$/ : /^\d{4}$/).test(task.code)) errors.push(`${path}.code: código oficial no válido.`);
+        const codeKey = isV3 ? JSON.stringify([task.type, task.code]) : task.code;
+        if (codes.has(codeKey)) errors.push(`${path}.code: código de tarea duplicado.`);
+        codes.add(codeKey);
         if (!nonemptyText(task.title)) errors.push(`${path}.title: título oficial obligatorio.`);
         const session = doc.sessions.find(item => item?.id === task.presentation?.sessionId);
-        if (!isObject(task.presentation) || !session) errors.push(`${path}.presentation: requiere una sesión existente de esta UT.`);
+        if (isV3 && !Object.hasOwn(task, 'presentation')) { /* Unassigned is a supported explicit absence. */ }
+        else if (!isObject(task.presentation) || !session) errors.push(`${path}.presentation: requiere una sesión existente de esta UT.`);
         else if (Object.hasOwn(task.presentation, 'activityId') && (!Array.isArray(session.activities) || !session.activities.some(activity => activity?.id === task.presentation.activityId))) errors.push(`${path}.presentation.activityId: debe pertenecer a la sesión indicada.`);
         if (Object.hasOwn(task, 'taskPresented') && typeof task.taskPresented !== 'boolean') errors.push(`${path}.taskPresented: debe ser booleano.`);
         validateTaskMetadata(task, path, errors);
       });
     }
   }
+  if (isV3) validateV3Document(doc, errors);
   return errors;
 }
 
 /** Durations include Cabecera and exclude gaps between portions. */
 export function validateTaskRegistry(doc, moduleCode) {
   const errors = [];
-  if (!isObject(doc) || doc.schemaVersion !== 1 || !MODULE_CODES.has(moduleCode) || doc.moduleCode !== moduleCode || !Array.isArray(doc.tasks)) return ['Registro de tareas no válido.'];
+  if (!isObject(doc) || ![1, 2].includes(doc.schemaVersion) || !MODULE_CODES.has(moduleCode) || doc.moduleCode !== moduleCode || !Array.isArray(doc.tasks)) return ['Registro de tareas no válido.'];
   validateJson(doc, 'registry', errors);
   const ids = new Set(); const identities = new Set();
   doc.tasks.forEach((task, index) => {
@@ -282,7 +291,8 @@ export function validateTaskRegistry(doc, moduleCode) {
     if (!isObject(task)) { errors.push(`${path}: debe ser un objeto.`); return; }
     if (!nonemptyText(task.id) || ids.has(task.id)) errors.push(`${path}.id: identificador no válido o duplicado.`);
     ids.add(task.id);
-    if (!isUnitCode(task.unitCode) || !['task', 'exam'].includes(task.type) || !nonemptyText(task.title) || !isText(task.code) || !(task.type === 'exam' ? /^\d{2}(?:\d{2})?$/ : /^\d{4}$/).test(task.code)) errors.push(`${path}: identidad de tarea no válida.`);
+    if (!isUnitCode(task.unitCode) || !['task', 'exam'].includes(task.type) || !nonemptyText(task.title) || !(doc.schemaVersion === 2 ? officialCode(task.code) : isText(task.code) && (task.type === 'exam' ? /^\d{2}(?:\d{2})?$/ : /^\d{4}$/).test(task.code))) errors.push(`${path}: identidad de tarea no válida.`);
+    if (doc.schemaVersion === 2) validateExtendedTask(task, path, errors, isValidDate);
     const identity = `${task.unitCode}/${task.type}/${task.code}`;
     if (identities.has(identity)) errors.push(`${path}: código duplicado.`);
     identities.add(identity);

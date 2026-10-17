@@ -1,9 +1,9 @@
-import { TaskRegistryStore } from './general-notes.mjs?v=20261017-4';
-import { taskDateFields, taskDetails } from './module-views.mjs?v=20261017-4';
-import { TaskEditError, taskEditTarget, taskEditSnapshot, assertTaskRead, prepareTaskSave, saveTaskDocument } from './task-edit.mjs?v=20261017-4';
-import { presentationDefaults } from './task-cycle.mjs?v=20261017-4';
-import { taskHeading } from './task-plan.mjs?v=20261017-4';
-import { saveErrorFeedback, isValidDate } from './core.mjs?v=20261017-4';
+import { TaskRegistryStore } from './general-notes.mjs?v=20261017-5';
+import { taskDateFields, taskDetails } from './module-views.mjs?v=20261017-5';
+import { TaskEditError, taskEditTarget, taskEditSnapshot, assertTaskRead, prepareTaskSave, saveTaskDocument } from './task-edit.mjs?v=20261017-5';
+import { presentationDefaults } from './task-cycle.mjs?v=20261017-5';
+import { taskHeading } from './task-plan.mjs?v=20261017-5';
+import { saveErrorFeedback, isValidDate } from './core.mjs?v=20261017-5';
 
 const $ = id => document.getElementById(id);
 
@@ -54,7 +54,7 @@ export function createTaskRegistryUI({ isBusy, setBusy, canOpen, onChange, onSta
     if (task.registryTaskId) records.set(task.entry.moduleCode, { entry: { moduleCode: task.entry.moduleCode, path: task.entry.path }, document: result.document, registry: true });
   }
   async function open(task, action, value, reloading = false) {
-    if (isBusy() || !token || (!reloading && ($('registry-dialog').open || !canOpen()))) return;
+    if (isBusy() || !token || (!reloading && ($('registry-dialog').open || !canOpen(task)))) return;
     if (!reloading) position = capturePosition();
     setBusy(true);
     try {

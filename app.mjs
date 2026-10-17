@@ -1,14 +1,15 @@
-import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261017-4';
+import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261017-5';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261016-1';
-import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261017-4';
-import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261017-4';
-import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders } from './teaching.mjs?v=20261017-4';
-import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261017-4';
-import { createModuleViews } from './module-views-ui.mjs?v=20261017-4';
-import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261017-4';
-import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261017-4';
-import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261017-4';
-import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261017-4';
+import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261017-5';
+import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261017-5';
+import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261017-5';
+import { libraryIntegrity } from './model-v3.mjs?v=20261017-5';
+import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261017-5';
+import { createModuleViews } from './module-views-ui.mjs?v=20261017-5';
+import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261017-5';
+import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261017-5';
+import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261017-5';
+import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261017-5';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -496,7 +497,9 @@ function makeTeachingControls(session, sessionIndex) {
     controls.append(control);
   }
   if (selected.includes('exam')) {
-    const exam = teachingTimeline.exams.find(item => item.id === session.id);
+    const sessionExams = teachingTimeline.exams.filter(item => item.sessionId === session.id || item.id === session.id);
+    if (!sessionExams.length) sessionExams.push({ id: session.id, sessionId: session.id, date: session.date, source: { entry: activeEntry }, announced: session.examAnnouncedFor === session.date });
+    for (const [examIndex, exam] of sessionExams.entries()) {
     if (exam && exam.source.entry.path !== activeEntry.path) {
       if (exam.announced) controls.append(node('span', 'teaching-confirmed', 'Avisado ✓'));
       else {
@@ -506,9 +509,8 @@ function makeTeachingControls(session, sessionIndex) {
         action.addEventListener('click', () => markExamReminder(exam)); controls.append(action);
       }
     } else {
-      controls.append(teachingCheckbox('Avisado', `exam-announced-${sessionIndex}`, session.examAnnouncedFor === session.date, `Aviso al alumnado del examen de la sesión ${session.number}, ${dateInfo(session.date).full}`, checked => {
-        if (checked) session.examAnnouncedFor = session.date; else delete session.examAnnouncedFor;
-      }));
+      controls.append(teachingCheckbox(exam.code ? `Avisado ${exam.code}` : 'Avisado', `exam-announced-${sessionIndex}${exam.officialTaskId ? '-' + examIndex : ''}`, exam.announced, `Aviso al alumnado del examen${exam.title ? ' ' + exam.title : ''} de la sesión ${session.number}, ${dateInfo(session.date).full}`, checked => setExamAnnouncement(draft, exam, checked)));
+    }
     }
   }
   return controls;
@@ -517,7 +519,7 @@ function makeTeachingControls(session, sessionIndex) {
 function makeExamReminder(exam) {
   const reminder = node('div', 'exam-reminder');
   reminder.setAttribute('role', 'note');
-  const label = `Avisar del examen · ${exam.source.entry.unitCode} · ${dateInfo(exam.date).full}`;
+  const label = `Avisar del examen · ${exam.code ? exam.code + ' ' + exam.title : exam.source.entry.unitCode} · ${dateInfo(exam.date).full}`;
   const details = node('div', 'exam-reminder-text');
   details.append(node('strong', '', label));
   const explanation = exam.shortfall
@@ -527,7 +529,7 @@ function makeExamReminder(exam) {
   reminder.append(details);
   const action = node('button', 'button button-small', exam.source.entry.path === activeEntry.path ? 'Marcar avisado' : `Marcar avisado en ${exam.source.entry.unitCode}`);
   action.type = 'button'; action.disabled = busy;
-  action.setAttribute('aria-label', `Marcar avisado el examen de ${exam.source.entry.unitCode} del ${exam.date}`);
+  action.setAttribute('aria-label', `Marcar avisado el examen ${exam.code ? exam.code + ' ' + exam.title + ' ' : ''}de ${exam.source.entry.unitCode} del ${exam.date}`);
   action.addEventListener('click', () => markExamReminder(exam));
   reminder.append(action);
   return reminder;
@@ -547,11 +549,10 @@ async function markExamReminder(exam) {
     } finally { setBusy(false); }
     if (activeEntry.path !== exam.source.entry.path) return;
   }
-  const session = draft.sessions.find(item => item.id === exam.id);
-  if (!session || session.date !== exam.date || !eventTypes(session, draft).includes('exam') || ['Cancelada', 'Reprogramada'].includes(session.state)) {
+  if (!setExamAnnouncement(copy(draft), exam, true)) {
     message('workspace-message', 'La planificación del examen ha cambiado. Revisa la sesión antes de confirmar el aviso.', 'warning'); return;
   }
-  changeTeaching(() => { session.examAnnouncedFor = session.date; });
+  changeTeaching(() => setExamAnnouncement(draft, exam, true));
   message('workspace-message', 'Aviso marcado en el borrador del examen. Pulsa Guardar cambios para conservarlo.');
 }
 
@@ -1025,7 +1026,10 @@ const presentationUI = createTaskPresentationUI({
   onClose(focusId) { if (draft) renderSessions(); if (focusId) $(focusId)?.focus({ preventScroll: true }); }
 });
 const registryUI = createTaskRegistryUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState,
-  canOpen() {
+  canOpen(task) {
+    if (libraryIntegrity([...libraryRecords(), ...registryUI.records()]).some(issue => issue.code === 'DUPLICATE_TASK' && issue.moduleCode === task.entry.moduleCode && issue.taskId === (task.officialTaskId || task.registryTaskId))) {
+      message('workspace-message', 'Esta tarea aparece en más de un documento. Revisa su conciliación antes de editarla.', 'warning'); return false;
+    }
     if ($('editor').open || presentationUI.isOpen() || generalNotesUI.isOpen() || generalNotesUI.hasPending() || $('suggestions-dialog').open) {
       message('workspace-message', 'Cierra el editor abierto antes de editar otra tarea.', 'warning'); return false;
     }
@@ -1073,7 +1077,7 @@ const generalNotesUI = createGeneralNotesUI({
   },
 });
 const moduleViews = createModuleViews({
-  getState: () => ({ module: catalog?.modules.find(item => item.code === activeEntry?.moduleCode), records: moduleRecords(), allRecords: libraryRecords(), taskRecords: [...libraryRecords(), ...registryUI.records()], registryFailures: registryUI.failures(), catalog, failures: moduleFailures(), allFailures: moduleLoadFailures, errors: teachingTimeline.errors, ready: moduleContextReady, today: madridToday(), activePath: activeEntry?.path, busy }),
+  getState: () => ({ module: catalog?.modules.find(item => item.code === activeEntry?.moduleCode), records: moduleRecords(), allRecords: libraryRecords(), taskRecords: [...libraryRecords(), ...registryUI.records()], integrityIssues: libraryIntegrity([...libraryRecords(), ...registryUI.records()]), registryFailures: registryUI.failures(), catalog, failures: moduleFailures(), allFailures: moduleLoadFailures, errors: teachingTimeline.errors, ready: moduleContextReady, today: madridToday(), activePath: activeEntry?.path, busy }),
   onOpen: (path, sessionId) => openModuleSource(path, sessionId),
   onEdit: task => registryUI.open(task),
   onCorrected: correctTask, onPresented: presentTask, onRetry: retryExamContext,

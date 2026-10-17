@@ -1,5 +1,5 @@
 /** Teaching flags are independent of delivery, activity progress and preparation. */
-import { hasTaskPlan, plannedSessionTasks, visibleSessionTasks } from './task-plan.mjs?v=20261017-4';
+import { hasTaskPlan, plannedSessionTasks, visibleSessionTasks } from './task-plan.mjs?v=20261017-5';
 const types = ['task', 'exam'];
 const excluded = new Set(['Cancelada', 'Reprogramada']);
 
@@ -71,6 +71,11 @@ export function moduleTimeline(records, moduleCode) {
     if (group.sources.some(source => source.session.date !== group.date)) errors.push('Un mismo identificador de sesión tiene fechas distintas.');
     const states = new Set(group.sources.map(source => excluded.has(source.session.state)));
     if (states.size > 1) errors.push('Una sesión compartida tiene estados incompatibles entre unidades.');
+    if (group.sources.some(source => source.document.schemaVersion === 3)) {
+      if (new Set(group.sources.map(source => source.session.state).filter(Boolean)).size > 1) errors.push('Una sesión compartida tiene estados de impartición distintos.');
+      const intervals = group.sources.flatMap(source => source.session.activities.map(activity => ({ start: activity.start, end: activity.end }))).sort((a, b) => a.start.localeCompare(b.start));
+      if (intervals.some((interval, n) => n > 0 && interval.start < intervals[n - 1].end)) errors.push('Las porciones de una sesión compartida se solapan entre unidades.');
+    }
     group.excluded = states.has(true);
     group.start = group.sources.map(source => source.session.activities[0].start).sort()[0];
   }
@@ -82,17 +87,37 @@ export function moduleTimeline(records, moduleCode) {
     const candidates = group.sources.filter(source => eventTypes(source.session, source.document).includes('exam'))
       .sort((a, b) => a.entry.path.localeCompare(b.entry.path) || a.sessionIndex - b.sessionIndex);
     if (!candidates.length) return;
-    const source = candidates[0];
     const dueIndex = Math.max(0, index - 3);
-    exams.push({
-      id: group.id, date: group.date, index, source, dueIndex,
-      due: sessions[dueIndex], shortfall: index < 3,
-      availableBefore: index,
-      announced: source.session.examAnnouncedFor === group.date,
-      changedDate: Boolean(source.session.examAnnouncedFor && source.session.examAnnouncedFor !== group.date),
-    });
+    const official = candidates.flatMap(source => source.document.schemaVersion === 3
+      ? plannedSessionTasks(source.session, source.document).filter(task => task.type === 'exam').map(task => ({ source, task })) : []);
+    const targets = official.length ? official : [{ source: candidates[0] }];
+    for (const { source, task } of targets) {
+      const previous = task ? task.announcement?.examDate : source.session.examAnnouncedFor;
+      exams.push({
+        id: task?.id || group.id, sessionId: group.id, officialTaskId: task?.id, title: task?.title, code: task?.code,
+        date: group.date, index, source, dueIndex, due: sessions[dueIndex], shortfall: index < 3,
+        availableBefore: index, announced: previous === group.date, changedDate: Boolean(previous && previous !== group.date),
+      });
+    }
   });
   return { sessions, exams, errors };
+}
+
+export function setExamAnnouncement(document, exam, enabled) {
+  const session = document.sessions.find(session => session.id === (exam.sessionId || exam.id));
+  if (!session || session.date !== exam.date || excluded.has(session.state) || !eventTypes(session, document).includes('exam')) return false;
+  if (exam.officialTaskId) {
+    const task = document.tasks?.find(task => task.id === exam.officialTaskId && task.type === 'exam' && task.presentation?.sessionId === session.id);
+    if (!task) return false;
+    if (enabled) task.announcement = { ...task.announcement, examDate: session.date };
+    else {
+      const metadata = { ...task.announcement }; delete metadata.examDate;
+      if (Object.keys(metadata).length) task.announcement = metadata; else delete task.announcement;
+    }
+  } else {
+    if (enabled) session.examAnnouncedFor = session.date; else delete session.examAnnouncedFor;
+  }
+  return true;
 }
 
 /** Each reminder appears once in a unit: at its threshold session, or above it. */
