@@ -1,7 +1,7 @@
-import { moduleOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261017-3';
-import { eventTypes } from './teaching.mjs?v=20261017-3';
-import { taskStates } from './task-cycle.mjs?v=20261017-3';
-import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261017-3';
+import { moduleOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261017-4';
+import { eventTypes } from './teaching.mjs?v=20261017-4';
+import { taskStates } from './task-cycle.mjs?v=20261017-4';
+import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261017-4';
 
 const $ = id => document.getElementById(id);
 function el(tag, className, text) {
@@ -22,6 +22,25 @@ function monthName(month) {
 
 export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPresented, onRetry }) {
   let filterModule = '';
+
+  function capturePosition() {
+    const rows = [...$('tasks-list').querySelectorAll('[data-task-key]')];
+    const anchor = rows.find(row => row.getBoundingClientRect().bottom > 0);
+    const focused = document.activeElement;
+    return { x: window.scrollX, y: window.scrollY, anchor: anchor?.dataset.taskKey, top: anchor?.getBoundingClientRect().top,
+      focusKey: focused?.closest('[data-task-key]')?.dataset.taskKey, action: focused?.dataset.taskAction };
+  }
+  function restorePosition(position, focus = true) {
+    if (!position) return;
+    const rows = [...$('tasks-list').querySelectorAll('[data-task-key]')];
+    const anchor = rows.find(row => row.dataset.taskKey === position.anchor);
+    if (focus && position.focusKey) {
+      const row = rows.find(row => row.dataset.taskKey === position.focusKey);
+      const control = [...(row?.querySelectorAll('[data-task-action]') ?? [])].find(control => control.dataset.taskAction === position.action);
+      (control ?? $('tasks-status')).focus({ preventScroll: true });
+    }
+    window.scrollTo({ left: position.x, top: anchor ? window.scrollY + anchor.getBoundingClientRect().top - position.top : position.y, behavior: 'instant' });
+  }
 
   function render() {
     const { module, records, allRecords, taskRecords, registryFailures, catalog, failures, allFailures, errors, ready, today, activePath, busy } = getState();
@@ -102,6 +121,7 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
       const heading = taskHeading(task.entry.moduleCode, task.code, task.title);
       const row = el('article', `task-row task-compact${task.type === 'exam' ? ' is-exam' : ''}${task.corrected ? ' is-corrected' : overdue ? ' is-overdue' : task.presented ? ' is-presented' : ''}`); row.setAttribute('aria-label', heading);
       row.title = `${task.type === 'exam' ? 'Examen' : 'Tarea'} · ${taskStates[task.status]} · ${task.entry.moduleCode} · ${task.entry.unitCode}${task.registryTaskId ? ' · Registro histórico sin sesiones importadas' : ' · Sesión ' + task.number} · ${shortDate(task.date)} · Entrega: ${shortDate(task.dueOn)}${task.state ? ' · ' + task.state : ''}`;
+      row.dataset.taskKey = task.key;
       const title = el('div', 'task-name');
       const source = el('span', 'task-source', `${task.entry.moduleCode} · ${task.code || 'Sin código'} ·`);
       source.title = task.code ? `Módulo ${task.entry.moduleCode} · ${task.type === 'exam' ? 'Examen' : 'Tarea'} ${task.code}` : 'Equivalencia y código oficial pendientes de confirmar; se conserva el título anterior.';
@@ -117,6 +137,7 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
         const confirmation = el('label', 'task-toggle'); const checkbox = el('input'); checkbox.type = 'checkbox'; checkbox.checked = selected;
         checkbox.setAttribute('aria-label', `${label}: ${task.entry.moduleCode} · ${task.entry.unitCode} · ${task.title}`);
         confirmation.title = `${label} · ${taskStates[task.status]}`;
+        checkbox.dataset.taskAction = letter;
         checkbox.addEventListener('change', () => { const checked = checkbox.checked; checkbox.checked = selected; action(task, checked); });
         const symbol = el('span', '', letter); symbol.setAttribute('aria-hidden', 'true'); confirmation.append(checkbox, symbol);
         const value = el('time', 'task-inline-date', date ? `${date.slice(8)}/${date.slice(5, 7)}` : '—'); if (date) value.dateTime = date;
@@ -124,6 +145,7 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
         value.setAttribute('aria-label', value.title); control.append(confirmation, value); row.append(control);
       }
       const edit = el('button', 'button button-small task-edit', '✎'); edit.type = 'button'; edit.title = 'Editar tarea'; edit.setAttribute('aria-label', `Editar tarea de ${task.entry.moduleCode} · ${task.entry.unitCode}${task.number === null ? '' : ', sesión ' + task.number}: ${task.title}`);
+      edit.dataset.taskAction = 'edit';
       edit.addEventListener('click', () => onEdit(task)); row.append(edit); list.append(row);
     }
     if (!visible.length) list.append(el('p', 'empty-sessions', tasks.length ? 'No hay tareas con estos filtros.' : 'No hay tareas disponibles en los documentos leídos. Las nuevas aparecerán al cerrar su UT en el proyecto.'));
@@ -132,7 +154,7 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
 
   ['overview-month', 'tasks-module', 'tasks-unit', 'tasks-status'].forEach(id => $(id).addEventListener('change', render));
   $('retry-tasks').addEventListener('click', onRetry);
-  return { render, clear() {
+  return { render, capturePosition, restorePosition, clear() {
     filterModule = ''; $('module-grid').replaceChildren(); $('tasks-list').replaceChildren();
     for (const id of ['module-scope', 'tasks-scope', 'tasks-count']) $(id).textContent = '';
     for (const id of ['overview-month', 'tasks-module', 'tasks-unit']) $(id).replaceChildren();

@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261017-3">
-  <script type="module" src="./app.mjs?v=20261017-3"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261017-4">
+  <script type="module" src="./app.mjs?v=20261017-4"></script>
 </head>
 <body>
   <header class="topbar">
@@ -80,7 +80,7 @@
         <section id="tasks-view" aria-label="Gestor de tareas" hidden>
           <div class="module-view-toolbar"><label class="visually-hidden" for="tasks-module">Módulo</label><select id="tasks-module"></select><label class="visually-hidden" for="tasks-unit">Unidad</label><select id="tasks-unit"></select><label class="visually-hidden" for="tasks-status">Mostrar</label><select id="tasks-status"><option value="all">Todos</option><option value="planned">Planificadas · por presentar</option><option value="presented">Presentadas</option><option value="to-correct">Por corregir</option><option value="corrected">Corregidas</option></select><span id="tasks-count" class="scope-note"></span><button id="retry-tasks" type="button" class="button button-small">Actualizar tareas</button></div>
           <p id="tasks-scope" class="scope-note"></p>
-          <p class="scope-note">UT incorporada: Guardar cambios. Tarea histórica: Guardar tarea en su diálogo. Por corregir: presentada y con fecha Corregir llegada.</p>
+          <p class="scope-note">P, C o lápiz → Guardar tarea. No cambia la unidad abierta ni guarda sus notas pendientes.</p>
           <div id="tasks-list" class="tasks-list"></div>
         </section>
         <footer class="workspace-footer"><span id="loaded-version"></span><span>Planificación de solo lectura · No modifica Excel ni Calendar · Guardado explícito</span></footer>
@@ -112,7 +112,7 @@
   <dialog id="registry-dialog" class="suggestions-dialog" aria-labelledby="registry-title">
     <form id="registry-form" class="suggestions-form">
       <header class="suggestions-header"><h2 id="registry-title"></h2></header>
-      <div class="suggestions-content"><p class="field-help">Tarea histórica de una UT aún sin sesiones importadas. Su seguimiento se guarda en el registro de tareas del módulo, sin modificar ningún Excel.</p>
+      <div class="suggestions-content"><p class="field-help">Guardar tarea conserva solo este seguimiento. No guarda las notas pendientes ni cambia la unidad abierta.</p>
         <div class="task-date-inputs"><label>Presentada<input id="registry-presentedOn" type="date"></label><label>Entrega<input id="registry-dueOn" type="date"></label><label>Corregir<input id="registry-correctBy" type="date"></label></div>
         <div class="task-editor-checks"><label><input id="registry-presented" type="checkbox">Presentada</label><label><input id="registry-corrected" type="checkbox">Corregida</label></div>
         <p id="registry-message" class="message" role="status" hidden></p><div class="suggestions-recovery"><button id="registry-reload" type="button" class="button">Revisar GitHub</button><button id="registry-download" type="button" class="button">Descargar borrador</button></div>

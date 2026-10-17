@@ -1,17 +1,18 @@
-import { TaskRegistryStore } from './general-notes.mjs?v=20261017-3';
-import { taskDateFields, taskDetails, applyTaskDetails } from './module-views.mjs?v=20261017-3';
-import { presentationDefaults } from './task-cycle.mjs?v=20261017-3';
-import { taskHeading } from './task-plan.mjs?v=20261017-3';
-import { saveErrorFeedback, isValidDate } from './core.mjs?v=20261017-3';
+import { TaskRegistryStore } from './general-notes.mjs?v=20261017-4';
+import { taskDateFields, taskDetails } from './module-views.mjs?v=20261017-4';
+import { TaskEditError, taskEditTarget, taskEditSnapshot, assertTaskRead, prepareTaskSave, saveTaskDocument } from './task-edit.mjs?v=20261017-4';
+import { presentationDefaults } from './task-cycle.mjs?v=20261017-4';
+import { taskHeading } from './task-plan.mjs?v=20261017-4';
+import { saveErrorFeedback, isValidDate } from './core.mjs?v=20261017-4';
 
 const $ = id => document.getElementById(id);
 
-/** Historic tasks have their own versioned module file, not fabricated sessions. */
-export function createTaskRegistryUI({ isBusy, setBusy, canOpen, onChange, onStateChange }) {
-  let token = null, current = null, loaded = null, blocked = false;
+/** One independent editor for official, legacy and historic tasks. */
+export function createTaskRegistryUI({ isBusy, setBusy, canOpen, onChange, onStateChange, unitStore, getActive, onSaved, onBlocked, capturePosition, restorePosition }) {
+  let token = null, current = null, loaded = null, blocked = false, sourceStore = null, position = null;
   const stores = new Map(), records = new Map(); let failures = [];
   const readForm = () => ({ ...Object.fromEntries(taskDateFields.map(field => [field, $('registry-' + field).value])), presented: $('registry-presented').checked, corrected: $('registry-corrected').checked });
-  const target = () => loaded?.document.tasks.find(task => task.id === current?.registryTaskId);
+  const target = () => loaded && current ? taskEditTarget(loaded.document, current) : null;
   const pending = () => Boolean(loaded && (blocked || JSON.stringify(readForm()) !== JSON.stringify(taskDetails(target()))));
   function message(value = '', kind = '') { $('registry-message').textContent = value; $('registry-message').className = 'message ' + kind; $('registry-message').hidden = !value; }
   function availability() {
@@ -40,27 +41,42 @@ export function createTaskRegistryUI({ isBusy, setBusy, canOpen, onChange, onSta
     availability(); onStateChange();
   }
   function close() {
-    if (isBusy() || (pending() && !window.confirm('Hay cambios sin guardar en esta tarea histórica. ¿Descartarlos y cerrar?'))) return;
-    clear(); onStateChange();
+    if (isBusy() || (pending() && !window.confirm('Hay cambios sin guardar en esta tarea. ¿Descartarlos y cerrar?'))) return;
+    const previous = position; clear(); onStateChange(); restorePosition(previous);
   }
   function clear() {
-    current = null; loaded = null; blocked = false;
+    current = null; loaded = null; blocked = false; sourceStore = null; position = null;
     $('registry-dialog').close(); $('registry-title').textContent = '';
     taskDateFields.forEach(field => { $('registry-' + field).value = ''; });
     $('registry-presented').checked = false; $('registry-corrected').checked = false; message();
   }
-  async function open(task, action, value) {
-    if (isBusy() || !token || !canOpen()) return;
+  function remember(task, result) {
+    if (task.registryTaskId) records.set(task.entry.moduleCode, { entry: { moduleCode: task.entry.moduleCode, path: task.entry.path }, document: result.document, registry: true });
+  }
+  async function open(task, action, value, reloading = false) {
+    if (isBusy() || !token || (!reloading && ($('registry-dialog').open || !canOpen()))) return;
+    if (!reloading) position = capturePosition();
     setBusy(true);
     try {
-      const result = await storeFor(task.entry.moduleCode).load();
-      if (!result.document.tasks.some(item => item.id === task.registryTaskId)) throw new Error();
+      const candidate = task.registryTaskId ? storeFor(task.entry.moduleCode) : unitStore(task.entry);
+      const result = await candidate.load();
+      assertTaskRead(result, task, getActive());
+      sourceStore = candidate;
       loaded = result; current = task; blocked = false; fill();
-      records.set(task.entry.moduleCode, { entry: { moduleCode: task.entry.moduleCode, path: task.entry.path }, document: result.document, registry: true });
-      const item = target(); $('registry-title').textContent = taskHeading(task.entry.moduleCode, item.code, item.title);
+      remember(task, result);
+      const item = target(); $('registry-title').textContent = taskHeading(task.entry.moduleCode, item.code || task.code, item.title || task.title);
       if (action) $(action === 'presented' ? 'registry-presented' : 'registry-corrected').checked = value;
-      defaults(); message(); $('registry-dialog').showModal(); onChange();
-    } catch { onChange('No se ha podido leer la tarea histórica. No se ha cambiado ningún dato.', 'error'); }
+      defaults(); message();
+      const active = getActive();
+      if (active?.path === task.entry.path && JSON.stringify(taskDetails(taskEditTarget(active.draft, task))) !== JSON.stringify(taskDetails(item))) {
+        message('Esta tarea también tiene cambios pendientes en Unidad. Aquí se muestra lo guardado en GitHub; no se sustituirán esos cambios silenciosamente.', 'warning');
+      }
+      if (!$('registry-dialog').open) $('registry-dialog').showModal();
+    } catch (error) {
+      if (error.code === 'TASK_UNIT_STALE') onBlocked(task, error);
+      const text = error instanceof TaskEditError ? error.message : 'No se ha podido leer la tarea. No se ha cambiado ningún dato. Se conserva cualquier borrador anterior.';
+      if (reloading) message(text, 'error'); else { onChange(text, 'error'); restorePosition(position); }
+    }
     finally { setBusy(false); availability(); onStateChange(); }
   }
   $('registry-form').addEventListener('submit', async event => {
@@ -69,27 +85,33 @@ export function createTaskRegistryUI({ isBusy, setBusy, canOpen, onChange, onSta
       const input = $('registry-' + field); input.setCustomValidity(input.value && !isValidDate(input.value) ? 'Indica una fecha válida.' : '');
       if (!input.reportValidity()) return;
     }
-    const snapshot = structuredClone(loaded.document);
-    applyTaskDetails(snapshot.tasks.find(task => task.id === current.registryTaskId), readForm());
     setBusy(true);
     try {
-      loaded = await storeFor(current.entry.moduleCode).save(snapshot, loaded.sha);
-      records.set(current.entry.moduleCode, { entry: { moduleCode: current.entry.moduleCode, path: current.entry.path }, document: loaded.document, registry: true });
+      const prepared = prepareTaskSave(loaded, current, readForm(), getActive());
+      const result = await saveTaskDocument(sourceStore, prepared, current, loaded.sha);
+      onSaved(current, result, prepared);
+      loaded = result; remember(current, result);
       fill(); message('Tarea guardada y confirmada en GitHub.'); onChange();
     } catch (error) {
-      const feedback = saveErrorFeedback(error); blocked = feedback.requiresReload || error.code === 'HTTP_422';
-      message(feedback.message + ' [' + feedback.code + ']', feedback.kind);
+      if (error instanceof TaskEditError) {
+        message(error.message, 'warning');
+        if (error.code === 'TASK_UNIT_STALE') { blocked = true; onBlocked(current, error); }
+      } else {
+        const feedback = saveErrorFeedback(error); blocked = feedback.requiresReload || error.code === 'HTTP_422';
+        if (blocked) onBlocked(current, error);
+        message(feedback.message + ' [' + feedback.code + ']', feedback.kind);
+      }
     } finally { setBusy(false); availability(); onStateChange(); }
   });
   $('registry-reload').addEventListener('click', async () => {
     if (!current || isBusy() || (pending() && !window.confirm('Descarga el borrador si quieres conservarlo. ¿Descartarlo y leer la versión actual de GitHub?'))) return;
-    const task = current; loaded = null; blocked = false; await open(task);
+    await open(current, undefined, undefined, true);
   });
   $('registry-download').addEventListener('click', () => {
     if (!loaded || isBusy()) return;
-    const doc = structuredClone(loaded.document); applyTaskDetails(doc.tasks.find(task => task.id === current.registryTaskId), readForm());
+    const doc = taskEditSnapshot(loaded, current, readForm()).document;
     const url = URL.createObjectURL(new Blob([JSON.stringify(doc, null, 2) + '\n'], { type: 'application/json;charset=utf-8' }));
-    const link = document.createElement('a'); link.href = url; link.download = current.entry.moduleCode + '-tareas-borrador.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const link = document.createElement('a'); link.href = url; link.download = current.entry.moduleCode + '-' + (current.registryTaskId ? 'tareas' : current.entry.unitCode) + '-borrador-tarea.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
   $('registry-close').addEventListener('click', close);
   $('registry-dialog').addEventListener('cancel', event => { event.preventDefault(); close(); });

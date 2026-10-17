@@ -1,5 +1,5 @@
-import { eventTypes } from './teaching.mjs?v=20261017-3';
-import { timeToMinutes } from './core.mjs?v=20261017-3';
+import { eventTypes } from './teaching.mjs?v=20261017-4';
+import { timeToMinutes } from './core.mjs?v=20261017-4';
 
 /** Presentation helpers. Codes, titles, dates and academic states remain unchanged. */
 export function compactUnitLabel(unit) {

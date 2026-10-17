@@ -1,14 +1,14 @@
-import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261017-3';
+import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261017-4';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261016-1';
-import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261017-3';
-import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261017-3';
-import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders } from './teaching.mjs?v=20261017-3';
-import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks, resolveTaskTarget } from './module-views.mjs?v=20261017-3';
-import { createModuleViews } from './module-views-ui.mjs?v=20261017-3';
-import { presentationTargets, presentationDefaults, applyPresentation, setTaskCorrected } from './task-cycle.mjs?v=20261017-3';
-import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261017-3';
-import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261017-3';
-import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261017-3';
+import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261017-4';
+import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261017-4';
+import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders } from './teaching.mjs?v=20261017-4';
+import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261017-4';
+import { createModuleViews } from './module-views-ui.mjs?v=20261017-4';
+import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261017-4';
+import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261017-4';
+import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261017-4';
+import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261017-4';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -36,7 +36,7 @@ let editorTarget = null;
 let lastConfirmedAt = null;
 let currentView = 'unit';
 
-// The cache contains all catalog modules. Only the active UT is editable.
+// Unit draft and independent task transactions share confirmed source snapshots.
 function libraryRecords() { return draft ? [...moduleDocuments.values(), { entry: activeEntry, document: draft }] : []; }
 function moduleRecords() { return libraryRecords().filter(record => record.entry.moduleCode === activeEntry?.moduleCode); }
 function moduleFailures() { return moduleLoadFailures.filter(entry => entry.moduleCode === activeEntry?.moduleCode).map(entry => entry.unitCode); }
@@ -241,15 +241,9 @@ async function ensureSourceUnit(path) {
   return true;
 }
 
-async function openModuleSource(path, sessionId, activityId, editTask = false, taskKey) {
+async function openModuleSource(path, sessionId) {
   if (!await ensureSourceUnit(path)) return;
   const index = sessionId ? draft.sessions.findIndex(session => session.id === sessionId) : -1;
-  if (editTask) {
-    const task = moduleTasks([{ entry: activeEntry, document: draft }], activeEntry.moduleCode)
-      .find(item => taskKey ? item.key === taskKey : item.sessionId === sessionId && item.activityId === activityId);
-    if (!task) { message('workspace-message', 'La tarea ha cambiado desde la lectura del módulo. Revisa la planificación actual.', 'warning'); return; }
-    openEditor(task.sessionIndex, task.activityIndex, 'task', task.officialTaskId);
-  } else {
     selectWorkspaceView('unit');
     if (index >= 0) {
       openSessions.add(sessionId); renderSessions();
@@ -257,18 +251,10 @@ async function openModuleSource(path, sessionId, activityId, editTask = false, t
       section?.scrollIntoView({ block: 'start', behavior: 'instant' });
       section?.querySelector('.session-title')?.focus({ preventScroll: true });
     }
-  }
 }
 
 async function correctTask(task, value) {
-  if (task.registryTaskId) { await registryUI.open(task, 'corrected', value); return; }
-  if (!await ensureSourceUnit(task.entry.path)) { moduleViews.render(); return; }
-  const current = moduleTasks([{ entry: activeEntry, document: draft }]).find(item => item.key === task.key);
-  if (!current) { message('workspace-message', 'La tarea ha cambiado. Revisa su UT antes de confirmar la corrección.', 'warning'); moduleViews.render(); return; }
-  const target = resolveTaskTarget(draft, current);
-  if (!target) return;
-  changeTeaching(() => setTaskCorrected(target, value));
-  message('workspace-message', `Corrección ${value ? 'marcada' : 'desmarcada'} en el borrador de ${activeEntry.moduleCode} · ${activeEntry.unitCode}. Pulsa Guardar cambios.`);
+  await registryUI.open(task, 'corrected', value);
 }
 
 function selectWorkspaceView(view) {
@@ -486,11 +472,7 @@ function requestPresentation(sessionIndex, value, activityId, focusId, officialT
 }
 
 async function presentTask(task, value) {
-  if (task.registryTaskId) { await registryUI.open(task, 'presented', value); return; }
-  if (!await ensureSourceUnit(task.entry.path)) { moduleViews.render(); return; }
-  const current = moduleTasks([{ entry: activeEntry, document: draft }]).find(item => item.key === task.key);
-  if (!current) { message('workspace-message', 'La tarea ha cambiado. Revisa su UT.', 'warning'); return; }
-  requestPresentation(current.sessionIndex, value, current.sessionOnly || current.officialTaskId ? undefined : current.activityId, undefined, current.officialTaskId);
+  await registryUI.open(task, 'presented', value);
 }
 
 function makeTeachingControls(session, sessionIndex) {
@@ -833,7 +815,7 @@ function disconnect() {
 }
 
 async function refresh() {
-  if (busy || !store || $('editor').open || presentationUI.isOpen()) return;
+  if (busy || !store || $('editor').open || presentationUI.isOpen() || registryUI.isOpen()) return;
   if (dirty() && !window.confirm('Actualizar descartará el borrador y cargará la versión de GitHub. Descarga primero el borrador si quieres conservarlo. ¿Continuar?')) return;
   setBusy(true);
   message('workspace-message', 'Leyendo de nuevo la versión de GitHub…');
@@ -849,7 +831,7 @@ async function refresh() {
 }
 
 async function save() {
-  if (busy || !store || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen()) return;
+  if (busy || !store || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen() || registryUI.isOpen()) return;
   const errors = validateDocument(draft, activeEntry);
   if (!Array.isArray(errors) || errors.length) {
     failedSave = true;
@@ -1044,12 +1026,40 @@ const presentationUI = createTaskPresentationUI({
 });
 const registryUI = createTaskRegistryUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState,
   canOpen() {
-    if (dirty() || blockedSave || $('editor').open || presentationUI.isOpen() || generalNotesUI.isOpen() || generalNotesUI.hasPending() || $('suggestions-dialog').open) {
-      message('workspace-message', 'Guarda o revisa el borrador abierto antes de editar una tarea histórica.', 'warning'); return false;
+    if ($('editor').open || presentationUI.isOpen() || generalNotesUI.isOpen() || generalNotesUI.hasPending() || $('suggestions-dialog').open) {
+      message('workspace-message', 'Cierra el editor abierto antes de editar otra tarea.', 'warning'); return false;
     }
     return true;
   },
-  onChange(content, kind) { if (draft) renderSessions(); if (content) message('workspace-message', content, kind); }
+  getActive: () => activeEntry && ({ path: activeEntry.path, sha: originalSha, savedDocument, draft, blocked: blockedSave }),
+  unitStore(entry) {
+    const candidate = documentStores.get(entry.path) ?? connection.forDocument(entry);
+    documentStores.set(entry.path, candidate); return candidate;
+  },
+  onSaved(task, result, prepared) {
+    if (task.registryTaskId) return;
+    if (task.entry.path === activeEntry?.path) {
+      savedDocument = copy(result.document); originalSha = result.sha;
+      draft = prepared.unitDraft; failedSave = false; lastConfirmedAt = confirmationTime();
+      $('loaded-version').textContent = `Versión leída: ${originalSha.slice(0, 8)} · Comprobada a las ${lastConfirmedAt}`;
+    } else {
+      moduleDocuments.set(task.entry.path, { entry: task.entry, document: result.document });
+      moduleLoadFailures = moduleLoadFailures.filter(entry => entry.path !== task.entry.path);
+    }
+  },
+  onBlocked(task) {
+    if (task.entry.path === activeEntry?.path) {
+      blockedSave = true;
+      message('workspace-message', 'Revisa la versión de esta unidad antes de guardar. Sus notas pendientes se conservan; puedes descargar el borrador.', 'warning');
+    }
+  },
+  capturePosition: () => moduleViews.capturePosition(), restorePosition: position => moduleViews.restorePosition(position),
+  onChange(content, kind) {
+    const position = moduleViews.capturePosition();
+    if (draft) renderSessions();
+    moduleViews.restorePosition(position, false);
+    if (content) message('workspace-message', content, kind);
+  }
 });
 const suggestionsUI = createSuggestionsUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState, isAcademicEditorOpen: () => $('editor').open || presentationUI.isOpen() || registryUI.isOpen() || generalNotesUI.isOpen() });
 const generalNotesUI = createGeneralNotesUI({
@@ -1065,7 +1075,7 @@ const generalNotesUI = createGeneralNotesUI({
 const moduleViews = createModuleViews({
   getState: () => ({ module: catalog?.modules.find(item => item.code === activeEntry?.moduleCode), records: moduleRecords(), allRecords: libraryRecords(), taskRecords: [...libraryRecords(), ...registryUI.records()], registryFailures: registryUI.failures(), catalog, failures: moduleFailures(), allFailures: moduleLoadFailures, errors: teachingTimeline.errors, ready: moduleContextReady, today: madridToday(), activePath: activeEntry?.path, busy }),
   onOpen: (path, sessionId) => openModuleSource(path, sessionId),
-  onEdit: task => task.registryTaskId ? registryUI.open(task) : openModuleSource(task.entry.path, task.sessionId, task.activityId, true, task.key),
+  onEdit: task => registryUI.open(task),
   onCorrected: correctTask, onPresented: presentTask, onRetry: retryExamContext,
 });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && draft) { renderSessionBand(); moduleViews.render(); } });
