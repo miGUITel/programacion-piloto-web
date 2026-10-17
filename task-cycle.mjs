@@ -1,6 +1,6 @@
-import { isValidDate } from './core.mjs?v=20261017-2';
-import { eventTypes } from './teaching.mjs?v=20261016-4';
-import { madridToday } from './unit-tools.mjs?v=20261017-1';
+import { isValidDate } from './core.mjs?v=20261017-3';
+import { sessionTaskTargets } from './teaching.mjs?v=20261017-3';
+import { madridToday } from './unit-tools.mjs?v=20261017-3';
 
 export const taskStates = Object.freeze({ planned: 'Planificada', presented: 'Presentada', 'to-correct': 'Por corregir', corrected: 'Corregida' });
 
@@ -11,23 +11,26 @@ export function taskState(details, today = madridToday()) {
   return isValidDate(details.correctBy) && details.correctBy <= today ? 'to-correct' : 'presented';
 }
 
-export function presentationTargets(session, activityId) {
-  if (!eventTypes(session).includes('task')) return [];
-  const typed = session.activities.filter(activity => activity.eventType === 'task');
-  const targets = typed.length ? typed : [session];
-  return targets.filter(target => !target.taskPresented && (!activityId || target.id === activityId || (target === session && session.activities[0].id === activityId)));
+export function presentationTargets(session, activityId, document) {
+  return sessionTaskTargets(session, document).filter(target => !target.taskPresented && (!activityId || target.id === activityId || target.presentation?.activityId === activityId || (target === session && session.activities[0].id === activityId)));
+}
+
+export function presentationDefaults(target, today = madridToday()) {
+  const task = target?.task ?? {};
+  const empty = !task.presentedOn && !task.dueOn && !task.correctBy;
+  return { presentedOn: task.presentedOn || today, dueOn: task.dueOn || (empty ? today : ''), correctBy: task.correctBy || (empty ? today : '') };
 }
 
 /** Validate the whole batch first, so cancel/invalid dates cannot partly present a session. */
-export function applyPresentation(session, values, today = madridToday()) {
+export function applyPresentation(session, values, today = madridToday(), document) {
   if (!isValidDate(today)) return false;
   if (!values.length || new Set(values.map(value => value.id)).size !== values.length) return false;
-  const targets = presentationTargets(session);
+  const targets = presentationTargets(session, undefined, document);
   const matched = values.map(value => targets.find(target => target.id === value.id));
-  if (matched.some(target => !target) || values.some(value => !isValidDate(value.dueOn) || !isValidDate(value.correctBy))) return false;
+  if (matched.some(target => !target) || values.some(value => !isValidDate(value.dueOn) || !isValidDate(value.correctBy) || (Object.hasOwn(value, 'presentedOn') && !isValidDate(value.presentedOn)))) return false;
   values.forEach((value, index) => {
     const target = matched[index];
-    target.task = { ...target.task, dueOn: value.dueOn, correctBy: value.correctBy, presentedOn: today };
+    target.task = { ...target.task, dueOn: value.dueOn, correctBy: value.correctBy, presentedOn: value.presentedOn || today };
     target.taskPresented = true;
   });
   return true;

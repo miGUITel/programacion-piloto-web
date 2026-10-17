@@ -144,6 +144,7 @@ export function validateCatalog(catalog) {
     if (modules.has(module.code)) errors.push(`${prefix}.code: módulo duplicado.`);
     modules.add(module.code);
     if (!nonemptyText(module.name)) errors.push(`${prefix}.name: debe ser texto no vacío.`);
+    if (Object.hasOwn(module, 'taskRegistry') && module.taskRegistry !== `${module.code}/tasks.json`) errors.push(`${prefix}.taskRegistry: ruta de tareas del módulo no válida.`);
     if (!Array.isArray(module.units)) { errors.push(`${prefix}.units: debe ser una lista.`); return; }
     module.units.forEach((unit, unitIndex) => {
       const unitPrefix = `${prefix}.units[${unitIndex}]`;
@@ -245,10 +246,52 @@ export function validateDocument(doc, expectedEntry) {
       }
     });
   });
+  if (Object.hasOwn(doc.unit ?? {}, 'preparation') && !['draft', 'ready'].includes(doc.unit.preparation)) errors.push('unit.preparation: debe ser draft o ready.');
+  if (Object.hasOwn(doc, 'tasks')) {
+    if (!Array.isArray(doc.tasks)) errors.push('tasks: debe ser una lista.');
+    else {
+      const codes = new Set();
+      doc.tasks.forEach((task, index) => {
+        const path = `tasks[${index}]`;
+        if (!isObject(task)) { errors.push(`${path}: debe ser un objeto.`); return; }
+        checkId(task.id, `${path}.id`);
+        if (task.type !== undefined && !['task', 'exam'].includes(task.type)) errors.push(`${path}.type: debe ser task o exam.`);
+        if (!isText(task.code) || !(task.type === 'exam' ? /^\d{2}(?:\d{2})?$/ : /^\d{4}$/).test(task.code)) errors.push(`${path}.code: código oficial no válido.`);
+        if (codes.has(task.code)) errors.push(`${path}.code: código de tarea duplicado.`);
+        codes.add(task.code);
+        if (!nonemptyText(task.title)) errors.push(`${path}.title: título oficial obligatorio.`);
+        const session = doc.sessions.find(item => item?.id === task.presentation?.sessionId);
+        if (!isObject(task.presentation) || !session) errors.push(`${path}.presentation: requiere una sesión existente de esta UT.`);
+        else if (Object.hasOwn(task.presentation, 'activityId') && (!Array.isArray(session.activities) || !session.activities.some(activity => activity?.id === task.presentation.activityId))) errors.push(`${path}.presentation.activityId: debe pertenecer a la sesión indicada.`);
+        if (Object.hasOwn(task, 'taskPresented') && typeof task.taskPresented !== 'boolean') errors.push(`${path}.taskPresented: debe ser booleano.`);
+        validateTaskMetadata(task, path, errors);
+      });
+    }
+  }
   return errors;
 }
 
 /** Durations include Cabecera and exclude gaps between portions. */
+export function validateTaskRegistry(doc, moduleCode) {
+  const errors = [];
+  if (!isObject(doc) || doc.schemaVersion !== 1 || !MODULE_CODES.has(moduleCode) || doc.moduleCode !== moduleCode || !Array.isArray(doc.tasks)) return ['Registro de tareas no válido.'];
+  validateJson(doc, 'registry', errors);
+  const ids = new Set(); const identities = new Set();
+  doc.tasks.forEach((task, index) => {
+    const path = `tasks[${index}]`;
+    if (!isObject(task)) { errors.push(`${path}: debe ser un objeto.`); return; }
+    if (!nonemptyText(task.id) || ids.has(task.id)) errors.push(`${path}.id: identificador no válido o duplicado.`);
+    ids.add(task.id);
+    if (!isUnitCode(task.unitCode) || !['task', 'exam'].includes(task.type) || !nonemptyText(task.title) || !isText(task.code) || !(task.type === 'exam' ? /^\d{2}(?:\d{2})?$/ : /^\d{4}$/).test(task.code)) errors.push(`${path}: identidad de tarea no válida.`);
+    const identity = `${task.unitCode}/${task.type}/${task.code}`;
+    if (identities.has(identity)) errors.push(`${path}: código duplicado.`);
+    identities.add(identity);
+    if (Object.hasOwn(task, 'taskPresented') && typeof task.taskPresented !== 'boolean') errors.push(`${path}.taskPresented: debe ser booleano.`);
+    validateTaskMetadata(task, path, errors);
+  });
+  return errors;
+}
+
 export function summarize(doc) {
   const sessions = (Array.isArray(doc?.sessions) ? doc.sessions : []).map(session => {
     const minutes = (Array.isArray(session.activities) ? session.activities : []).reduce((sum, activity) => {

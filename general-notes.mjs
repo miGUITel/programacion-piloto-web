@@ -1,4 +1,4 @@
-import { ApiError, ConflictError, UnknownSaveError, validateCatalog, encodeUtf8Base64, decodeUtf8Base64 } from './core.mjs?v=20261016-2';
+import { ApiError, ConflictError, UnknownSaveError, validateCatalog, validateTaskRegistry, encodeUtf8Base64, decodeUtf8Base64 } from './core.mjs?v=20261017-3';
 
 const codes = new Set(['LM', 'SR', 'SOS', 'ED', 'PRO']);
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
@@ -37,10 +37,14 @@ export function withGeneralText(document, target, value) {
 
 /** One versioned file per module. No access to session documents or suggestions. */
 export class GeneralNotesStore {
+  #registry;
+  #path() { return this.#registry ? `${this.#code}/tasks.json` : generalNotesPath(this.#code); }
+  #validate(doc) { return this.#registry ? validateTaskRegistry(doc, this.#code) : validateGeneralNotes(doc, this.#code); }
   #token; #fetch; #timeout; #code; #version; #blocked = false; #queue = Promise.resolve();
-  constructor({ token, moduleCode, fetchImpl = globalThis.fetch, timeoutMs = 15000 }) {
+  constructor({ token, moduleCode, fetchImpl = globalThis.fetch, timeoutMs = 15000 }, registry = false) {
     generalNotesPath(moduleCode);
     if (!text(token) || !token.trim()) throw new ApiError('Falta la conexión.', { code: 'MISSING_TOKEN' });
+    this.#registry = registry === true;
     this.#token = token.trim(); this.#code = moduleCode; this.#fetch = fetchImpl.bind(globalThis); this.#timeout = timeoutMs;
   }
   #enqueue(operation) {
@@ -83,15 +87,15 @@ export class GeneralNotesStore {
   }
   async #load() {
     let loaded;
-    try { loaded = await this.#read(generalNotesPath(this.#code)); }
+    try { loaded = await this.#read(this.#path()); }
     catch (error) {
-      if (error.code !== 'HTTP_404') throw error;
+      if (error.code !== 'HTTP_404' || this.#registry) throw error;
       // A missing private file may conceal loss of access. Confirm the catalog first.
       const result = await this.#read('catalog.json');
       if (validateCatalog(result.document).length || !result.document.modules.some(module => module.code === this.#code)) throw new ApiError('No se pudo confirmar el acceso al módulo.', { code: 'INVALID_CATALOG' });
       loaded = { document: emptyGeneralNotes(this.#code), sha: null };
     }
-    if (validateGeneralNotes(loaded.document, this.#code).length) throw new ApiError('Registro de mejoras no válido.', { code: 'INVALID_DOCUMENT' });
+    if (this.#validate(loaded.document).length) throw new ApiError('Registro no válido.', { code: 'INVALID_DOCUMENT' });
     return loaded;
   }
   load() {
@@ -102,15 +106,15 @@ export class GeneralNotesStore {
     });
   }
   save(document, sha) {
-    if (validateGeneralNotes(document, this.#code).length) return Promise.reject(new ApiError('Revisa las mejoras antes de guardar.', { code: 'INVALID_DOCUMENT' }));
+    if (this.#validate(document).length) return Promise.reject(new ApiError('Revisa el registro antes de guardar.', { code: 'INVALID_DOCUMENT' }));
     const snapshot = structuredClone(document);
     return this.#enqueue(async () => {
       if (this.#blocked) throw new UnknownSaveError('reload-required');
       if (this.#version === undefined || sha !== this.#version) throw new ApiError('Vuelve a leer las mejoras.', { code: 'MISSING_SHA' });
-      const path = generalNotesPath(this.#code);
+      const path = this.#path();
       try {
         const result = await this.#request('PUT', path, {
-          message: `Actualizar mejoras generales ${this.#code}`,
+          message: `Actualizar ${this.#registry ? 'tareas históricas' : 'mejoras generales'} ${this.#code}`,
           content: encodeUtf8Base64(JSON.stringify(snapshot, null, 2) + '\n'), branch: 'main', ...(sha === null ? {} : { sha }),
         });
         if (result.status !== (sha === null ? 201 : 200) || !text(result.value.content?.sha) || !text(result.value.commit?.sha) || result.value.content.path !== path) throw new UnknownSaveError('invalid-response');
@@ -125,4 +129,8 @@ export class GeneralNotesStore {
       }
     });
   }
+}
+
+export class TaskRegistryStore extends GeneralNotesStore {
+  constructor(options) { super(options, true); }
 }

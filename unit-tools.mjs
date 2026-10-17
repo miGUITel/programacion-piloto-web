@@ -1,5 +1,5 @@
-import { eventTypes } from './teaching.mjs?v=20261016-4';
-import { timeToMinutes } from './core.mjs?v=20261016-5';
+import { eventTypes } from './teaching.mjs?v=20261017-3';
+import { timeToMinutes } from './core.mjs?v=20261017-3';
 
 /** Presentation helpers. Codes, titles, dates and academic states remain unchanged. */
 export function compactUnitLabel(unit) {
@@ -73,7 +73,7 @@ export function globalSessionExpansion(sessions, openSessions) {
   return { allOpen, symbol: allOpen ? '−' : '+', label: allOpen ? 'Plegar todas las sesiones' : 'Desplegar todas las sesiones', disabled: sessions.length === 0 };
 }
 
-export function sessionBand(sessions, today = madridToday()) {
+export function sessionBand(sessions, today = madridToday(), document) {
   let previousMonth = '';
   return sessions.map((session, index) => ({ session, index }))
     .sort((a, b) => a.session.date.localeCompare(b.session.date) || a.index - b.index)
@@ -86,8 +86,8 @@ export function sessionBand(sessions, today = madridToday()) {
         day: String(Number(session.date.slice(8))), monthLabel,
         monthName: new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${session.date}T12:00:00Z`)),
         past: session.date < today, today: session.date === today,
-        task: eventTypes(session).includes('task'),
-        exam: eventTypes(session).includes('exam'),
+        task: eventTypes(session, document).includes('task'),
+        exam: eventTypes(session, document).includes('exam'),
       };
     });
 }

@@ -1,7 +1,12 @@
-import { eventTypes } from './teaching.mjs?v=20261016-4';
-import { taskState } from './task-cycle.mjs?v=20261017-2';
+import { eventTypes } from './teaching.mjs?v=20261017-3';
+import { taskState } from './task-cycle.mjs?v=20261017-3';
+import { hasTaskPlan, visiblePlanTasks } from './task-plan.mjs?v=20261017-3';
 
-export const taskDateFields = ['publishedOn', 'presentedOn', 'dueOn', 'correctBy'];
+export const taskDateFields = ['presentedOn', 'dueOn', 'correctBy'];
+
+export function resolveTaskTarget(document, task) {
+  return task.officialTaskId || task.registryTaskId ? document.tasks?.find(item => item.id === (task.officialTaskId || task.registryTaskId)) : taskTarget(document.sessions[task.sessionIndex], task.activityIndex);
+}
 
 /** Manual session-only tasks have a single record, not a fabricated activity. */
 export function taskTarget(session, activityIndex) {
@@ -41,8 +46,32 @@ export function moduleOverview(module, records, month = '') {
 /** Derived index only: source references always point back to the unit JSON. */
 export function moduleTasks(records, moduleCode, today) {
   const tasks = [];
-  for (const { entry, document } of records) {
+  for (const { entry, document, registry } of records) {
+    if (registry) {
+      if ((moduleCode && entry.moduleCode !== moduleCode) || document.moduleCode !== entry.moduleCode) continue;
+      for (const target of document.tasks) {
+        const details = taskDetails(target);
+        tasks.push({ key: JSON.stringify([entry.path, 'task', target.id]), registryTaskId: target.id, type: target.type, code: target.code,
+          entry: { ...entry, unitCode: target.unitCode }, title: target.title, date: details.presentedOn || '', number: null,
+          ...details, status: taskState(details, today), missingDates: details.presented && (!details.dueOn || !details.correctBy) });
+      }
+      continue;
+    }
     if ((moduleCode && entry.moduleCode !== moduleCode) || document.module.code !== entry.moduleCode) continue;
+    if (hasTaskPlan(document)) {
+      for (const target of visiblePlanTasks(document)) {
+        const sessionIndex = document.sessions.findIndex(session => session.id === target.presentation.sessionId);
+        const session = document.sessions[sessionIndex]; if (!session) continue;
+        const activityIndex = target.presentation.activityId ? session.activities.findIndex(activity => activity.id === target.presentation.activityId) : 0;
+        if (activityIndex < 0) continue;
+        const details = taskDetails(target);
+        tasks.push({ key: JSON.stringify([entry.path, 'task', target.id]), officialTaskId: target.id, code: target.code, type: target.type || 'task',
+          entry, unitTitle: document.unit.title, sessionId: session.id, sessionIndex, activityId: session.activities[activityIndex].id, activityIndex,
+          title: target.title, date: session.date, number: session.number, state: session.state, ...details,
+          status: taskState(details, today), missingDates: details.presented && (!details.dueOn || !details.correctBy) });
+      }
+      continue;
+    }
     document.sessions.forEach((session, sessionIndex) => {
       if (!eventTypes(session).includes('task')) return;
       const typed = session.activities.map((activity, index) => ({ activity, index })).filter(x => x.activity.eventType === 'task');
@@ -53,7 +82,8 @@ export function moduleTasks(records, moduleCode, today) {
         tasks.push({ key: JSON.stringify([entry.path, session.id, sessionOnly ? null : activity.id]),
           entry, unitTitle: document.unit.title, sessionId: session.id, sessionIndex,
           activityId: activity.id, activityIndex: index, sessionOnly: !!sessionOnly,
-          title: activity.title || 'Tarea sin título', date: session.date, number: session.number,
+          type: 'task',
+          title: target.task?.title || activity.title || 'Tarea sin título', code: target.task?.code || '', publishedOn: target.task?.publishedOn || '', date: session.date, number: session.number,
           state: session.state, ...details, status: taskState(details, today),
           missingDates: details.presented && (!details.dueOn || !details.correctBy) });
       });
@@ -64,7 +94,7 @@ export function moduleTasks(records, moduleCode, today) {
 }
 
 export function filterTasks(tasks, { moduleCode = '', unitPath = '', status = 'all' } = {}) {
-  return tasks.filter(task => (!moduleCode || task.entry.moduleCode === moduleCode) && (!unitPath || task.entry.path === unitPath)
+  return tasks.filter(task => (!moduleCode || task.entry.moduleCode === moduleCode) && (!unitPath || task.entry.path === unitPath || `${task.entry.moduleCode}:${task.entry.unitCode}` === unitPath)
     && (status !== 'unpresented' || !task.presented)
     && (status !== 'uncorrected' || !task.corrected)
     && (!['planned', 'presented', 'to-correct', 'corrected'].includes(status) || task.status === status))

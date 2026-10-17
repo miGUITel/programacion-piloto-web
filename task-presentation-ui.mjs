@@ -1,4 +1,5 @@
 const $ = id => document.getElementById(id);
+import { presentationDefaults } from './task-cycle.mjs?v=20261017-3';
 
 /** A modal draft only. Nothing changes until every required date is confirmed. */
 export function createTaskPresentationUI({ onConfirm, onClose }) {
@@ -16,7 +17,7 @@ export function createTaskPresentationUI({ onConfirm, onClose }) {
   $('presentation-form').addEventListener('submit', event => {
     event.preventDefault();
     if (!pending || !$('presentation-form').reportValidity()) return;
-    const values = inputs.map(item => ({ id: item.id, dueOn: item.due.value, correctBy: item.notice.value }));
+    const values = inputs.map(item => ({ id: item.id, presentedOn: item.presented.value, dueOn: item.due.value, correctBy: item.notice.value }));
     if (!onConfirm(pending, values)) { $('presentation-error').textContent = 'La tarea ha cambiado o alguna fecha no es válida. Cancela y revisa la sesión.'; return; }
     close();
   });
@@ -34,10 +35,12 @@ export function createTaskPresentationUI({ onConfirm, onClose }) {
           const input = document.createElement('input'); input.type = 'date'; input.required = true; input.value = value || '';
           label.append(input); controls.append(label); return input;
         }
-        const due = dateInput('Fecha máxima de entrega', target.task?.dueOn);
-        const notice = dateInput('Fecha de aviso de corrección', target.task?.correctBy);
+        const defaults = presentationDefaults(target);
+        const presented = dateInput('Presentada', defaults.presentedOn);
+        const due = dateInput('Entrega', defaults.dueOn);
+        const notice = dateInput('Corregir', defaults.correctBy);
         section.append(controls); $('presentation-items').append(section);
-        return { id: target.id, due, notice };
+        return { id: target.id, presented, due, notice };
       });
       $('presentation-dialog').showModal(); inputs[0].due.focus();
     }

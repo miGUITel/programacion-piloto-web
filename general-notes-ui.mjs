@@ -1,7 +1,7 @@
-import { GeneralNotesStore, getGeneralText, withGeneralText } from './general-notes.mjs?v=20261016-2';
-import { saveErrorFeedback } from './core.mjs?v=20261016-2';
+import { GeneralNotesStore, getGeneralText, withGeneralText } from './general-notes.mjs?v=20261017-3';
+import { saveErrorFeedback } from './core.mjs?v=20261017-3';
 
-export function createGeneralNotesUI({ isBusy, setBusy, onStateChange, getTarget, otherEditorOpen }) {
+export function createGeneralNotesUI({ isBusy, setBusy, onStateChange, getTarget, otherEditorOpen, improvementIcon }) {
   const $ = id => document.getElementById(id);
   const dialog = $('general-notes-dialog');
   let token = null, target = null, store = null, loaded = null, blocked = false, remote = null;
@@ -17,7 +17,10 @@ export function createGeneralNotesUI({ isBusy, setBusy, onStateChange, getTarget
     for (const [scope, id] of [['module', 'module-improvements'], ['unit', 'unit-improvements']]) {
       const next = getTarget(scope);
       $(id).disabled = busy || !token || !next || otherEditorOpen() || (hasPending() && !sameTarget(next));
-      $(id).textContent = `Mejoras${hasPending() && sameTarget(next) ? ' •' : ''}`;
+      const pending = hasPending() && sameTarget(next);
+      if (improvementIcon) { $(id).replaceChildren(improvementIcon()); $(id).classList.toggle('has-content', pending); }
+      else $(id).textContent = `Mejoras${pending ? ' •' : ''}`;
+      $(id).setAttribute('aria-label', `${scope === 'module' ? 'Mejoras generales del módulo' : 'Mejoras generales de la unidad abierta'}${pending ? ' · Borrador pendiente' : ''}`);
       $(id).title = next ? `Mejoras generales de ${next.unitCode ? `${next.moduleCode} ${next.unitCode}` : next.moduleCode}` : 'Conecta y elige el ámbito';
     }
     $('general-notes-text').disabled = busy || !loaded || blocked;

@@ -83,7 +83,7 @@ Los botones **Unidad**, **Módulo** y **Tareas** cambian la presentación sin gu
 
 **Tareas** reúne las porciones con tipo explícito task y las tareas marcadas solo a nivel de sesión de todos los módulos incorporados, respetando las selecciones manuales. No interpreta títulos ni duplica tareas explícitas como registros de sesión. Filtros independientes: módulo, UT y Planificada (por presentar), Presentada, Por corregir o Corregida. Por corregir se ordena por aviso; Planificada, por sesión; los demás, por entrega o sesión. Las tareas canceladas/reprogramadas siguen accesibles sin borrar su seguimiento. La lista advierte si faltan lecturas y no incluye UT todavía no incorporadas. **Actualizar tareas** vuelve a leer las otras UT, sin descartar el borrador activo.
 
-La fila de escritorio es compacta: módulo/UT, título conservado, **P** con fecha de presentación, **C** con fecha prevista de aviso/corrección y lápiz para editar. Verde: corregida; rojo: presentada y no corregida cuyo aviso ya pasó; amarillo: presentada en los demás casos. El día del aviso ya corresponde a Por corregir, aunque el rojo se reserva para fechas anteriores a hoy. En móvil son dos líneas compactas con controles de 44 píxeles. El estado también está disponible mediante texto accesible, filtros y ayuda, no solo mediante el color. Publicación y entrega siguen en el editor; la entrega aparece además en la ayuda de la fila. Fechas ausentes: —, nunca estimaciones.
+La fila de escritorio es compacta: módulo/UT, título conservado, **P** con fecha de presentación, **C** con fecha prevista de aviso/corrección y lápiz para editar. Verde: corregida; rojo: Por corregir; amarillo: presentada antes de la fecha Corregir. El día de Corregir ya corresponde a Por corregir y su banda se muestra roja. El borde permanece azul en tareas y naranja en exámenes, independiente del estado. En móvil son dos líneas compactas con controles de 44 píxeles. El estado también está disponible mediante texto accesible, filtros y ayuda, no solo mediante el color. Publicación y entrega siguen en el editor; la entrega aparece además en la ayuda de la fila. Fechas ausentes: —, nunca estimaciones.
 
 **Editar tarea** abre el editor habitual, enfocado en sus fechas y confirmaciones. Si procede de otra UT, primero exige resolver el borrador previo y lee el documento y su SHA actuales; nunca escribe sobre la instantánea usada para dibujar la vista. Se comprueba que la tarea siga existiendo y marcada. **Aplicar al borrador** no escribe en GitHub; **Guardar cambios** guarda únicamente la UT abierta con sus protecciones habituales. No hay guardados múltiples o automáticos. Una edición se refleja inmediatamente en las tres vistas del mismo borrador.
 
@@ -147,7 +147,7 @@ Cerrar el formulario conserva su borrador en memoria sin guardar ni descartar el
 
 La verificación usa pruebas automatizadas y una interfaz con transporte ficticio para éxito, permisos insuficientes, límites, rechazo, respuesta perdida y colisión. No se envían sugerencias ficticias al registro real. El docente envió propuestas reales el 16/10/2026; sus archivos y textos se comprobaron directamente en GitHub.
 
-## Requisitos futuros pendientes
+## Requisitos y estado de implantación
 
 Lista consolidada y ordenada el 17/10/2026, contrastada con la conversación y las sugerencias guardadas en GitHub. Primero se sitúan el aspecto de la interfaz y el aprovechamiento del espacio vertical; después, el seguimiento de tareas y los conceptos todavía por definir. Las propuestas relacionadas se agrupan sin borrar los registros originales. Este orden no autoriza su implementación ni convierte en resueltas las decisiones pendientes. La escritura en GitHub y su recuperación tras reconectar ya están confirmadas.
 
@@ -159,13 +159,17 @@ Los cuatro requisitos prioritarios ya tienen implementación y pruebas técnicas
 
 Abrir una vista dedicada de la sesión al hacer clic o tocar cualquier zona de su representación que no tenga otra funcionalidad. Los botones, desplegables, enlaces y demás controles conservarán su acción propia sin abrir además esta vista. Quedan pendientes de definir su contenido, distribución, edición y navegación, así como su relación con el despliegue actual de actividades; no implementar todavía. No obliga a desplegar más información en la lista principal.
 
-### Selectores superiores — ajuste visual pendiente
+### Selectores superiores — implantado
 
-Petición del 17/10/2026: retirar las etiquetas visibles «Módulo» y «Unidad» de los dos selectores superiores y sustituir sus dos botones «Mejoras» por el icono de bombilla. Conservar etiquetas accesibles, ayudas y destinos diferenciados (módulo seleccionado y UT abierta). Se registra para el siguiente ajuste visual; no está aplicado en la entrega del ciclo de tareas.
+Petición del 17/10/2026: retirar las etiquetas visibles «Módulo» y «Unidad» de los dos selectores superiores y sustituir sus dos botones «Mejoras» por el icono de bombilla. Conservar etiquetas accesibles, ayudas y destinos diferenciados (módulo seleccionado y UT abierta). Implantado: se conservan los nombres accesibles y el indicador de borrador junto al icono.
 
 ### Tareas oficiales, fechas al presentar y ciclo de corrección
 
-**Ciclo y fechas implantados el 17/10/2026; pendiente de revisión del docente.** La identidad unificada de tareas oficiales que se desarrollan en varias porciones sigue pendiente del diseño académico/modelo correspondiente. No se han renombrado tareas ni inventado códigos; el gestor conserva los títulos actuales de cada porción.
+#### Barra de filtros de Tareas — implantado
+
+Petición del docente del 17/10/2026, implantada: retirar las etiquetas visibles «Módulo», «Unidad» y «Mostrar» de los tres selectores de la vista Tareas, igual que se ha solicitado para los selectores superiores de Unidad. Mantener nombres accesibles diferenciados para módulo, UT y estado. Las opciones generales predeterminadas serán, respectivamente, **Todos**, **Todas** y **Todos**. Quitar el título visible «Todas las tareas» situado antes de los filtros y abreviar el contador como **visibles/total**, por ejemplo `6/6`, sin «de» ni «tareas»; conservar su significado mediante texto accesible. El objetivo es compactar la barra y aprovechar mejor el espacio sin cambiar el filtrado, su ámbito global o el botón Actualizar tareas. El ajuste no cambia por sí mismo los datos académicos.
+
+**Modelo oficial, ciclo y fechas implantados el 17/10/2026; pendiente de revisión del docente.** Cada tarea oficial tiene una identidad única y una presentación prevista. Los datos nuevos se cierran en el proyecto del módulo, sin deducir códigos de las porciones. Los documentos antiguos siguen siendo compatibles.
 
 - **Títulos oficiales:** el gestor debe identificar cada tarea por el título cerrado con el docente al diseñar la UT, no por el título genérico de su sesión o porción. Normalmente tendrá código `UTTT` y unas palabras clave: `0102` corresponde a la tarea 2 de la UT01. La numeración de tareas se reinicia en cada UT. Conservar las excepciones acordadas y los identificadores existentes; no inferir ni renombrar automáticamente tareas anteriores. Una misma tarea puede desarrollarse en varias actividades sin convertirse por ello en varias tareas oficiales. El ajuste del modelo deberá mantener esa identidad y sus referencias sin duplicar los datos de seguimiento.
 - **Presentar desde la vista UT:** al marcar la casilla Presentada, solicitar la fecha máxima de entrega y la fecha de aviso de corrección. Si hay fechas ya previstas, mostrarlas para confirmar o ajustar; no sustituirlas silenciosamente. Confirmar la presentación junto con las fechas; cancelar el diálogo debe conservar la situación anterior. Si una acción afecta a varias tareas, permitir confirmar las fechas de cada una, sin aplicar una pareja de fechas a todas de forma implícita. Mantener el guardado explícito del borrador y las protecciones de versión.
@@ -177,6 +181,26 @@ Petición del 17/10/2026: retirar las etiquetas visibles «Módulo» y «Unidad�
 
 El acuerdo docente exige revisar y cerrar la lista de tareas y sus nombres como paso del diseño de cada UT. Los procedimientos generales detallan esa aprobación; la lista concreta y sus fechas permanecen únicamente en su fuente académica vigente. Este registro de requisitos no autoriza por sí mismo a migrar otras UT, reimportar Excel ni reescribir los títulos o estados actuales.
 
+### Inicio de fila de tarea — implantado
+
+Petición del docente del 17/10/2026: comenzar cada fila del gestor con **MÓDULO · UUTT · Título oficial**, por ejemplo visual `LM · 0201 · Ficha válida`: `LM` es el módulo, `02` la UT y `01` el número de tarea dentro de esa UT, conservando los ceros iniciales. No repetir `UT02` como etiqueta separada ni utilizar en lugar del título oficial el encabezado de la sesión, su numeración romana o la fase «inicio/cierre/continuación». Conservar los identificadores internos y utilizar los códigos oficiales acordados, sin deducirlos de la posición de una fila o porción. El formato utiliza el título y el código oficiales de la lista de tareas. En documentos antiguos aún no conciliados se muestra «Sin código» sin inventar una equivalencia.
+
+### Simplificación de fechas y aparición de tareas — implantado
+
+Aclaración del docente del 17/10/2026, implantada en la interfaz y en el modelo:
+
+- Las únicas fechas necesarias en el seguimiento de tareas son **Presentada**, **Entrega** y **Corregir**. Retirar «Publicación» de la interfaz; no sustituirla por la fecha de diseño de la UT ni de creación de la tarea. «Presentada» significa presentación real al alumnado; «Entrega», su fecha máxima; «Corregir», la fecha prevista que activa el aviso y el estado Por corregir.
+- El diseño de la UT y el cierre de su lista de tareas siguen realizándose con el docente en el proyecto del módulo, no desde la aplicación web. Cuando la UT se dé por preparada, sus tareas deben aparecer en el gestor como Planificadas, sin exigir que hayan sido presentadas al alumnado ni publicadas en Aula Virtual. No inferir preparación de la mera existencia del documento o de sus recursos.
+- Preparar una UT no presenta ni corrige automáticamente sus tareas ni altera confirmaciones previas. La señal explícita es `unit.preparation: "ready"`; `"draft"` indica diseño en curso. Si no está confirmada la preparación, no se muestran tareas nuevas de la lista oficial, pero se conserva el seguimiento previo. No se asigna preparación por una importación histórica.
+
+### Fechas iniciales al presentar — implantado
+
+Petición del docente del 17/10/2026: al marcar una tarea como Presentada, si no tiene ninguna fecha de seguimiento previamente configurada, proponer por defecto **Presentada**, **Entrega** y **Corregir** en la fecha de hoy según `Europe/Madrid`. Sirve como base editable y permite reflejar tareas presentadas, realizadas y entregadas durante la misma sesión. Si existen fechas previas, no sobrescribirlas por esta regla; el caso de fechas parcialmente configuradas no queda ampliado por este requisito. Mantener la confirmación del formulario, la cancelación sin cambios y el guardado explícito. Corregir hoy habilita el aviso/estado Por corregir, pero no confirma Corregida automáticamente. Implantado: los valores solo son propuestas hasta confirmar y guardar; no se rellenan fechas históricas al cargar.
+
+### Marca de presentación prevista de tareas — implantado
+
+Petición del docente del 17/10/2026: al programar las sesiones durante el diseño de una UT en el proyecto del módulo, identificar explícitamente en qué sesión se presentará cada tarea. La marca azul de esa sesión debe generarse automáticamente a partir de esa presentación prevista, sin exigir marcarla manualmente en la app ni esperar a confirmar Presentada. No deducirla solo del título ni confundir cualquier sesión de trabajo sobre una tarea con su presentación. La marca expresa planificación; no confirma que la tarea ya se haya presentado o abierto al alumnado. Conservar la confirmación real de Presentada y su fecha como datos independientes. Implantado mediante `tasks[].presentation`; se mantiene la selección manual de tipos como excepción reversible.
+
 ### Preparación de sesiones — pendiente de definición
 
 - **Preparación de sesiones:** mostrar de un vistazo qué sesiones están preparadas. Valorar una pequeña marca en cada cabecera de sesión o una vista anual limpia que reúna las sesiones y su preparación. Queda abierto si se adopta una opción o ambas; si hay dos vistas, consultarán el mismo dato, sin registros paralelos. La preparación es distinta de la impartición, del progreso de las actividades y de la confirmación de apertura de una tarea. El control se refiere a la sesión completa, no a una marca repetida en cada porción. Antes de implementarlo, acordar cómo se marca una sesión preparada y qué implica cambiar su planificación después; no deducir preparación automáticamente de la existencia de recursos ni del estado Impartida.
@@ -186,6 +210,31 @@ El acuerdo docente exige revisar y cerrar la lista de tareas y sus nombres como 
 Las sugerencias sobre selectores compactos de módulo y UT, mejoras generales, banda de sesiones, vista del módulo, gestor global de tareas y ciclo de presentación/corrección tienen implementación descrita arriba. Sus ampliaciones concretas siguen en los requisitos pendientes y la implantación no sustituye la revisión del docente. Se conservan las sugerencias originales aunque su estado inicial figure como `pendiente`; esta lista consolidada determina el trabajo restante.
 
 ## Formato del JSON
+
+### Lista oficial de tareas y preparación
+
+El modelo actual añade una lista opcional `tasks` al JSON de la UT. Cada entrada contiene `id` estable, `code` oficial como texto (conserva ceros), `title`, `type: "task" | "exam"`, `presentation: { sessionId, activityId? }`, `taskPresented?` y `task: { presentedOn?, dueOn?, correctBy?, corrected? }`. Las referencias de presentación deben pertenecer a la UT. Hay una sola entrada por tarea; sus distintas fases o porciones no generan tareas nuevas. El código de tarea utiliza cuatro cifras; el examen también admite el código de unidad de dos cifras, sin inventar un número de tarea.
+
+En el proyecto del módulo se cierra la lista y se marca `unit.preparation: "ready"`; mientras se diseña, `"draft"`. La aplicación no diseña ni da por preparada la UT. Las tareas nuevas aparecen como Planificadas al estar preparada; el seguimiento ya confirmado se mantiene visible aunque se reabra el diseño o falte una preparación histórica confirmada. Los documentos antiguos sin `tasks` mantienen su comportamiento hasta una conciliación explícita. No se migra ni se asignan códigos al abrir un documento.
+
+`presentation` genera las marcas de sesión, porción, banda y vista del módulo, aunque todavía no se haya presentado al alumnado. No colorea otras sesiones solo por trabajar sobre esa tarea. Se conservan las selecciones manuales `eventTypes`; restablecer recupera las previstas. La lista de tareas no desaparece por ocultar manualmente una marca de color. El seguimiento se modifica en la entrada oficial, no en una segunda copia de la porción. `publishedOn` anterior se conserva como histórico compatible, pero no se muestra ni se modifica desde los formularios.
+
+### Tareas históricas sin sesiones importadas
+
+`catalog.modules[].taskRegistry` admite únicamente `MÓDULO/tasks.json`. Cada registro privado contiene `{ schemaVersion: 1, moduleCode, tasks }`; sus tareas tienen `id`, `unitCode`, `type`, `code`, `title` y el mismo seguimiento anterior, sin sesiones inventadas ni cambios de autoridad de PD/MET. El gestor combina estas entradas con las listas de las UT sin mantener una misma tarea en ambas fuentes. Al incorporar posteriormente una UT completa se conciliará el registro histórico, conservando IDs y seguimiento; no reimportar por encima de cambios del docente.
+
+Las tareas con UT incorporada utilizan **Aplicar al borrador → Guardar cambios**. Para una tarea histórica, P, C o el lápiz abren un diálogo que lee antes su registro actual y requiere **Guardar tarea**; no hay escritura automática por pulsar una casilla. El guardado conserva las otras tareas y campos adicionales, utiliza el SHA leído y vuelve a leer para confirmar. Un conflicto o resultado incierto bloquea el reenvío; permite descargar el borrador y revisar GitHub explícitamente, sin reintentos automáticos. Las lecturas fallidas se señalan como lista incompleta. La vista global filtra también UT históricas que no tienen sesiones en el piloto.
+
+### Prueba de usuario de los retoques
+
+1. Guarda borradores antes de recargar. Comprueba las bombillas superiores, los selectores sin etiquetas visibles, los filtros Todos/Todas/Todos y el contador visibles/total.
+2. Revisa una tarea y un examen: su borde siempre debe ser azul/naranja, tanto con fondo blanco como verde, amarillo o rojo. Comprueba el comienzo MÓDULO · código · título oficial.
+3. En una tarea sin fechas, pulsa P: Presentada, Entrega y Corregir deben proponer hoy. Cancela sin cambios. Repite ajustando fechas y confirma; no debe quedar corregida. Una fecha previa no debe sobrescribirse; si faltan algunas, permite completarlas.
+4. Prueba filtro global, un módulo y una UT histórica. En una tarea con UT, aplica y guarda; en una histórica, pulsa Guardar tarea en su diálogo. Actualiza/reconecta para verificar persistencia; no deben mezclarse otras tareas ni perderse notas. Restaura cualquier dato usado solo para probar.
+5. En una UT de prueba cerrada en el proyecto, comprueba una sola fila por tarea y la marca automática en su presentación prevista. Una UT en diseño no debe incorporar tareas nuevas al gestor ni perder su seguimiento anterior. No modificar la preparación real solo para hacer esta prueba.
+6. Repite filtros, bombillas, P/C y edición en móvil: controles cómodos y sin desbordamiento. Si falla el guardado, debe conservar el borrador y no anunciar éxito.
+
+Verificación técnica: 119 pruebas automatizadas satisfactorias, validación de identidad y preparación, fechas por defecto/parciales, archivo histórico con SHA, guardado confirmado y conflictos sin reintentos. Pruebas visuales sintéticas a 390/320 píxeles y escritorio; no se envían datos ficticios al repositorio de datos.
 
 El catálogo usa `schemaVersion: 1` y una lista `modules`. Cada módulo contiene `code`, `name` y `units`; cada unidad contiene `code`, `id`, `title` y `path`. Los módulos sin unidades usan `units: []`. Solo se admiten rutas relativas coherentes con la identidad del documento dentro del repositorio privado, nunca URLs ni otros repositorios. La app lee el catálogo pero no lo modifica. Los cambios del catálogo tampoco escriben en los documentos de las unidades.
 

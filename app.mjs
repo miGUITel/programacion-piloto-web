@@ -1,12 +1,14 @@
-import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261017-2';
+import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261017-3';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261016-1';
-import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261016-2';
-import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261017-1';
-import { eventTypes, setSessionEventType, activityEventType, taskProgress, moduleTimeline, unitExamReminders } from './teaching.mjs?v=20261016-4';
-import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261017-2';
-import { createModuleViews } from './module-views-ui.mjs?v=20261017-2';
-import { presentationTargets, applyPresentation, setTaskCorrected } from './task-cycle.mjs?v=20261017-2';
-import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261017-2';
+import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261017-3';
+import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261017-3';
+import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders } from './teaching.mjs?v=20261017-3';
+import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks, resolveTaskTarget } from './module-views.mjs?v=20261017-3';
+import { createModuleViews } from './module-views-ui.mjs?v=20261017-3';
+import { presentationTargets, presentationDefaults, applyPresentation, setTaskCorrected } from './task-cycle.mjs?v=20261017-3';
+import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261017-3';
+import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261017-3';
+import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261017-3';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -43,6 +45,13 @@ function readTaskEditor() {
     presented: $('task-presented').checked, corrected: $('task-corrected').checked };
 }
 
+function editorTaskTarget() {
+  if (!editorTarget || !draft) return null;
+  if (editorTarget.officialTaskId) return draft.tasks.find(task => task.id === editorTarget.officialTaskId);
+  const session = draft.sessions[editorTarget.sessionIndex];
+  return editorTarget.sessionTask && !$('activity-event-type').value ? session : session.activities[editorTarget.activityIndex];
+}
+
 function node(tag, className, text) {
   const el = document.createElement(tag);
   if (className) el.className = className;
@@ -57,12 +66,12 @@ function dirty() { return Boolean(draft && JSON.stringify(draft) !== JSON.string
 function editorDirty() {
   if (!editorTarget || !$('editor').open || !draft) return false;
   const activity = draft.sessions[editorTarget.sessionIndex].activities[editorTarget.activityIndex];
-  const target = editorTarget.sessionTask ? draft.sessions[editorTarget.sessionIndex] : activity;
+  const target = editorTaskTarget();
   return fields.some((field) => $(field).value !== text(activity[field])) || $('activity-event-type').value !== (activity.eventType || '')
     || (!$('task-fields').hidden && JSON.stringify(readTaskEditor()) !== JSON.stringify(taskDetails(target)));
 }
 
-function hasPendingChanges() { return dirty() || editorDirty() || presentationUI.isOpen(); }
+function hasPendingChanges() { return dirty() || editorDirty() || presentationUI.isOpen() || registryUI.hasPending(); }
 
 function checked(value, entry = activeEntry) {
   const errors = validateDocument(value, entry ?? undefined);
@@ -101,8 +110,8 @@ function updateSaveState() {
   } else {
     state.textContent = lastConfirmedAt ? `Guardado · ${lastConfirmedAt}` : 'Sin cambios pendientes';
   }
-  $('save').disabled = busy || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen();
-  $('refresh').disabled = busy || !draft || $('editor').open || presentationUI.isOpen();
+  $('save').disabled = busy || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen() || registryUI.isOpen();
+  $('refresh').disabled = busy || !draft || $('editor').open || presentationUI.isOpen() || registryUI.isOpen();
   $('disconnect').disabled = busy;
   $('download-draft').disabled = busy || !draft;
   $('recovery-actions').hidden = !(dirty() || blockedSave || failedSave);
@@ -118,7 +127,7 @@ function selectedEntry() {
 }
 
 function updateNavigation() {
-  const editing = hasPendingChanges() || $('editor').open || blockedSave || generalNotesUI.hasPending() || generalNotesUI.isOpen();
+  const editing = hasPendingChanges() || $('editor').open || registryUI.isOpen() || blockedSave || generalNotesUI.hasPending() || generalNotesUI.isOpen();
   const selectedModule = catalog?.modules.find(item => item.code === $('module-select').value);
   const selected = selectedEntry();
   $('module-select').disabled = busy || editing || !catalog?.modules.length;
@@ -232,14 +241,14 @@ async function ensureSourceUnit(path) {
   return true;
 }
 
-async function openModuleSource(path, sessionId, activityId, editTask = false) {
+async function openModuleSource(path, sessionId, activityId, editTask = false, taskKey) {
   if (!await ensureSourceUnit(path)) return;
   const index = sessionId ? draft.sessions.findIndex(session => session.id === sessionId) : -1;
   if (editTask) {
     const task = moduleTasks([{ entry: activeEntry, document: draft }], activeEntry.moduleCode)
-      .find(item => item.sessionId === sessionId && item.activityId === activityId);
+      .find(item => taskKey ? item.key === taskKey : item.sessionId === sessionId && item.activityId === activityId);
     if (!task) { message('workspace-message', 'La tarea ha cambiado desde la lectura del módulo. Revisa la planificación actual.', 'warning'); return; }
-    openEditor(task.sessionIndex, task.activityIndex, 'task');
+    openEditor(task.sessionIndex, task.activityIndex, 'task', task.officialTaskId);
   } else {
     selectWorkspaceView('unit');
     if (index >= 0) {
@@ -252,10 +261,11 @@ async function openModuleSource(path, sessionId, activityId, editTask = false) {
 }
 
 async function correctTask(task, value) {
+  if (task.registryTaskId) { await registryUI.open(task, 'corrected', value); return; }
   if (!await ensureSourceUnit(task.entry.path)) { moduleViews.render(); return; }
   const current = moduleTasks([{ entry: activeEntry, document: draft }]).find(item => item.key === task.key);
   if (!current) { message('workspace-message', 'La tarea ha cambiado. Revisa su UT antes de confirmar la corrección.', 'warning'); moduleViews.render(); return; }
-  const target = taskTarget(draft.sessions[current.sessionIndex], current.activityIndex);
+  const target = resolveTaskTarget(draft, current);
   if (!target) return;
   changeTeaching(() => setTaskCorrected(target, value));
   message('workspace-message', `Corrección ${value ? 'marcada' : 'desmarcada'} en el borrador de ${activeEntry.moduleCode} · ${activeEntry.unitCode}. Pulsa Guardar cambios.`);
@@ -302,6 +312,7 @@ async function loadModuleContext() {
     else moduleLoadFailures.push(entries[index]);
   });
   moduleContextReady = true;
+  await registryUI.load(catalog);
   renderSessions();
 }
 
@@ -413,7 +424,7 @@ function makeStateSelect(session, index) {
 
 function makeActivity(activity, sessionIndex, activityIndex) {
   const container = node('section', 'activity');
-  const type = activityEventType(draft.sessions[sessionIndex], activity);
+  const type = activityEventType(draft.sessions[sessionIndex], activity, draft);
   if (type) container.classList.add('activity-' + type);
   const top = node('div', 'activity-top');
   const time = node('div', 'activity-time', `${activity.start}–${activity.end}`);
@@ -422,8 +433,11 @@ function makeActivity(activity, sessionIndex, activityIndex) {
   title.title = activity.title || 'Actividad';
   description.append(title);
   if (type === 'task') {
-    const id = `task-presented-${sessionIndex}-portion-${activityIndex}`;
-    description.append(teachingCheckbox('Presentada', id, activity.taskPresented === true, `Tarea presentada y abierta: ${activity.title}`, checked => requestPresentation(sessionIndex, checked, activity.id, id), true));
+    const tasks = hasTaskPlan(draft) ? visibleSessionTasks(draft.sessions[sessionIndex], draft).filter(task => task.presentation.activityId === activity.id) : [activity];
+    tasks.forEach((task, index) => {
+      const id = `task-presented-${sessionIndex}-portion-${activityIndex}-${index}`;
+      description.append(teachingCheckbox(tasks.length > 1 ? `P ${task.code}` : 'Presentada', id, task.taskPresented === true, `Tarea presentada y abierta: ${task.title}`, checked => requestPresentation(sessionIndex, checked, activity.id, id, hasTaskPlan(draft) ? task.id : undefined), true));
+    });
   }
   if (progressNames.has(activity.progress)) {
     const progress = node('span', `activity-progress progress-${activity.progress}`, progressNames.get(activity.progress));
@@ -454,37 +468,37 @@ function teachingCheckbox(label, id, selected, help, change, controlled = false)
   return wrapper;
 }
 
-function requestPresentation(sessionIndex, value, activityId, focusId) {
+function requestPresentation(sessionIndex, value, activityId, focusId, officialTaskId) {
   if (busy || !draft || $('editor').open || presentationUI.isOpen()) return;
   const session = draft.sessions[sessionIndex];
   if (!value) {
     changeTeaching(() => {
-      const typed = session.activities.filter(activity => activity.eventType === 'task');
-      const targets = typed.length ? typed.filter(activity => !activityId || activity.id === activityId) : [session];
+      const targets = sessionTaskTargets(session, draft).filter(target => officialTaskId ? target.id === officialTaskId : !activityId || target.id === activityId || target.presentation?.activityId === activityId || target === session);
       targets.forEach(target => { delete target.taskPresented; });
     }, focusId);
     return;
   }
   // Repaint the native checkbox from the unchanged model before opening the modal.
   renderSessions();
-  const targets = presentationTargets(session, activityId);
+  const targets = presentationTargets(session, activityId, draft).filter(task => !officialTaskId || task.id === officialTaskId);
   presentationUI.open({ path: activeEntry.path, sessionId: session.id, focusId }, targets, session);
   updateSaveState();
 }
 
 async function presentTask(task, value) {
+  if (task.registryTaskId) { await registryUI.open(task, 'presented', value); return; }
   if (!await ensureSourceUnit(task.entry.path)) { moduleViews.render(); return; }
   const current = moduleTasks([{ entry: activeEntry, document: draft }]).find(item => item.key === task.key);
   if (!current) { message('workspace-message', 'La tarea ha cambiado. Revisa su UT.', 'warning'); return; }
-  requestPresentation(current.sessionIndex, value, current.sessionOnly ? undefined : current.activityId);
+  requestPresentation(current.sessionIndex, value, current.sessionOnly || current.officialTaskId ? undefined : current.activityId, undefined, current.officialTaskId);
 }
 
 function makeTeachingControls(session, sessionIndex) {
   const controls = node('div', 'teaching-controls');
   controls.setAttribute('role', 'group'); controls.setAttribute('aria-label', `Tareas y examen de la sesión ${session.number}`);
-  const selected = eventTypes(session);
+  const selected = eventTypes(session, draft);
   for (const [type, label] of [['task', 'Tarea'], ['exam', 'Examen']]) {
-    controls.append(teachingCheckbox(label, `teaching-${type}-${sessionIndex}`, selected.includes(type), `${label} en la sesión ${session.number}`, checked => setSessionEventType(session, type, checked)));
+    controls.append(teachingCheckbox(label, `teaching-${type}-${sessionIndex}`, selected.includes(type), `${label} en la sesión ${session.number}`, checked => setSessionEventType(session, type, checked, draft)));
   }
   if (Object.hasOwn(session, 'eventTypes')) {
     const reset = node('button', 'teaching-reset', '↶'); reset.type = 'button';
@@ -492,8 +506,8 @@ function makeTeachingControls(session, sessionIndex) {
     reset.addEventListener('click', () => changeTeaching(() => { delete session.eventTypes; }, `teaching-task-${sessionIndex}`));
     controls.append(reset);
   }
-  if (selected.includes('task')) {
-    const progress = taskProgress(session);
+  const progress = taskProgress(session, draft);
+  if (selected.includes('task') && progress.total) {
     const id = `task-presented-${sessionIndex}`;
     const control = teachingCheckbox(progress.total === 1 ? 'Presentada' : `Presentadas ${progress.presented}/${progress.total}`, id, progress.presented === progress.total, `Todas las tareas presentadas y abiertas para trabajar en la sesión ${session.number}`, checked => requestPresentation(sessionIndex, checked, undefined, id), true);
     control.querySelector('input').indeterminate = progress.presented > 0 && progress.presented < progress.total;
@@ -552,7 +566,7 @@ async function markExamReminder(exam) {
     if (activeEntry.path !== exam.source.entry.path) return;
   }
   const session = draft.sessions.find(item => item.id === exam.id);
-  if (!session || session.date !== exam.date || !eventTypes(session).includes('exam') || ['Cancelada', 'Reprogramada'].includes(session.state)) {
+  if (!session || session.date !== exam.date || !eventTypes(session, draft).includes('exam') || ['Cancelada', 'Reprogramada'].includes(session.state)) {
     message('workspace-message', 'La planificación del examen ha cambiado. Revisa la sesión antes de confirmar el aviso.', 'warning'); return;
   }
   changeTeaching(() => { session.examAnnouncedFor = session.date; });
@@ -563,11 +577,11 @@ function makeSession(session, sessionIndex, heading) {
   const first = session.activities[0];
   const isOpen = openSessions.has(session.id);
   const section = node('article', 'session');
-  const types = eventTypes(session);
+  const types = eventTypes(session, draft);
   types.forEach(type => section.classList.add('session-' + type));
   section.dataset.sessionIndex = String(sessionIndex);
   const top = node('div', 'session-top');
-  top.dataset.eventType = activityEventType(session, first);
+  top.dataset.eventType = activityEventType(session, first, draft);
   const toggle = node('button', 'session-toggle', isOpen ? '−' : '+');
   toggle.type = 'button';
   toggle.setAttribute('aria-label', `${isOpen ? 'Plegar' : 'Abrir'} sesión ${session.number}`);
@@ -623,7 +637,7 @@ function renderStats() {
   const records = currentView === 'tasks' ? libraryRecords() : moduleRecords();
   const values = currentView === 'unit'
     ? [[summary.totalSessions, 'sesiones', false], [summary.deliveredSessions, 'impartidas', true], [minutesLabel(summary.totalMinutes), 'previstos', false]]
-    : [[records.length, 'UT leídas', false], [new Set(records.flatMap(record => record.document.sessions.map(session => record.entry.moduleCode + ':' + session.id))).size, 'sesiones', false], [moduleTasks(records).length, 'tareas', true]];
+    : [[records.length, 'UT leídas', false], [new Set(records.flatMap(record => record.document.sessions.map(session => record.entry.moduleCode + ':' + session.id))).size, 'sesiones', false], [moduleTasks(currentView === 'tasks' ? [...records, ...registryUI.records()] : records).length, 'tareas', true]];
   stats.setAttribute('aria-label', currentView === 'unit' ? `Resumen de ${draft.module.code} · ${draft.unit.code}` : currentView === 'tasks' ? 'Resumen de todos los módulos, solo UT leídas' : `Resumen del módulo ${draft.module.code}, solo UT leídas`);
   for (const [value, label, highlight] of values) {
     const item = node('div', 'stat');
@@ -662,7 +676,7 @@ function renderSessionBand() {
   container.replaceChildren();
   if (!draft) return;
   container.dataset.today = madridToday();
-  for (const item of sessionBand(draft.sessions, container.dataset.today)) {
+  for (const item of sessionBand(draft.sessions, container.dataset.today, draft)) {
     if (item.monthLabel) {
       const month = node('li', 'band-month', item.monthLabel);
       month.title = item.monthName; month.setAttribute('aria-label', item.monthName);
@@ -721,6 +735,7 @@ async function connect(event) {
     connection = new GithubStore({ token });
     suggestionsUI.connect(token);
     generalNotesUI.connect(token);
+    registryUI.connect(token);
     token = '';
     setBusy(true);
     message('login-message', 'Comprobando acceso y leyendo el catálogo privado…');
@@ -733,6 +748,7 @@ async function connect(event) {
     connection = null;
     suggestionsUI.disconnect();
     generalNotesUI.disconnect();
+    registryUI.disconnect();
     documentStores.clear();
     catalog = null;
     activeEntry = null;
@@ -766,6 +782,7 @@ function disconnect() {
   if ((hasPendingChanges() || suggestionsUI.hasPending() || generalNotesUI.hasPending()) && !window.confirm('Hay cambios, mejoras o sugerencias sin guardar. Descárgalos si quieres conservarlos. ¿Quieres descartarlos y desconectar?')) return;
   suggestionsUI.disconnect();
   generalNotesUI.disconnect();
+  registryUI.disconnect();
   presentationUI.clear();
   $('editor').close();
   editorTarget = null;
@@ -857,21 +874,22 @@ async function save() {
   }
 }
 
-function openEditor(sessionIndex, activityIndex, targetField = 'observations') {
+function openEditor(sessionIndex, activityIndex, targetField = 'observations', officialTaskId) {
   if (busy || !draft || presentationUI.isOpen()) return;
   const session = draft.sessions[sessionIndex];
   const activity = session.activities[activityIndex];
-  editorTarget = { sessionIndex, activityIndex, sessionTask: taskTarget(session, activityIndex) === session,
-    wasPresented: taskDetails(taskTarget(session, activityIndex)).presented };
+  const official = visibleSessionTasks(session, draft).filter(task => task.presentation.activityId === activity.id || (!task.presentation.activityId && activityIndex === 0));
+  editorTarget = { sessionIndex, activityIndex, officialTaskId: officialTaskId || (official.length === 1 ? official[0].id : undefined),
+    sessionTask: !hasTaskPlan(draft) && taskTarget(session, activityIndex) === session };
   $('editor-kicker').textContent = `SESIÓN ${session.number} · ${activityIndex === 0 ? 'PRIMERA PORCIÓN' : 'ACTIVIDAD'}`;
-  $('editor-title').textContent = activity.title || 'Actividad';
+  $('editor-title').textContent = editorTarget.officialTaskId ? taskHeading(draft.module.code, editorTaskTarget().code, editorTaskTarget().title) : activity.title || 'Actividad';
   $('editor-time').textContent = `${activity.start}–${activity.end} · ${dateInfo(session.date).full}`;
   $('editor-progress').hidden = !progressNames.has(activity.progress);
   $('editor-progress').textContent = progressNames.has(activity.progress) ? `Progreso importado: ${progressNames.get(activity.progress)} · Solo lectura` : '';
   $('editor-planned').textContent = activity.planned || 'Sin descripción prevista.';
   fields.forEach((field) => { $(field).value = text(activity[field]); });
   $('activity-event-type').value = activity.eventType || '';
-  const detailsTask = taskDetails(editorTarget.sessionTask ? session : activity);
+  const detailsTask = taskDetails(editorTaskTarget());
   taskDateFields.forEach(field => { $('task-' + field).value = detailsTask[field]; $('task-' + field).setCustomValidity(''); });
   $('task-presented').checked = detailsTask.presented; $('task-corrected').checked = detailsTask.corrected;
   syncTaskFields();
@@ -891,17 +909,27 @@ function openEditor(sessionIndex, activityIndex, targetField = 'observations') {
 
 function syncTaskFields() {
   const manual = editorTarget?.sessionTask && !$('activity-event-type').value;
-  $('task-fields').hidden = $('activity-event-type').value !== 'task' && !manual;
-  $('task-target-help').textContent = manual ? 'Tarea marcada solo en la sesión: estos datos pertenecen a la sesión completa.' : 'Estos datos pertenecen únicamente a esta porción marcada como tarea.';
+  $('activity-type-field').hidden = hasTaskPlan(draft);
+  $('task-fields').hidden = hasTaskPlan(draft) ? !editorTarget?.officialTaskId : $('activity-event-type').value !== 'task' && !manual;
+  $('task-target-help').textContent = editorTarget?.officialTaskId ? 'Seguimiento único de la tarea oficial. Su título y presentación prevista se preparan en el proyecto del módulo.' : manual ? 'Tarea marcada solo en la sesión: estos datos pertenecen a la sesión completa.' : 'Estos datos pertenecen únicamente a esta porción marcada como tarea.';
   taskDateFields.forEach(field => { $('task-' + field).disabled = $('task-fields').hidden; });
   syncPresentationRequired();
 }
 
 function syncPresentationRequired() {
-  const session = editorTarget && draft.sessions[editorTarget.sessionIndex];
-  const target = session && (editorTarget.sessionTask && !$('activity-event-type').value ? session : session.activities[editorTarget.activityIndex]);
+  const target = editorTaskTarget();
   const required = !$('task-fields').hidden && $('task-presented').checked && !taskDetails(target).presented;
-  for (const field of ['dueOn', 'correctBy']) $('task-' + field).required = required;
+  for (const field of taskDateFields) $('task-' + field).required = required;
+  if (required && !editorTarget.autoDates) {
+    const defaults = presentationDefaults(target); editorTarget.autoDates = {};
+    for (const field of taskDateFields) {
+      const input = $('task-' + field);
+      if (!input.value && defaults[field]) { editorTarget.autoDates[field] = { previous: input.value, value: defaults[field] }; input.value = defaults[field]; }
+    }
+  } else if (!required && editorTarget?.autoDates) {
+    for (const [field, value] of Object.entries(editorTarget.autoDates)) if ($('task-' + field).value === value.value) $('task-' + field).value = value.previous;
+    delete editorTarget.autoDates;
+  }
 }
 
 function closeEditor() {
@@ -926,9 +954,11 @@ function applyEditor(event) {
     }
   }
   fields.forEach((field) => { activity[field] = $(field).value; });
-  if ($('activity-event-type').value) activity.eventType = $('activity-event-type').value;
-  else delete activity.eventType;
-  const target = taskTarget(session, editorTarget.activityIndex);
+  if (!hasTaskPlan(draft)) {
+    if ($('activity-event-type').value) activity.eventType = $('activity-event-type').value;
+    else delete activity.eventType;
+  }
+  const target = hasTaskPlan(draft) ? editorTarget.officialTaskId && editorTaskTarget() : taskTarget(session, editorTarget.activityIndex);
   if (target && !$('task-fields').hidden) {
     const values = readTaskEditor();
     if (values.presented && !taskDetails(target).presented && !values.presentedOn) values.presentedOn = madridToday();
@@ -1005,17 +1035,26 @@ const presentationUI = createTaskPresentationUI({
   onConfirm(context, values) {
     if (busy || !draft || context.path !== activeEntry.path) return false;
     const session = draft.sessions.find(item => item.id === context.sessionId);
-    if (!session || !applyPresentation(session, values)) return false;
+    if (!session || !applyPresentation(session, values, madridToday(), draft)) return false;
     failedSave = false;
     message('workspace-message', 'Presentación y fechas aplicadas al borrador. Pulsa Guardar cambios para conservarlas.');
     return true;
   },
   onClose(focusId) { if (draft) renderSessions(); if (focusId) $(focusId)?.focus({ preventScroll: true }); }
 });
-const suggestionsUI = createSuggestionsUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState, isAcademicEditorOpen: () => $('editor').open || presentationUI.isOpen() || generalNotesUI.isOpen() });
+const registryUI = createTaskRegistryUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState,
+  canOpen() {
+    if (dirty() || blockedSave || $('editor').open || presentationUI.isOpen() || generalNotesUI.isOpen() || generalNotesUI.hasPending() || $('suggestions-dialog').open) {
+      message('workspace-message', 'Guarda o revisa el borrador abierto antes de editar una tarea histórica.', 'warning'); return false;
+    }
+    return true;
+  },
+  onChange(content, kind) { if (draft) renderSessions(); if (content) message('workspace-message', content, kind); }
+});
+const suggestionsUI = createSuggestionsUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState, isAcademicEditorOpen: () => $('editor').open || presentationUI.isOpen() || registryUI.isOpen() || generalNotesUI.isOpen() });
 const generalNotesUI = createGeneralNotesUI({
-  isBusy: () => busy, setBusy, onStateChange: updateSaveState,
-  otherEditorOpen: () => $('editor').open || presentationUI.isOpen() || $('suggestions-dialog').open,
+  isBusy: () => busy, setBusy, onStateChange: updateSaveState, improvementIcon: () => noteIcon('improvements'),
+  otherEditorOpen: () => $('editor').open || presentationUI.isOpen() || registryUI.isOpen() || $('suggestions-dialog').open,
   getTarget(scope) {
     if (!connection) return null;
     if (scope === 'unit') return activeEntry && draft && selectedEntry()?.path === activeEntry.path ? { ...activeEntry, title: draft.unit.title } : null;
@@ -1024,9 +1063,9 @@ const generalNotesUI = createGeneralNotesUI({
   },
 });
 const moduleViews = createModuleViews({
-  getState: () => ({ module: catalog?.modules.find(item => item.code === activeEntry?.moduleCode), records: moduleRecords(), allRecords: libraryRecords(), catalog, failures: moduleFailures(), allFailures: moduleLoadFailures, errors: teachingTimeline.errors, ready: moduleContextReady, today: madridToday(), activePath: activeEntry?.path, busy }),
+  getState: () => ({ module: catalog?.modules.find(item => item.code === activeEntry?.moduleCode), records: moduleRecords(), allRecords: libraryRecords(), taskRecords: [...libraryRecords(), ...registryUI.records()], registryFailures: registryUI.failures(), catalog, failures: moduleFailures(), allFailures: moduleLoadFailures, errors: teachingTimeline.errors, ready: moduleContextReady, today: madridToday(), activePath: activeEntry?.path, busy }),
   onOpen: (path, sessionId) => openModuleSource(path, sessionId),
-  onEdit: task => openModuleSource(task.entry.path, task.sessionId, task.activityId, true),
+  onEdit: task => task.registryTaskId ? registryUI.open(task) : openModuleSource(task.entry.path, task.sessionId, task.activityId, true, task.key),
   onCorrected: correctTask, onPresented: presentTask, onRetry: retryExamContext,
 });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && draft) { renderSessionBand(); moduleViews.render(); } });

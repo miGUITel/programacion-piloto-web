@@ -1,29 +1,46 @@
 /** Teaching flags are independent of delivery, activity progress and preparation. */
+import { hasTaskPlan, plannedSessionTasks, visibleSessionTasks } from './task-plan.mjs?v=20261017-3';
 const types = ['task', 'exam'];
 const excluded = new Set(['Cancelada', 'Reprogramada']);
 
-export function plannedEventTypes(session) {
-  return types.filter(type => session.activities.some(activity => activity.eventType === type));
+export function plannedEventTypes(session, document) {
+  return types.filter(type => hasTaskPlan(document) ? plannedSessionTasks(session, document).some(task => (task.type || 'task') === type) || (type === 'exam' && session.activities.some(activity => activity.eventType === 'exam')) : session.activities.some(activity => activity.eventType === type));
 }
 
-export function eventTypes(session) {
-  return Object.hasOwn(session, 'eventTypes') ? [...session.eventTypes] : plannedEventTypes(session);
+export function eventTypes(session, document) {
+  return Object.hasOwn(session, 'eventTypes') ? [...session.eventTypes] : plannedEventTypes(session, document);
 }
 
-export function setSessionEventType(session, type, enabled) {
+export function setSessionEventType(session, type, enabled, document) {
   if (!types.includes(type) || typeof enabled !== 'boolean') throw new TypeError('Marca no válida.');
-  const selected = new Set(eventTypes(session));
+  const selected = new Set(eventTypes(session, document));
   if (enabled) selected.add(type); else selected.delete(type);
   const next = types.filter(item => selected.has(item));
-  if (JSON.stringify(next) === JSON.stringify(plannedEventTypes(session))) delete session.eventTypes;
+  if (JSON.stringify(next) === JSON.stringify(plannedEventTypes(session, document))) delete session.eventTypes;
   else session.eventTypes = next;
 }
 
-export function activityEventType(session, activity) {
-  return eventTypes(session).includes(activity.eventType) ? activity.eventType : '';
+export function activityEventType(session, activity, document) {
+  const selected = eventTypes(session, document);
+  if (hasTaskPlan(document)) {
+    const planned = plannedSessionTasks(session, document).find(task => task.presentation.activityId === activity.id || (!task.presentation.activityId && session.activities[0].id === activity.id));
+    if (planned && selected.includes(planned.type || 'task')) return planned.type || 'task';
+  }
+  return activity.eventType === 'task' && hasTaskPlan(document) ? '' : selected.includes(activity.eventType) ? activity.eventType : '';
 }
 
-export function taskProgress(session) {
+export function sessionTaskTargets(session, document) {
+  if (hasTaskPlan(document)) return visibleSessionTasks(session, document);
+  if (!eventTypes(session).includes('task')) return [];
+  const targets = session.activities.filter(activity => activity.eventType === 'task');
+  return targets.length ? targets : [session];
+}
+
+export function taskProgress(session, document) {
+  if (hasTaskPlan(document)) {
+    const tasks = sessionTaskTargets(session, document);
+    return { total: tasks.length, presented: tasks.filter(task => task.taskPresented === true).length };
+  }
   const tasks = session.activities.filter(activity => activity.eventType === 'task');
   if (!tasks.length) return { total: 1, presented: session.taskPresented === true ? 1 : 0 };
   return { total: tasks.length, presented: tasks.filter(activity => activity.taskPresented === true).length };
@@ -46,7 +63,7 @@ export function moduleTimeline(records, moduleCode) {
     if (document.module.code !== moduleCode || entry.moduleCode !== moduleCode) continue;
     document.sessions.forEach((session, sessionIndex) => {
       const group = groups.get(session.id) ?? { id: session.id, date: session.date, sources: [] };
-      group.sources.push({ entry, session, sessionIndex, unitTitle: document.unit.title });
+      group.sources.push({ entry, session, sessionIndex, unitTitle: document.unit.title, document });
       groups.set(session.id, group);
     });
   }
@@ -62,7 +79,7 @@ export function moduleTimeline(records, moduleCode) {
   if (errors.length) return { sessions, exams: [], errors };
   const exams = [];
   sessions.forEach((group, index) => {
-    const candidates = group.sources.filter(source => eventTypes(source.session).includes('exam'))
+    const candidates = group.sources.filter(source => eventTypes(source.session, source.document).includes('exam'))
       .sort((a, b) => a.entry.path.localeCompare(b.entry.path) || a.sessionIndex - b.sessionIndex);
     if (!candidates.length) return;
     const source = candidates[0];
