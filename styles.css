@@ -1132,3 +1132,26 @@ textarea{resize:vertical;line-height:1.6}
   .session-list-heading .preparation-badge { min-height:44px; }
   .workspace .session-list-heading p { font-size:10.5px; line-height:1.25; }
 }
+
+.session-preparation-tools { display:flex; align-items:center; gap:4px; }
+.unit-information-open { display:grid; place-items:center; flex:none; width:32px; height:32px; padding:0; border:0; border-radius:6px; background:transparent; color:var(--teal); cursor:pointer; }
+.unit-information-open[hidden] { display:none; }
+.unit-information-open>span { display:grid; place-items:center; width:19px; height:19px; border:1.5px solid currentColor; border-radius:50%; font:700 16px/1 Georgia,serif; }
+.unit-information-open:hover { background:#e6eee7; }
+.unit-information-open:focus-visible { outline:2px solid var(--teal); outline-offset:2px; }
+.unit-information-dialog { width:min(1100px,calc(100vw - 32px)); max-width:none; max-height:calc(100dvh - 32px); padding:0; border:1px solid var(--line); border-radius:10px; background:var(--white); color:var(--ink); }
+.unit-information-dialog::backdrop { background:#10253380; }
+.unit-information-layout { display:flex; flex-direction:column; max-height:calc(100dvh - 34px); }
+.unit-information-content { min-height:0; overflow:auto; padding:16px 24px; line-height:1.55; overflow-wrap:anywhere; }
+.unit-information-content h3 { font-size:17px; margin:18px 0 7px; }
+.unit-information-content h3:first-child { margin-top:0; }
+.unit-information-content p { margin:7px 0; white-space:pre-wrap; }
+.unit-information-dialog .suggestions-footer { align-items:center; gap:12px; }
+.unit-information-dialog .suggestions-footer .scope-note { margin-right:auto; }
+@media(max-width:760px) {
+  .unit-information-open { width:44px; height:44px; }
+  .unit-information-dialog { width:calc(100vw - 16px); max-height:calc(100dvh - 16px); }
+  .unit-information-layout { max-height:calc(100dvh - 18px); }
+  .unit-information-content { padding:14px; font-size:15px; }
+  .unit-information-dialog .button { min-height:44px; }
+}
