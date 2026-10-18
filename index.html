@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261018-rf35-delete">
-  <script type="module" src="./app.mjs?v=20261018-rf35-delete"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261018-module-common">
+  <script type="module" src="./app.mjs?v=20261018-module-common"></script>
 </head>
 <body>
   <header class="topbar">
@@ -72,11 +72,19 @@
         <div id="sessions" class="sessions"></div>
         </div>
         <section id="module-view" aria-label="Vista general del módulo" hidden>
-          <div class="module-view-toolbar"><h2>Vista del módulo</h2><label for="overview-month">Fechas</label><select id="overview-month"></select><span class="module-legend"><span class="band-key task-key"></span>Tarea <span class="band-key exam-key"></span>Examen</span></div>
+          <nav class="module-sections" aria-label="Consultas del módulo"><button id="module-tab-sessions" class="layout-button" type="button" aria-pressed="true">Sesiones</button><button id="module-tab-timetable" class="layout-button" type="button" aria-pressed="false">Horario</button><button id="module-tab-calendar" class="layout-button" type="button" aria-pressed="false">Calendario escolar</button><button id="module-tab-evaluations" class="layout-button" type="button" aria-pressed="false">Evaluaciones</button></nav>
+          <div id="module-sessions-panel">
+          <div class="module-view-toolbar"><label class="visually-hidden" for="overview-month">Fechas</label><select id="overview-month"></select><label class="visually-hidden" for="overview-layout">Diseño provisional</label><select id="overview-layout" title="Selector provisional: lo retiraremos cuando elijas el diseño"><option value="2">2 · Sesión y fecha</option><option value="3">3 · Solo fecha</option></select><span class="module-legend"><span class="band-key task-key"></span>Tarea <span class="band-key exam-key"></span>Examen</span></div>
           <p id="module-scope" class="scope-note"></p>
-          <div class="module-grid-scroll" tabindex="0" role="region" aria-label="UT alineadas por fechas; desliza horizontalmente"><table id="module-grid" class="module-grid"><caption class="visually-hidden">Fechas con sesiones en las UT del piloto. Cada casilla contiene el número de sesión dentro de su UT.</caption></table></div>
+          <div class="module-grid-scroll compact-module-scroll" tabindex="0" role="region" aria-label="Sesiones alineadas por día de la semana"><div id="module-grid" class="compact-module-grid" data-layout="2" data-days="2" data-cycles="3"></div></div>
           <p id="overview-empty" class="empty-sessions" hidden>No hay sesiones en este intervalo.</p>
-          <p class="scope-note">Cada columna es una fecha con sesión; se omiten los días sin sesiones. Número de sesión dentro de cada UT. Tachado: cancelada o reprogramada; subrayado rojo: fecha pasada, no indica impartición.</p>
+          <p class="scope-note">Columnas por día de la semana, no por fecha. Tachado: cancelada o reprogramada; subrayado rojo: fecha pasada.</p>
+          </div>
+          <div id="module-common-panel" class="common-readonly" hidden>
+            <div class="module-view-toolbar"><label class="visually-hidden" for="common-scope">Ámbito de consulta</label><select id="common-scope"><option value="module">Este módulo</option><option value="all">Todos</option></select><button id="common-refresh" type="button" class="button button-small">Actualizar consulta</button><span class="scope-note">Solo lectura</span></div>
+            <p id="common-message" class="message" role="status" aria-live="polite" hidden></p>
+            <div id="common-content"></div>
+          </div>
         </section>
         <section id="tasks-view" aria-label="Gestor de tareas" hidden>
           <div class="module-view-toolbar"><label class="visually-hidden" for="tasks-module">Módulo</label><select id="tasks-module"></select><label class="visually-hidden" for="tasks-unit">Unidad</label><select id="tasks-unit"></select><label class="visually-hidden" for="tasks-status">Mostrar</label><select id="tasks-status"><option value="all">Todos</option><option value="planned">Planificadas · por presentar</option><option value="presented">Presentadas</option><option value="to-correct">Por corregir</option><option value="corrected">Corregidas</option></select><span id="tasks-count" class="scope-note"></span><button id="retry-tasks" type="button" class="button button-small">Actualizar tareas</button></div>
