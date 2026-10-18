@@ -85,13 +85,14 @@ export function createTaskRegistryUI({ isBusy, setBusy, canOpen, onChange, onSta
       const input = $('registry-' + field); input.setCustomValidity(input.value && !isValidDate(input.value) ? 'Indica una fecha válida.' : '');
       if (!input.reportValidity()) return;
     }
+    let confirmed = false;
     setBusy(true);
     try {
       const prepared = prepareTaskSave(loaded, current, readForm(), getActive());
       const result = await saveTaskDocument(sourceStore, prepared, current, loaded.sha);
       onSaved(current, result, prepared);
       loaded = result; remember(current, result);
-      fill(); message('Tarea guardada y confirmada en GitHub.'); onChange();
+      fill(); onChange('Tarea guardada y confirmada en GitHub.'); confirmed = true;
     } catch (error) {
       if (error instanceof TaskEditError) {
         message(error.message, 'warning');
@@ -101,7 +102,7 @@ export function createTaskRegistryUI({ isBusy, setBusy, canOpen, onChange, onSta
         if (blocked) onBlocked(current, error);
         message(feedback.message + ' [' + feedback.code + ']', feedback.kind);
       }
-    } finally { setBusy(false); availability(); onStateChange(); }
+    } finally { setBusy(false); availability(); onStateChange(); if (confirmed) close(); }
   });
   $('registry-reload').addEventListener('click', async () => {
     if (!current || isBusy() || (pending() && !window.confirm('Descarga el borrador si quieres conservarlo. ¿Descartarlo y leer la versión actual de GitHub?'))) return;
