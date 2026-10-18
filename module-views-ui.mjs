@@ -34,7 +34,7 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
     if (!header || !overviewDays.length) return;
     const width = header.getBoundingClientRect().width;
     if (!width) return;
-    const minimum = 53;
+    const minimum = 64;
     const cycles = Math.max(1, Math.min(10, Math.floor(width / (minimum * overviewDays.length))));
     grid.dataset.cycles = String(cycles);
     header.replaceChildren();
@@ -110,6 +110,7 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
           const types = eventTypes(session, row.record.document);
           const button = el('button', `overview-session band-day${types.includes('task') ? ' has-task' : ''}${types.includes('exam') ? ' has-exam' : ''}${['Cancelada', 'Reprogramada'].includes(session.state) ? ' excluded-session' : ''}${session.date < today ? ' elapsed-session' : ''}`);
           button.type = 'button'; button.dataset.sessionId = session.id; button.dataset.weekday = String(cell.weekday);
+          button.append(el('strong', 'overview-number', `S${session.number}`));
           button.append(el('span', 'overview-cell-date', dateText));
           const description = `${row.unit.code} · Sesión ${session.number} · ${shortDate(session.date)} · ${session.activities[0].start} · ${session.activities[0].title}${types.length ? ' · ' + types.map(type => type === 'task' ? 'Tarea' : 'Examen').join(' y ') : ''}${session.state ? ' · ' + session.state : ''}`;
           button.title = description; button.setAttribute('aria-label', description);
