@@ -1,11 +1,11 @@
 import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-rf1';
-import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261018-save-close';
-import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-save-close';
+import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261018-compact-header';
+import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-compact-header';
 import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261018-rf1';
 import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261018-rf1';
 import { libraryIntegrity } from './model-v3.mjs?v=20261018-rf1';
 import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-rf1';
-import { createModuleViews } from './module-views-ui.mjs?v=20261018-rf1';
+import { createModuleViews } from './module-views-ui.mjs?v=20261018-compact-header';
 import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261018-rf1';
 import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261018-rf1';
 import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-rf1';
@@ -98,24 +98,40 @@ function setBusy(value) {
   updateSaveState();
 }
 
+function updateConnectionState() {
+  const connected = Boolean(connection && catalog), online = globalThis.navigator?.onLine !== false;
+  const label = connected ? online ? 'Sesión conectada con GitHub' : 'Sin red; conserva los borradores' : 'Sin conectar';
+  $('connection-label').classList.toggle('is-connected', connected && online);
+  $('connection-label').setAttribute('aria-label', label);
+  $('connection-status').setAttribute('aria-label', `${label}. Opciones del cuaderno`);
+  $('connection-status').setAttribute('aria-disabled', String(busy));
+  $('connection-status').title = `${label}. Información, mejoras y desconexión. La escritura se confirma al guardar.`;
+  document.querySelector('.app-toolbar').classList.toggle('has-library', Boolean(catalog));
+}
+
 function updateSaveState() {
-  const state = $('save-state');
-  state.className = 'save-state';
-  if (busy) {
-    state.textContent = 'Conectando con GitHub…';
-    state.classList.add('saving');
-  } else if (blockedSave) {
-    state.textContent = 'Borrador pendiente de revisar';
-    state.classList.add('error');
-  } else if (failedSave) {
-    state.textContent = 'No se ha guardado';
-    state.classList.add('error');
-  } else if (dirty()) {
-    state.textContent = 'Cambios sin guardar';
-    state.classList.add('dirty');
-  } else {
-    state.textContent = lastConfirmedAt ? `Guardado · ${lastConfirmedAt}` : 'Sin cambios pendientes';
-  }
+  const state = $('save-state'), disk = $('save');
+  const independentPending = registryUI.hasPending() || preparationUI.hasPending() || sessionEditorUI.hasPending() || generalNotesUI.hasPending() || suggestionsUI.hasPending();
+  const pending = hasPendingChanges() || independentPending;
+  const independentError = independentPending && ['registry-message', 'preparation-message', 'session-editor-message', 'general-notes-message', 'suggestion-message']
+    .some(id => !$(id).hidden && ($(id).classList.contains('error') || $(id).classList.contains('warning')));
+  const error = blockedSave || failedSave || independentError;
+  const status = busy ? 'busy' : error ? 'error' : pending ? 'pending' : draft ? 'clean' : 'empty';
+  const description = busy ? 'Operación con GitHub en curso. Espera su confirmación.'
+    : error ? 'Hay un guardado fallido o pendiente de revisión. Los borradores se conservan; consulta el aviso.'
+    : independentPending ? 'Hay cambios pendientes en una ventana de edición. Usa su botón Guardar o Aplicar al borrador; no se guardan desde este disco.'
+    : dirty() ? 'Cambios de Unidad sin guardar. Pulsa el disco para guardarlos en GitHub.'
+    : draft ? 'Sin cambios locales pendientes. Versión confirmada mediante lectura de GitHub.' : 'Sin unidad abierta.';
+  state.textContent = description;
+  disk.dataset.state = status;
+  disk.title = description;
+  disk.setAttribute('aria-label', dirty() ? `Guardar cambios de Unidad. ${description}` : description);
+  disk.setAttribute('aria-busy', String(busy));
+  $('workspace-nav').hidden = !draft;
+  $('refresh').hidden = !draft;
+  disk.hidden = !draft;
+  $('open-suggestions').hidden = !catalog;
+  updateConnectionState();
   $('save').disabled = busy || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen());
   $('refresh').disabled = busy || !draft || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen());
   $('disconnect').disabled = busy;
@@ -162,6 +178,7 @@ function updateNavigation() {
   else if (!activeEntry && selected) help = busy ? 'Abriendo la unidad seleccionada…' : 'Elige una unidad para abrirla.';
   $('selection-help').textContent = help;
   $('selection-help').hidden = !help;
+  $('selection-help').classList.toggle('visually-hidden', editing && !blockedSave);
   generalNotesUI.updateAvailability();
   moduleProfileUI.updateAvailability();
 }
@@ -205,8 +222,7 @@ function acceptCatalog(result) {
   $('library-view').hidden = false;
   $('login-view').hidden = true;
   $('disconnect').hidden = false;
-  $('connection-label').replaceChildren(node('span', 'status-dot'), document.createTextNode('Conectado'));
-  $('connection-label').classList.add('is-connected');
+  updateConnectionState();
 }
 
 async function loadSelectedDocument() {
@@ -755,12 +771,11 @@ function renderSessionBand() {
 
 function render() {
   $('unit-title').textContent = `${draft.module.code} · ${draft.unit.code} ${draft.unit.title}`;
-  $('connection-label').replaceChildren(node('span', 'status-dot'), document.createTextNode('Conectado'));
-  $('connection-label').classList.add('is-connected');
+  updateConnectionState();
   $('disconnect').hidden = false;
   $('login-view').hidden = true;
   $('workspace').hidden = false;
-  $('loaded-version').textContent = `Versión leída: ${originalSha.slice(0, 8)} · Comprobada a las ${lastConfirmedAt}`;
+  $('loaded-version').textContent = `Versión leída: ${originalSha.slice(0, 8)}`;
   renderStats();
   renderSessions();
 }
@@ -810,8 +825,7 @@ async function connect(event) {
     $('library-view').hidden = true;
     $('login-view').hidden = false;
     $('disconnect').hidden = true;
-    $('connection-label').replaceChildren(node('span', 'status-dot'), document.createTextNode('Sin conectar'));
-    $('connection-label').classList.remove('is-connected');
+    updateConnectionState();
     const explanations = new Map([
       ['HTTP_401', 'GitHub no acepta el token. Comprueba que lo has copiado completo y que no ha caducado.'],
       ['HTTP_403', 'GitHub ha denegado el acceso. Comprueba los permisos del token; también puede haberse alcanzado un límite temporal de peticiones.'],
@@ -884,8 +898,8 @@ function disconnect() {
   message('library-message');
   $('login-view').hidden = false;
   $('disconnect').hidden = true;
-  $('connection-label').replaceChildren(node('span', 'status-dot'), document.createTextNode('Sin conectar'));
-  $('connection-label').classList.remove('is-connected');
+  $('connection-menu').open = false;
+  updateConnectionState();
   message('login-message', 'Desconectado. La credencial y el contenido cargado se han retirado de esta página.');
   updateSaveState();
   $('token').focus();
@@ -1064,6 +1078,21 @@ function toggleAllSessions() {
 
 $('login-form').addEventListener('submit', connect);
 $('disconnect').addEventListener('click', disconnect);
+$('connection-status').addEventListener('click', event => { if (busy) event.preventDefault(); });
+$('connection-menu').addEventListener('click', event => {
+  if (event.target.closest('.toolbar-menu-action') && !event.target.closest('button')?.disabled) $('connection-menu').open = false;
+});
+document.addEventListener('click', event => { if (!$('connection-menu').contains(event.target)) $('connection-menu').open = false; });
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !document.querySelector('dialog[open]') && $('connection-menu').open) {
+    $('connection-menu').open = false; $('connection-status').focus();
+  }
+});
+window.addEventListener('online', updateConnectionState);
+window.addEventListener('offline', updateConnectionState);
+for (const id of ['general-notes-dialog', 'module-profile-dialog']) $(id).addEventListener('close', () => {
+  if (catalog && !$('connection-menu').open) $('connection-status').focus({ preventScroll: true });
+});
 $('module-select').addEventListener('change', async () => {
   if (navigationBlocked()) { restoreUnitSelection(); return; }
   fillUnits(); message('library-message'); await openSelectedUnit();
@@ -1081,6 +1110,8 @@ $('activity-event-type').addEventListener('change', syncTaskFields);
 $('task-presented').addEventListener('change', syncPresentationRequired);
 taskDateFields.forEach(field => $('task-' + field).addEventListener('input', () => $('task-' + field).setCustomValidity('')));
 $('editor-form').addEventListener('submit', applyEditor);
+$('editor-form').addEventListener('input', updateSaveState);
+$('editor-form').addEventListener('change', updateSaveState);
 $('close-editor').addEventListener('click', closeEditor);
 $('cancel-editor').addEventListener('click', closeEditor);
 $('editor').addEventListener('cancel', (event) => { event.preventDefault(); closeEditor(); });
@@ -1125,7 +1156,7 @@ const registryUI = createTaskRegistryUI({ isBusy: () => busy, setBusy, onStateCh
     if (task.entry.path === activeEntry?.path) {
       savedDocument = copy(result.document); originalSha = result.sha;
       draft = prepared.unitDraft; failedSave = false; lastConfirmedAt = confirmationTime();
-      $('loaded-version').textContent = `Versión leída: ${originalSha.slice(0, 8)} · Comprobada a las ${lastConfirmedAt}`;
+      $('loaded-version').textContent = `Versión leída: ${originalSha.slice(0, 8)}`;
     } else {
       moduleDocuments.set(task.entry.path, { entry: task.entry, document: result.document });
       moduleLoadFailures = moduleLoadFailures.filter(entry => entry.path !== task.entry.path);
@@ -1197,7 +1228,7 @@ const preparationUI = createPreparationUI({
     if (entry.path === activeEntry?.path) {
       savedDocument = copy(result.document); originalSha = result.sha; draft = prepared.unitDraft;
       failedSave = false; lastConfirmedAt = confirmationTime();
-      $('loaded-version').textContent = `Versión leída: ${originalSha.slice(0, 8)} · Comprobada a las ${lastConfirmedAt}`;
+      $('loaded-version').textContent = `Versión leída: ${originalSha.slice(0, 8)}`;
     } else {
       moduleDocuments.set(entry.path, { entry, document: result.document });
       moduleLoadFailures = moduleLoadFailures.filter(item => item.path !== entry.path);
@@ -1217,7 +1248,7 @@ const sessionEditorUI = createSessionEditorUI({
   onSaved(entry, result, prepared) {
     savedDocument = copy(result.document); originalSha = result.sha; draft = prepared.unitDraft;
     failedSave = false; lastConfirmedAt = confirmationTime();
-    $('loaded-version').textContent = `Versión leída: ${originalSha.slice(0, 8)} · Comprobada a las ${lastConfirmedAt}`;
+    $('loaded-version').textContent = `Versión leída: ${originalSha.slice(0, 8)}`;
     renderSessions();
     message('workspace-message', dirty() ? 'Textos de la sesión guardados. Las demás notas y cambios de Unidad siguen pendientes de guardar.' : 'Textos de la sesión guardados y confirmados en GitHub.');
   },
