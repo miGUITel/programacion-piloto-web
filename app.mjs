@@ -1,7 +1,7 @@
 import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-rf1';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261018-compact-header';
 import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-compact-header';
-import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261018-rf1';
+import { orderedUnits, compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261018-unit-order';
 import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261018-rf1';
 import { libraryIntegrity } from './model-v3.mjs?v=20261018-rf1';
 import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-rf1';
@@ -207,6 +207,7 @@ function acceptCatalog(result) {
   const previousModule = $('module-select').value;
   const previousUnit = $('unit-select').value;
   catalog = copy(result.catalog);
+  for (const module of catalog.modules) module.units = orderedUnits(module.units);
   const select = $('module-select');
   select.replaceChildren();
   for (const module of catalog.modules) {
