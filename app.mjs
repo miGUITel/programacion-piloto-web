@@ -1,17 +1,17 @@
-import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-rf35-delete';
-import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261016-1';
-import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-rf35-delete';
-import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261018-rf35-delete';
-import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261018-rf35-delete';
-import { libraryIntegrity } from './model-v3.mjs?v=20261018-rf35-delete';
-import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-rf35-delete';
-import { createModuleViews } from './module-views-ui.mjs?v=20261018-rf35-delete';
-import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261018-rf35-delete';
-import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261018-rf35-delete';
-import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-rf35-delete';
-import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261018-rf35-delete';
-import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261018-rf35-delete';
-import { createPreparationUI } from './preparation-ui.mjs?v=20261018-rf35-delete';
+import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-module-common';
+import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261018-module-common';
+import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-module-common';
+import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261018-module-common';
+import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261018-module-common';
+import { libraryIntegrity } from './model-v3.mjs?v=20261018-module-common';
+import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-module-common';
+import { createModuleViews } from './module-views-ui.mjs?v=20261018-module-common';
+import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261018-module-common';
+import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261018-module-common';
+import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-module-common';
+import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261018-module-common';
+import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261018-module-common';
+import { createPreparationUI } from './preparation-ui.mjs?v=20261018-module-common';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -1154,7 +1154,7 @@ const preparationUI = createPreparationUI({
   },
 });
 const moduleViews = createModuleViews({
-  getState: () => ({ module: catalog?.modules.find(item => item.code === activeEntry?.moduleCode), records: moduleRecords(), allRecords: libraryRecords(), taskRecords: [...libraryRecords(), ...registryUI.records()], integrityIssues: libraryIntegrity([...libraryRecords(), ...registryUI.records()]), registryFailures: registryUI.failures(), catalog, failures: moduleFailures(), allFailures: moduleLoadFailures, errors: teachingTimeline.errors, ready: moduleContextReady, today: madridToday(), activePath: activeEntry?.path, busy }),
+  getState: () => ({ module: catalog?.modules.find(item => item.code === activeEntry?.moduleCode), records: moduleRecords(), allRecords: libraryRecords(), taskRecords: [...libraryRecords(), ...registryUI.records()], integrityIssues: libraryIntegrity([...libraryRecords(), ...registryUI.records()]), registryFailures: registryUI.failures(), catalog, failures: moduleFailures(), allFailures: moduleLoadFailures, errors: teachingTimeline.errors, ready: moduleContextReady, today: madridToday(), activePath: activeEntry?.path, busy, connection, view: currentView }),
   onOpen: (path, sessionId) => openModuleSource(path, sessionId),
   onEdit: task => registryUI.open(task),
   onCorrected: correctTask, onPresented: presentTask, onRetry: retryExamContext,
