@@ -1,5 +1,5 @@
-import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261018-rf3';
-import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261018-rf3';
+import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261018-rf35';
+import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261018-rf35';
 
 const OWNER = 'miGUITel';
 const REPOSITORY = 'programacion-piloto-datos';
@@ -263,6 +263,7 @@ export function validateDocument(doc, expectedEntry) {
         if (!isObject(task)) { errors.push(`${path}: debe ser un objeto.`); return; }
         checkId(task.id, `${path}.id`);
         if (task.type !== undefined && !['task', 'exam'].includes(task.type)) errors.push(`${path}.type: debe ser task o exam.`);
+        if (Object.hasOwn(task, 'preparation') && !['draft', 'ready'].includes(task.preparation)) errors.push(`${path}.preparation: debe ser draft o ready.`);
         if (isV3) validateExtendedTask(task, path, errors, isValidDate);
         else if (!isText(task.code) || !(task.type === 'exam' ? /^\d{2}(?:\d{2})?$/ : /^\d{4}$/).test(task.code)) errors.push(`${path}.code: código oficial no válido.`);
         const codeKey = isV3 ? JSON.stringify([task.type, task.code]) : task.code;
@@ -270,7 +271,7 @@ export function validateDocument(doc, expectedEntry) {
         codes.add(codeKey);
         if (!nonemptyText(task.title)) errors.push(`${path}.title: título oficial obligatorio.`);
         const session = doc.sessions.find(item => item?.id === task.presentation?.sessionId);
-        if (isV3 && !Object.hasOwn(task, 'presentation')) { /* Unassigned is a supported explicit absence. */ }
+        if (!Object.hasOwn(task, 'presentation')) { /* New official tasks may await a planned session in any supported format. */ }
         else if (!isObject(task.presentation) || !session) errors.push(`${path}.presentation: requiere una sesión existente de esta UT.`);
         else if (Object.hasOwn(task.presentation, 'activityId') && (!Array.isArray(session.activities) || !session.activities.some(activity => activity?.id === task.presentation.activityId))) errors.push(`${path}.presentation.activityId: debe pertenecer a la sesión indicada.`);
         if (Object.hasOwn(task, 'taskPresented') && typeof task.taskPresented !== 'boolean') errors.push(`${path}.taskPresented: debe ser booleano.`);

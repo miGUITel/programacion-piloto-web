@@ -1,4 +1,4 @@
-/** Academic task identities are authored in the module project, never inferred from rows. */
+/** Official tasks are explicitly authored, never inferred from session or portion titles. */
 export const hasTaskPlan = document => Array.isArray(document?.tasks);
 export const visiblePlanTasks = document => !hasTaskPlan(document) ? [] : document.tasks.filter(task =>
   (typeof task.approved === 'boolean' ? task.approved : document.schemaVersion !== 3 && document.unit.preparation === 'ready') || task.taskPresented === true || task.task?.corrected === true);

@@ -211,31 +211,33 @@ Petición del docente del 17/10/2026: al marcar una tarea como Presentada, si no
 
 Petición del docente del 17/10/2026: al programar las sesiones durante el diseño de una UT en el proyecto del módulo, identificar explícitamente en qué sesión se presentará cada tarea. La marca azul de esa sesión debe generarse automáticamente a partir de esa presentación prevista, sin exigir marcarla manualmente en la app ni esperar a confirmar Presentada. No deducirla solo del título ni confundir cualquier sesión de trabajo sobre una tarea con su presentación. La marca expresa planificación; no confirma que la tarea ya se haya presentado o abierto al alumnado. Conservar la confirmación real de Presentada y su fecha como datos independientes. Implantado mediante `tasks[].presentation`; se mantiene la selección manual de tipos como excepción reversible.
 
-### RF 3 — preparación automática de UT, implantado el 18/10/2026
+### RF 3 y preparación individual de tareas — implantado el 18/10/2026
 
-La etiqueta aparece en **Unidad** y **Módulo**. La nueva vista **Preparación** reúne las UT del catálogo, con filtros por módulo y estado. Pulsar una etiqueta abre el editor independiente de materiales y sesiones.
+La etiqueta se muestra en **Unidad** y **Módulo**. La vista **Preparación** reúne las UT del catálogo, con filtros por módulo y estado. Pulsar la etiqueta abre el editor; pulsar el código de una UT abre sus sesiones. Si otra unidad tiene notas pendientes, se ofrece guardarlas antes de cambiar o cancelar conservándolas.
 
 | Estado | Regla |
 |---|---|
-| Preparada | PPT, Web, Tareas y Examen están Listo y todas las sesiones están listas. Requiere al menos una sesión. |
-| En preparación | Hay algún material o sesión listo, pero falta completar el conjunto. |
-| Pendiente | No hay ningún material ni sesión listo. Sustituye «Sin confirmar». |
+| Preparada | PPT y Web están Listo, todas las tareas y exámenes de sus listas están preparados y todas las sesiones están listas. Requiere listas no vacías y al menos una sesión. |
+| En preparación | Hay algún material, tarea, examen o sesión listo, pero falta completar el conjunto. |
+| Pendiente | No hay ninguno listo. |
 
-El estado sube o baja automáticamente al cambiar esas marcas; un material En proceso no cuenta como listo. Las marcas previas se respetan. Un antiguo resumen de UT preparada no inventa marcas en materiales o sesiones.
+El editor muestra las tareas y exámenes oficiales con código, título y una casilla de preparación individual. Tareas y Examen son resúmenes automáticos —por ejemplo, 3/5 preparadas—: todos listos equivale a Listo; alguno, En proceso; ninguno, Pendiente. Una lista vacía no se completa automáticamente. Las marcas globales anteriores no se distribuyen por inferencia entre tareas. Presentada, Corregida, aprobación y preparación siguen siendo conceptos independientes.
 
-**Guardar preparación** lee la versión vigente, envía únicamente esta edición, comprueba la respuesta y relee GitHub. Las notas pendientes de Unidad se conservan sin enviarse; se puede editar también otra UT sin cambiar la abierta. Un conflicto o resultado incierto mantiene los borradores y bloquea el reenvío. Cerrar con cambios pide confirmar su descarte. La consulta no guarda automáticamente.
+**Añadir tarea** y **Añadir examen** solicitan código oficial, título, tipo y sesión prevista opcional. **Añadir al borrador** todavía no escribe; **Guardar preparación** incorpora el elemento a la lista oficial como Planificado. Empieza con preparación pendiente, sin fechas reales ni confirmaciones, y se puede marcar preparado antes de guardar. Los códigos duplicados y las referencias inválidas se rechazan. Se mantiene el formato de cada UT, admitiendo tareas nuevas sin sesión prevista también en formatos anteriores.
 
-Reabrir una UT conserva notas, tareas aprobadas y su seguimiento. El cálculo de preparación no aprueba tareas nuevas. En formatos anteriores a v3, el primer guardado de preparación conserva mediante aprobación explícita la visibilidad previa, sin convertir la versión. Preparación no confirma impartición, Presentada, Corregida, avisos ni publicación.
+El guardado independiente utiliza la versión leída y una relectura de confirmación. Guarda marcas y altas sin enviar las notas pendientes de Unidad; conserva también el seguimiento y las aprobaciones existentes. Un conflicto o resultado incierto conserva ambos borradores y bloquea el reenvío. Las tareas históricas aún sin conciliar no se convierten automáticamente en lista oficial para permitir nuevas altas.
 
-Este editor cubre las marcas mínimas de materiales y sesiones necesarias para RF 3. Otras vistas y ampliaciones de RF 4 y RF 5 mantienen su alcance pendiente.
+Las ventanas de preparación, seguimiento, tareas, información y mejoras aprovechan casi todo el ancho disponible. En escritorio, tareas y exámenes aparecen en columnas; en móvil se apilan y los controles de cierre y guardado permanecen accesibles.
 
 Pruebas de usuario:
-1. Guarda tus borradores antes de recargar la app. Abre Preparación y comprueba filtros y etiquetas.
-2. Revisa una UT: ningún elemento listo produce Pendiente; alguno listo, En preparación; los cuatro materiales y todas las sesiones listas, Preparada.
-3. Retira una marca: el estado debe bajar. Guarda, cierra y vuelve a abrir para comprobar persistencia. Deja al final las marcas que correspondan a su preparación real.
-4. Aplica una observación al borrador de Unidad sin guardarla. Guarda preparación en esa UT y después en otra: la nota debe seguir pendiente e intacta hasta que pulses Guardar cambios.
-5. Comprueba que las tareas aprobadas siguen en Tareas al retirar una marca de preparación y que no cambian sus fechas ni confirmaciones.
-6. Cierra una edición de preparación sin guardarla: cancelar el descarte conserva el editor; confirmar descarta solo sus marcas.
+
+1. Pulsar el código de una UT desde Preparación: debe abrir sus sesiones. Repetir con una nota pendiente en otra UT y cancelar el cambio: la nota debe seguir intacta.
+2. Marcar una tarea preparada y un examen preparado. Comprobar sus contadores, el estado automático y que Presentada/Corregida no cambian.
+3. Añadir una tarea sin sesión prevista y un examen con sesión elegida. Antes de Guardar preparación son borradores; después deben aparecer una vez en Tareas como Planificados.
+4. Intentar repetir un código: debe mostrar el problema sin crear otro elemento. Cancelar una incorporación a medio escribir no cambia la lista.
+5. Dejar una observación aplicada al borrador de Unidad sin guardar, guardar preparación o una nueva tarea y comprobar que la observación sigue pendiente e intacta.
+6. Retirar una marca de preparado y comprobar que baja el estado correspondiente sin ocultar las tareas aprobadas. Cerrar, volver a abrir y comprobar persistencia.
+7. Comprobar anchura de las ventanas en escritorio y su adaptación en móvil. Guardar únicamente marcas y elementos académicos reales; las pruebas técnicas usan datos ficticios fuera del repositorio de datos.
 
 ### Preparación de sesiones — ampliaciones pendientes
 

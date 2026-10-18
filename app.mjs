@@ -1,17 +1,17 @@
-import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-rf3';
+import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-rf35';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261016-1';
-import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-rf3';
-import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261018-rf3';
-import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261018-rf3';
-import { libraryIntegrity } from './model-v3.mjs?v=20261018-rf3';
-import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-rf3';
-import { createModuleViews } from './module-views-ui.mjs?v=20261018-rf3';
-import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261018-rf3';
-import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261018-rf3';
-import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-rf3';
-import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261018-rf3';
-import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261018-rf3';
-import { createPreparationUI } from './preparation-ui.mjs?v=20261018-rf3';
+import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-rf35';
+import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261018-rf35';
+import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261018-rf35';
+import { libraryIntegrity } from './model-v3.mjs?v=20261018-rf35';
+import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-rf35';
+import { createModuleViews } from './module-views-ui.mjs?v=20261018-rf35';
+import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261018-rf35';
+import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261018-rf35';
+import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-rf35';
+import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261018-rf35';
+import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261018-rf35';
+import { createPreparationUI } from './preparation-ui.mjs?v=20261018-rf35';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -256,6 +256,17 @@ async function openModuleSource(path, sessionId) {
       section?.scrollIntoView({ block: 'start', behavior: 'instant' });
       section?.querySelector('.session-title')?.focus({ preventScroll: true });
     }
+}
+
+async function openPreparationUnit(path) {
+  if (busy || preparationUI.isOpen()) return;
+  if (path !== activeEntry?.path && dirty() && !blockedSave) {
+    if (!window.confirm('Hay notas o cambios pendientes en la unidad abierta. ¿Guardarlos antes de abrir las sesiones de otra UT? Cancelar conserva el borrador y la vista actual.')) return;
+    await save();
+    if (dirty() || blockedSave || failedSave) return;
+  }
+  await openModuleSource(path);
+  if (activeEntry?.path === path && currentView === 'unit') $('unit-view').scrollIntoView({ block: 'start', behavior: 'instant' });
 }
 
 async function correctTask(task, value) {
@@ -1114,6 +1125,12 @@ const preparationUI = createPreparationUI({
   canOpen: () => Boolean(connection) && !$('editor').open && !presentationUI.isOpen() && !registryUI.isOpen() && !generalNotesUI.isOpen() && !generalNotesUI.hasPending() && !$('suggestions-dialog').open && !$('module-profile-dialog').open,
   onMessage: (content, kind) => message('workspace-message', content, kind),
   onRetry: refreshPreparationContext,
+  onOpenUnit: openPreparationUnit,
+  additionIssue(entry) {
+    if (registryUI.failures().includes(entry.moduleCode)) return 'Falta consultar el registro de tareas del módulo. Actualiza la preparación antes de añadir elementos.';
+    const history = registryUI.records().find(record => record.entry.moduleCode === entry.moduleCode);
+    return history?.document.tasks.some(task => task.unitCode === entry.unitCode) ? 'Esta UT tiene tareas en el registro histórico. Hay que conciliar su lista antes de añadir elementos oficiales.' : '';
+  },
   onSaved(entry, result, prepared) {
     if (entry.path === activeEntry?.path) {
       savedDocument = copy(result.document); originalSha = result.sha; draft = prepared.unitDraft;

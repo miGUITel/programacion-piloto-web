@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261018-rf3">
-  <script type="module" src="./app.mjs?v=20261018-rf3"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261018-rf35">
+  <script type="module" src="./app.mjs?v=20261018-rf35"></script>
 </head>
 <body>
   <header class="topbar">
@@ -178,7 +178,19 @@
         <p><span id="preparation-result" role="status"></span></p><p id="preparation-detail" class="scope-note"></p>
         <p class="field-help">Todo listo: Preparada. Algún material o sesión listo: En preparación. Ninguno listo: Pendiente. Los cambios se conservan al pulsar Guardar preparación.</p>
         <div id="preparation-fields"></div>
-        <p class="field-help">Este guardado conserva solo la preparación y mantiene tus notas pendientes y tareas aprobadas.</p>
+        <fieldset id="preparation-task-editor" class="preparation-task-editor" hidden>
+          <legend>Añadir a la lista oficial</legend>
+          <div class="preparation-new-fields">
+            <label>Tipo<select id="preparation-new-type" aria-label="Tipo"><option value="task">Tarea</option><option value="exam">Examen</option></select></label>
+            <label>Código oficial<input id="preparation-new-code" type="text" autocomplete="off"></label>
+            <label class="preparation-new-title">Título<input id="preparation-new-title" type="text" autocomplete="off"></label>
+            <label class="preparation-new-session">Presentación prevista (opcional)<select id="preparation-new-session" aria-label="Presentación prevista (opcional)"></select></label>
+          </div>
+          <p class="field-help">Se incorporará como Planificada, con preparación pendiente. No se confirma Presentada ni Corregida. Añade el elemento al borrador y después pulsa Guardar preparación.</p>
+          <p id="preparation-new-message" class="message error" role="status"></p>
+          <div class="preparation-session-actions"><button id="preparation-new-add" class="button" type="button">Añadir al borrador</button><button id="preparation-new-cancel" class="button" type="button">Cancelar nueva tarea o examen</button></div>
+        </fieldset>
+        <p class="field-help">Este guardado conserva la preparación y los elementos añadidos. Mantiene tus notas pendientes y las tareas ya aprobadas.</p>
         <p id="preparation-message" class="message" role="status" hidden></p>
         <div class="suggestions-recovery"><button id="preparation-reload" class="button" type="button">Revisar GitHub</button><button id="preparation-download" class="button" type="button">Descargar borrador</button></div>
       </div>

@@ -1,4 +1,5 @@
 /** RF 3: preparation is derived from confirmed materials and session marks. */
+import { taskPreparationGroups, createPreparationTask } from './preparation-tasks.mjs?v=20261018-rf35';
 export const preparationMaterials = ['ppt', 'web', 'tasks', 'exam'];
 export const preparationLabels = { pending: 'Pendiente', draft: 'En preparación', ready: 'Preparada' };
 export const materialLabels = { ppt: 'PPT', web: 'Web', tasks: 'Tareas', exam: 'Examen' };
@@ -10,15 +11,17 @@ const fail = (code, message) => { throw new PreparationError(code, message); };
 
 export function preparationValues(document) {
   return { materials: Object.fromEntries(preparationMaterials.map(key => [key, document.unit.resourcePreparation?.[key] ?? ''])),
-    sessions: Object.fromEntries(document.sessions.map(session => [session.id, session.preparation ?? ''])) };
+    sessions: Object.fromEntries(document.sessions.map(session => [session.id, session.preparation ?? ''])),
+    tasks: Object.fromEntries((document.tasks ?? []).map(task => [task.id, task.preparation ?? ''])), additions: [] };
 }
 
 export function preparationSummary(document) {
-  const materials = preparationMaterials.filter(key => document.unit.resourcePreparation?.[key] === 'Listo').length;
+  const groups = taskPreparationGroups(document);
+  const materials = preparationMaterials.filter(key => (groups[key]?.state ?? document.unit.resourcePreparation?.[key]) === 'Listo').length;
   const sessions = document.sessions.filter(session => session.preparation === 'ready').length;
   const total = document.sessions.length;
-  const state = materials === 4 && total > 0 && sessions === total ? 'ready' : materials > 0 || sessions > 0 ? 'draft' : 'pending';
-  return { state, label: preparationLabels[state], materials, sessions, total };
+  const state = materials === 4 && total > 0 && sessions === total ? 'ready' : materials > 0 || sessions > 0 || groups.tasks.ready > 0 || groups.exam.ready > 0 ? 'draft' : 'pending';
+  return { state, label: preparationLabels[state], materials, sessions, total, groups };
 }
 
 export function assertPreparationRead(loaded, entry, active) {
@@ -31,7 +34,7 @@ export function assertPreparationRead(loaded, entry, active) {
 export function preparationSnapshot(document, values) {
   const result = structuredClone(document);
   const original = preparationValues(document);
-  for (const key of preparationMaterials) {
+  for (const key of ['ppt', 'web']) {
     const value = values.materials[key];
     if (!['', 'Sin mirar', 'En proceso', 'Listo'].includes(value)) fail('PREPARATION_INVALID', 'Revisa el estado de los materiales.');
     if (value === original.materials[key]) continue;
@@ -50,6 +53,28 @@ export function preparationSnapshot(document, values) {
   // V3 approvals are explicit and are never created by a preparation calculation.
   if (document.schemaVersion !== 3) for (const task of result.tasks ?? []) {
     if (typeof task.approved !== 'boolean') task.approved = document.unit.preparation === 'ready';
+  }
+  if (!equal(Object.keys(values.tasks).sort(), (document.tasks ?? []).map(task => task.id).sort())) fail('PREPARATION_INVALID', 'La lista de tareas ha cambiado. Revisa la unidad.');
+  for (const task of result.tasks ?? []) {
+    const value = values.tasks[task.id];
+    if (!['', 'draft', 'ready'].includes(value)) fail('PREPARATION_INVALID', 'Revisa la preparación de las tareas.');
+    if (value === original.tasks[task.id]) continue;
+    if (value) task.preparation = value; else delete task.preparation;
+  }
+  for (const addition of values.additions) {
+    let task;
+    try { task = createPreparationTask(result, { ...addition, sessionId: addition.presentation?.sessionId }, addition.id); }
+    catch (error) { fail('PREPARATION_INVALID', error.message); }
+    if (!['draft', 'ready'].includes(addition.preparation)) fail('PREPARATION_INVALID', 'Revisa la preparación del nuevo elemento.');
+    task.preparation = addition.preparation;
+    (result.tasks ??= []).push(task);
+  }
+  const groups = taskPreparationGroups(result);
+  for (const key of ['tasks', 'exam']) {
+    // No automatic completion for an empty list and no inference from former aggregate marks.
+    if (groups[key].total || Object.hasOwn(result.unit.resourcePreparation ?? {}, key)) {
+      (result.unit.resourcePreparation ??= {})[key] = groups[key].state;
+    }
   }
   const state = preparationSummary(result).state;
   if (state === 'pending') delete result.unit.preparation; else result.unit.preparation = state;
@@ -79,10 +104,15 @@ export function preparePreparationSave(loaded, entry, values, active) {
       merge(target, before.sessions.find(item => item.id === session.id), session, 'preparation');
     }
     for (const task of document.tasks ?? []) {
-      const original = before.tasks.find(item => item.id === task.id);
+      const original = before.tasks?.find(item => item.id === task.id);
       const target = unitDraft.tasks?.find(item => item.id === task.id);
+      if (!original) {
+        if (target && !equal(target, task)) fail('PREPARATION_LOCAL_CONFLICT', 'El borrador de Unidad contiene otro elemento con esa identidad. Conserva ambos borradores.');
+        if (!target) (unitDraft.tasks ??= []).push(structuredClone(task));
+        continue;
+      }
       if (!target && !equal(original?.approved, task.approved)) fail('PREPARATION_LOCAL_CONFLICT', 'La lista de tareas ha cambiado en el borrador de Unidad. Revisa antes de guardar.');
-      if (target) merge(target, original, task, 'approved');
+      if (target) { merge(target, original, task, 'approved'); merge(target, original, task, 'preparation'); }
     }
   }
   return { document, unitDraft };
