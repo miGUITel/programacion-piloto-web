@@ -190,7 +190,7 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
     const drafts = allRecords.filter(record => hasTaskPlan(record.document) && record.document.unit.preparation !== 'ready' && record.document.schemaVersion !== 3);
     if (drafts.length) $('tasks-scope').textContent += ` ${drafts.length} UT sin preparación confirmada: sus nuevas tareas aparecerán al darlas por preparadas en el proyecto; se conserva el seguimiento previo.`;
     const due = tasks.filter(task => task.status === 'to-correct').length;
-    $('view-tasks').textContent = `Tareas${due ? ' · ' + due : ''}${allFailures.length || registryFailures.length ? ' !' : ''}`;
+    $('view-tasks').textContent = `Ta · ${due}${allFailures.length || registryFailures.length ? ' !' : ''}`;
     $('view-tasks').setAttribute('aria-label', `Tareas de todos los módulos${due ? ` · ${due} por corregir` : ''}${allFailures.length || registryFailures.length ? ' · Lista incompleta' : ''}`);
     const list = $('tasks-list'); list.replaceChildren();
     for (const task of visible) {
@@ -242,6 +242,6 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
     for (const id of ['module-scope', 'tasks-scope', 'tasks-count']) $(id).textContent = '';
     for (const id of ['overview-month', 'tasks-module', 'tasks-unit']) $(id).replaceChildren();
     $('tasks-status').value = 'all';
-    $('view-tasks').textContent = 'Tareas'; $('view-tasks').setAttribute('aria-label', 'Tareas de todos los módulos');
+    $('view-tasks').textContent = 'Ta · 0'; $('view-tasks').setAttribute('aria-label', 'Tareas de todos los módulos');
   } };
 }
