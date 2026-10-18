@@ -1,7 +1,7 @@
 import { SuggestionsStore, createSuggestion, suggestionErrorFeedback } from './suggestions.mjs?v=20261018-rf1';
 
 /** Separate UI and persistence: never reads or writes the academic document. */
-export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademicEditorOpen }) {
+export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademicEditorOpen, onSaved = () => {} }) {
   const $ = id => document.getElementById(id);
   const dialog = $('suggestions-dialog');
   const inputs = ['suggestion-type', 'suggestion-title', 'suggestion-description'];
@@ -48,11 +48,12 @@ export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademic
     uncertain = false;
     const sha = result.commitSha || result.sha;
     const revision = typeof sha === 'string' && /^[0-9a-f]{7,64}$/i.test(sha) ? ` Referencia ${sha.slice(0, 8)}.` : '';
-    message(`Sugerencia guardada y confirmada en GitHub.${revision} No se han modificado las notas de tus cursos.`);
+    const confirmation = `Sugerencia guardada y confirmada en GitHub.${revision} No se han modificado las notas de tus cursos.`;
+    message(confirmation);
     // Build the URL from our generated UUID, never from remote text.
     $('saved-suggestion-link').href = `https://github.com/miGUITel/programacion-piloto-datos/blob/main/APP/sugerencias/${entry.id}.json`;
     $('saved-suggestion-link').hidden = false;
-    $('suggestion-message').scrollIntoView({ block: 'nearest' });
+    onSaved({ message: confirmation, url: $('saved-suggestion-link').href });
   }
   function reportError(error) {
     const feedback = suggestionErrorFeedback(error);
@@ -72,7 +73,7 @@ export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademic
       message('Guardando la sugerencia en el registro privado…');
       confirm(await store.save(entry));
     } catch (error) { reportError(error); }
-    finally { setBusy(false); }
+    finally { setBusy(false); if (saved) close(); }
   }
   async function verify() {
     if (isBusy() || !store || !entry || !uncertain) return;
@@ -86,7 +87,7 @@ export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademic
         message('GitHub no encuentra esta sugerencia; también puede deberse al acceso al repositorio. Puedes revisar el acceso y volver a pulsar Guardar sugerencia; se conservará el mismo identificador sin sobrescribir un registro existente.', 'warning');
       }
     } catch (error) { reportError(error); }
-    finally { setBusy(false); }
+    finally { setBusy(false); if (saved) close(); }
   }
   function close() {
     if (isBusy()) return;
@@ -108,6 +109,7 @@ export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademic
   }
   $('open-suggestions').addEventListener('click', () => {
     if (isBusy() || !store || isAcademicEditorOpen()) return;
+    if (saved) reset();
     dialog.showModal();
     updateAvailability();
     if (!entry && !saved) $('suggestion-title').focus();
