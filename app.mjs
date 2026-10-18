@@ -5,7 +5,7 @@ import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compac
 import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261018-module-common';
 import { libraryIntegrity } from './model-v3.mjs?v=20261018-module-common';
 import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-module-common';
-import { createModuleViews } from './module-views-ui.mjs?v=20261018-module-common';
+import { createModuleViews } from './module-views-ui.mjs?v=20261018-module-fixeddate';
 import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261018-module-common';
 import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261018-module-common';
 import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-module-common';
