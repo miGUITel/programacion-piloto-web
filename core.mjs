@@ -1,5 +1,6 @@
-import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261018-rf35-delete';
-import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261018-rf35-delete';
+import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261018-module-common';
+import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261018-module-common';
+import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261018-module-common';
 
 const OWNER = 'miGUITel';
 const REPOSITORY = 'programacion-piloto-datos';
@@ -455,6 +456,18 @@ export class GithubStore {
       const errors = validateCatalog(catalog);
       if (errors.length) throw new ApiError('El catálogo privado no cumple el formato del piloto.', { code: 'INVALID_CATALOG', errors });
       return { catalog, sha };
+    });
+  }
+
+  loadCommon(catalog) {
+    const path = commonCoursePath(catalog);
+    if (!path) return Promise.reject(new ApiError('El catálogo no tiene un destino común confirmado.', { code: 'INVALID_TARGET' }));
+    return this.#enqueue(async () => {
+      const { value: document, sha } = await this.#readJson(path, 'INVALID_DOCUMENT');
+      const errors = validateCommonCourse(document, path);
+      validateJson(document, 'common', errors);
+      if (errors.length) throw new ApiError('Los datos comunes no cumplen el contrato.', { code: 'INVALID_DOCUMENT', errors });
+      return { document, sha };
     });
   }
 
