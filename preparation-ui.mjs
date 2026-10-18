@@ -176,17 +176,18 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
   }
   $('preparation-form').addEventListener('submit', async event => {
     event.preventDefault(); if (isBusy() || blocked || !changed() || unfinishedTask()) return;
+    let confirmed = false;
     setBusy(true);
     try {
       for (const id of values.removals) { const issue = removalIssue(entry, id); if (issue) throw new PreparationError('PREPARATION_LOCAL_CONFLICT', issue); }
       const prepared = preparePreparationSave(loaded, entry, values, getActive());
       const result = await saveTaskDocument(sourceStore, prepared, { entry }, loaded.sha);
       onSaved(entry, result, prepared); loaded = result; blocked = false; fill();
-      message('Preparación guardada y confirmada en GitHub.'); render();
+      render(); onMessage('Preparación guardada y confirmada en GitHub.'); confirmed = true;
     } catch (error) {
       if (error instanceof PreparationError) { message(error.message, 'warning'); if (error.code === 'PREPARATION_STALE') { blocked = true; onBlocked(entry); } }
       else { const feedback = saveErrorFeedback(error); blocked = feedback.requiresReload || error.code === 'HTTP_422'; if (blocked) onBlocked(entry); message(feedback.message + ' [' + feedback.code + ']', feedback.kind); }
-    } finally { setBusy(false); availability(); onStateChange(); }
+    } finally { setBusy(false); availability(); onStateChange(); if (confirmed) close(); }
   });
   for (const id of ['preparation-new-code', 'preparation-new-title', 'preparation-new-session']) $(id).addEventListener('input', () => { availability(); onStateChange(); });
   $('preparation-new-cancel').addEventListener('click', () => { if (isBusy()) return; resetNewTask(); availability(); onStateChange(); });
