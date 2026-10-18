@@ -771,8 +771,9 @@ textarea{resize:vertical;line-height:1.6}
 .overview-weekdays { margin:0 4px; text-align:center; align-items:center; min-width:0; }
 .overview-strip { align-items:start; }
 .overview-slot { min-width:0; display:flex; flex-direction:column; gap:3px; }
-.compact-module-grid .overview-session.band-day { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; width:100%; min-width:0; height:31px; margin:0; padding:2px; border-radius:5px; }
-.overview-cell-date { font-size:12px; font-weight:650; line-height:1.2; white-space:nowrap; }
+.compact-module-grid .overview-session.band-day { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; width:100%; min-width:0; height:45px; margin:0; padding:2px; border-radius:5px; }
+.overview-number { font-size:12px; line-height:1.1; }
+.overview-cell-date { font-size:10px; line-height:1.2; white-space:nowrap; }
 .overview-slot.is-today .overview-session { outline:2px solid #087e78; outline-offset:-2px; }
 .overview-exceptions { display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-top:4px; }
 .overview-exceptions .overview-slot { width:74px; }
