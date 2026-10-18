@@ -11,7 +11,7 @@ import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v
 import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-rf1';
 import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261018-save-close';
 import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261018-rf1';
-import { renderUnitInformation, sessionInformationLines } from './unit-information.mjs?v=20261018-rf1';
+import { renderUnitInformation, sessionInformationLines } from './unit-information.mjs?v=20261018-unit-info-icon';
 import { createPreparationUI } from './preparation-ui.mjs?v=20261018-save-close';
 import { createSessionEditorUI, bindSessionEditRow } from './session-editor-ui.mjs?v=20261018-save-close';
 
@@ -716,7 +716,7 @@ function renderStats() {
 }
 
 function renderSessions() {
-  renderUnitInformation($('unit-information'), draft);
+  renderUnitInformation($('unit-information'), draft, $('unit-information-open'));
   const records = moduleRecords();
   const failures = moduleFailures();
   teachingTimeline = moduleTimeline(records, draft.module.code);
@@ -874,7 +874,9 @@ function disconnect() {
   openSessions.clear();
   $('sessions').replaceChildren();
   $('session-band').replaceChildren();
-  $('unit-information').replaceChildren(); $('unit-information').hidden = true;
+  $('unit-information').close(); $('unit-information').hidden = true;
+  $('unit-information').querySelector('.unit-information-content').replaceChildren();
+  $('unit-information-context').textContent = ''; $('unit-information-open').hidden = true;
   delete $('unit-information').dataset.unitId;
   moduleViews.clear();
   $('exam-reminders').replaceChildren(); $('exam-reminders').hidden = true;
@@ -1079,6 +1081,13 @@ function toggleAllSessions() {
 
 $('login-form').addEventListener('submit', connect);
 $('disconnect').addEventListener('click', disconnect);
+$('unit-information-open').addEventListener('click', () => {
+  if (!busy && draft && !$('unit-information-open').hidden && !$('unit-information').open) $('unit-information').showModal();
+});
+for (const id of ['unit-information-close', 'unit-information-hide']) $(id).addEventListener('click', () => $('unit-information').close());
+$('unit-information').addEventListener('close', () => {
+  if (connection && !$('unit-information-open').hidden) $('unit-information-open').focus({ preventScroll: true });
+});
 $('connection-status').addEventListener('click', event => { if (busy) event.preventDefault(); });
 $('connection-menu').addEventListener('click', event => {
   if (event.target.closest('.toolbar-menu-action') && !event.target.closest('button')?.disabled) $('connection-menu').open = false;
