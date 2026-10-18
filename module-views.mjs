@@ -1,6 +1,7 @@
-import { eventTypes } from './teaching.mjs?v=20261018-rf35-delete';
-import { taskState } from './task-cycle.mjs?v=20261018-rf35-delete';
-import { hasTaskPlan, visiblePlanTasks } from './task-plan.mjs?v=20261018-rf35-delete';
+import { eventTypes } from './teaching.mjs?v=20261018-module-common';
+import { taskState } from './task-cycle.mjs?v=20261018-module-common';
+import { hasTaskPlan, visiblePlanTasks } from './task-plan.mjs?v=20261018-module-common';
+import { moduleWeekdays } from './common-course.mjs?v=20261018-module-common';
 
 export const taskDateFields = ['presentedOn', 'dueOn', 'correctBy'];
 
@@ -41,6 +42,29 @@ export function moduleOverview(module, records, month = '') {
       .filter(s => s.date === date).sort((a, b) => a.activities[0].start.localeCompare(b.activities[0].start) || a.id.localeCompare(b.id)) ?? []) };
   });
   return { dates, months: [...new Set(allDates.map(date => date.slice(0, 7)))], rows };
+}
+
+/** Compact each UT independently; columns mean weekdays, never shared dates. */
+export function weekdayOverview(module, records, common, month = '') {
+  const base = moduleOverview(module, records, month);
+  const confirmedDays = moduleWeekdays(common, module.code);
+  const dayOf = date => new Date(date + 'T12:00:00Z').getUTCDay() || 7;
+  const days = confirmedDays.length ? confirmedDays : [...new Set(base.dates.map(dayOf))].sort((a, b) => a - b);
+  const rows = base.rows.map(row => {
+    const slots = [], exceptions = [];
+    let position = -1;
+    row.cells.forEach((sessions, i) => {
+      if (!sessions.length) return;
+      const date = base.dates[i], weekday = dayOf(date), dayIndex = days.indexOf(weekday);
+      const cell = { date, weekday, sessions };
+      if (dayIndex < 0) { exceptions.push(cell); return; }
+      position++;
+      while (position % days.length !== dayIndex) { slots.push(null); position++; }
+      slots.push(cell);
+    });
+    return { unit: row.unit, record: row.record, slots, exceptions };
+  });
+  return { days, rows, months: base.months, dates: base.dates, confirmedDays: confirmedDays.length > 0 };
 }
 
 /** Derived index only: source references always point back to the unit JSON. */
