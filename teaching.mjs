@@ -1,5 +1,5 @@
 /** Teaching flags are independent of delivery, activity progress and preparation. */
-import { hasTaskPlan, plannedSessionTasks, visibleSessionTasks } from './task-plan.mjs?v=20261018-rf35-delete';
+import { hasTaskPlan, plannedSessionTasks, visibleSessionTasks } from './task-plan.mjs?v=20261018-module-common';
 const types = ['task', 'exam'];
 const excluded = new Set(['Cancelada', 'Reprogramada']);
 
