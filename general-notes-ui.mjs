@@ -1,5 +1,5 @@
-import { GeneralNotesStore, getGeneralText, withGeneralText } from './general-notes.mjs?v=20261018-module-common';
-import { saveErrorFeedback } from './core.mjs?v=20261018-module-common';
+import { GeneralNotesStore, getGeneralText, withGeneralText } from './general-notes.mjs?v=20261018-rf1';
+import { saveErrorFeedback } from './core.mjs?v=20261018-rf1';
 
 export function createGeneralNotesUI({ isBusy, setBusy, onStateChange, getTarget, otherEditorOpen, improvementIcon }) {
   const $ = id => document.getElementById(id);

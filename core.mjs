@@ -1,6 +1,6 @@
-import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261018-module-common';
-import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261018-module-common';
-import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261018-module-common';
+import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261018-rf1';
+import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261018-rf1';
+import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261018-rf1';
 
 const OWNER = 'miGUITel';
 const REPOSITORY = 'programacion-piloto-datos';

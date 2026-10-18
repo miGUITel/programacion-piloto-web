@@ -1,7 +1,7 @@
-import { eventTypes } from './teaching.mjs?v=20261018-module-common';
-import { taskState } from './task-cycle.mjs?v=20261018-module-common';
-import { hasTaskPlan, visiblePlanTasks } from './task-plan.mjs?v=20261018-module-common';
-import { moduleWeekdays } from './common-course.mjs?v=20261018-module-common';
+import { eventTypes } from './teaching.mjs?v=20261018-rf1';
+import { taskState } from './task-cycle.mjs?v=20261018-rf1';
+import { hasTaskPlan, visiblePlanTasks } from './task-plan.mjs?v=20261018-rf1';
+import { moduleWeekdays } from './common-course.mjs?v=20261018-rf1';
 
 export const taskDateFields = ['presentedOn', 'dueOn', 'correctBy'];
 

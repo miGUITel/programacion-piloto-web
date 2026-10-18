@@ -1,17 +1,18 @@
-import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-module-common';
-import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261018-module-common';
-import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-module-common';
-import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261018-module-common';
-import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261018-module-common';
-import { libraryIntegrity } from './model-v3.mjs?v=20261018-module-common';
-import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-module-common';
-import { createModuleViews } from './module-views-ui.mjs?v=20261018-module-sessiondate';
-import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261018-module-common';
-import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261018-module-common';
-import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-module-common';
-import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261018-module-common';
-import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261018-module-common';
-import { createPreparationUI } from './preparation-ui.mjs?v=20261018-module-common';
+import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-rf1';
+import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261018-rf1';
+import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-rf1';
+import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261018-rf1';
+import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261018-rf1';
+import { libraryIntegrity } from './model-v3.mjs?v=20261018-rf1';
+import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-rf1';
+import { createModuleViews } from './module-views-ui.mjs?v=20261018-rf1';
+import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261018-rf1';
+import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261018-rf1';
+import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-rf1';
+import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261018-rf1';
+import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261018-rf1';
+import { renderUnitInformation, sessionInformationLines } from './unit-information.mjs?v=20261018-rf1';
+import { createPreparationUI } from './preparation-ui.mjs?v=20261018-rf1';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -623,6 +624,7 @@ function makeSession(session, sessionIndex, heading) {
   body.hidden = !isOpen;
   const timing = node('p', 'session-timing', `Sesión ${sessionTime(session)} · ${session.activities.length} ${session.activities.length === 1 ? 'porción' : 'porciones'} · Primera porción ${first.start}–${first.end}${!heading.periods.length ? ' · Periodos sin correspondencia confirmada' : ''}`);
   body.append(timing);
+  for (const line of sessionInformationLines(session)) body.append(node('p', 'session-information', line));
   if (session.activities.length === 1) body.append(node('p', 'activities-label', 'Esta sesión tiene una única porción.'));
   session.activities.slice(1).forEach((activity, index) => body.append(makeActivity(activity, sessionIndex, index + 1)));
   toggle.addEventListener('click', () => {
@@ -661,6 +663,7 @@ function renderStats() {
 }
 
 function renderSessions() {
+  renderUnitInformation($('unit-information'), draft);
   const records = moduleRecords();
   const failures = moduleFailures();
   teachingTimeline = moduleTimeline(records, draft.module.code);
@@ -820,6 +823,8 @@ function disconnect() {
   openSessions.clear();
   $('sessions').replaceChildren();
   $('session-band').replaceChildren();
+  $('unit-information').replaceChildren(); $('unit-information').hidden = true;
+  delete $('unit-information').dataset.unitId;
   moduleViews.clear();
   $('exam-reminders').replaceChildren(); $('exam-reminders').hidden = true;
   $('stats').replaceChildren();

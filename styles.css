@@ -1029,3 +1029,11 @@ textarea{resize:vertical;line-height:1.6}
   .preparation-task { min-height:44px; }
   .preparation-unit-link { display:inline-flex; align-items:center; min-height:44px; }
 }
+
+/* Read-only context recovered by RF 1. */
+.unit-information { margin: .6rem 0; padding: .7rem 1rem; border: 1px solid var(--line, #d7e1dc); border-radius: 8px; }
+.unit-information summary { cursor: pointer; font-weight: 700; }
+.unit-information h3 { font-size: 1rem; margin: 1rem 0 .4rem; }
+.unit-information p, .session-information { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
+.unit-information p { margin: .4rem 0; }
+.session-information { margin: .4rem 0; color: var(--muted, #5c7379); font-size: .86rem; }

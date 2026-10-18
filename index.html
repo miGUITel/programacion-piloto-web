@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261018-module-sessiondate">
-  <script type="module" src="./app.mjs?v=20261018-module-sessiondate"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261018-rf1">
+  <script type="module" src="./app.mjs?v=20261018-rf1"></script>
 </head>
 <body>
   <header class="topbar">
@@ -62,6 +62,7 @@
         <div id="recovery-actions" class="recovery-actions" hidden><button id="download-draft" type="button" class="button button-small">Descargar borrador JSON</button><span>El borrador permanece aquí hasta que lo descartes o cierres la página.</span></div>
         <div id="unit-view">
         <div id="unit-preparation" class="unit-preparation"></div>
+        <section id="unit-information" class="unit-information" aria-label="Información de la unidad" hidden></section>
         <section id="session-band-section" class="session-band-section" aria-label="Sesiones de la unidad">
           <div class="band-caption"><p><span class="band-key task-key"></span>Tarea <span class="band-key exam-key"></span>Examen <span class="band-key elapsed-key"></span>Tiempo transcurrido</p></div>
           <div class="session-band-scroll" tabindex="0" role="region" aria-label="Sesiones de la UT; desliza para ver todas"><ol id="session-band" class="session-band"></ol></div>

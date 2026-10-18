@@ -6,7 +6,7 @@ export const moduleProfilePath = code => codes.has(code) ? `${code}/module.json`
 
 export function validateModuleProfile(doc, moduleCode) {
   const errors = [];
-  if (!object(doc) || doc.schemaVersion !== 1 || !codes.has(moduleCode)
+  if (!object(doc) || ![1, 2].includes(doc.schemaVersion) || !codes.has(moduleCode)
     || !object(doc.module) || doc.module.code !== moduleCode || !text(doc.module.name)) return ['Información general: identidad o versión no válida.'];
   if (!object(doc.annualPlan) || !Array.isArray(doc.annualPlan.units)) return ['Programación anual no válida.'];
   const ids = new Set();
@@ -24,13 +24,27 @@ export function validateModuleProfile(doc, moduleCode) {
   if (!Array.isArray(doc.methodology) || doc.methodology.some(section => !object(section) || !text(section.title) || !text(section.text))) errors.push('Metodología no válida.');
   if (!object(doc.assessment)) return [...errors, 'Calificación no válida.'];
   const grading = doc.assessment;
-  for (const key of ['overall', 'unit', 'finalProject']) {
+  const weightGroups = doc.schemaVersion === 1 ? ['overall', 'unit', 'finalProject'] : [];
+  if (doc.schemaVersion === 2) {
+    if (!Array.isArray(grading.sections) || !grading.sections.length || grading.sections.some(section => !object(section)
+      || !text(section.id) || !text(section.title) || !text(section.text))) errors.push('Apartados de calificación no válidos.');
+    else {
+      if (new Set(grading.sections.map(section => section.id)).size !== grading.sections.length) errors.push('Apartados de calificación duplicados.');
+      for (const section of grading.sections) if (Object.hasOwn(section, 'components')) {
+        const components = section.components;
+        if (!Array.isArray(components) || !components.length || components.some(c => !object(c) || !text(c.label)
+          || !Number.isFinite(c.weight) || c.weight < 0 || c.weight > 1)
+          || Math.abs(components.reduce((sum, c) => sum + c.weight, 0) - 1) > 1e-9) errors.push('Reparto de calificación incompleto o no válido.');
+      }
+    }
+  }
+  for (const key of weightGroups) {
     const weights = grading[key];
     if (!object(weights) || !Array.isArray(weights.components) || !weights.components.length
       || weights.components.some(c => !object(c) || !text(c.label) || !Number.isFinite(c.weight) || c.weight < 0 || c.weight > 1)
       || Math.abs(weights.components.reduce((sum, c) => sum + c.weight, 0) - 1) > 1e-9) errors.push(`Calificación ${key}: reparto incompleto o no válido.`);
   }
-  if (!object(grading.examGuidance) || grading.examGuidance.approximate !== true || !text(grading.examGuidance.text)) errors.push('Orientación del examen no válida.');
+  if (doc.schemaVersion === 1 && (!object(grading.examGuidance) || grading.examGuidance.approximate !== true || !text(grading.examGuidance.text))) errors.push('Orientación del examen no válida.');
   if (!object(grading.learningOutcomeWeights) || !['pending', 'confirmed'].includes(grading.learningOutcomeWeights.status)) errors.push('Estado de ponderaciones de RA no válido.');
   else if (grading.learningOutcomeWeights.status === 'pending' && grading.learningOutcomeWeights.values !== null) errors.push('Los pesos pendientes no pueden convertirse en pesos iguales.');
   else if (grading.learningOutcomeWeights.status === 'confirmed') {
@@ -40,10 +54,10 @@ export function validateModuleProfile(doc, moduleCode) {
   }
   if (!object(grading.evaluation) || grading.evaluation.method !== 'mean-of-completed-learning-outcomes' || !text(grading.evaluation.text)) errors.push('Cálculo por evaluación no válido.');
   if (!object(grading.passing) || grading.passing.allLearningOutcomesRequired !== true || grading.passing.independentTaskExamUnitMinimums !== false) errors.push('Condiciones de superación no válidas.');
-  if (!text(grading.passing?.text) || !object(grading.recovery) || !text(grading.recovery.text)) errors.push('Condiciones o recuperación no descritas.');
-  if (!object(grading.rubric) || !Array.isArray(grading.rubric.levels) || !grading.rubric.levels.length
+  if (!text(grading.passing?.text) || (doc.schemaVersion === 1 || Object.hasOwn(grading, 'recovery')) && (!object(grading.recovery) || !text(grading.recovery.text))) errors.push('Condiciones o recuperación no descritas.');
+  if ((doc.schemaVersion === 1 || Object.hasOwn(grading, 'rubric')) && (!object(grading.rubric) || !Array.isArray(grading.rubric.levels) || !grading.rubric.levels.length
     || grading.rubric.levels.some(level => !object(level) || !Number.isFinite(level.grade) || !text(level.text))
-    || !text(grading.rubric.exception)) errors.push('Rúbrica no válida.');
+    || !text(grading.rubric.exception))) errors.push('Rúbrica no válida.');
   if (Object.hasOwn(doc, 'proposals') && (!Array.isArray(doc.proposals) || doc.proposals.some(p => !object(p) || p.status !== 'pending' || !text(p.text)))) errors.push('Propuestas pendientes no válidas.');
   if (!Array.isArray(doc.pending) || doc.pending.some(item => !object(item) || !text(item.id) || !text(item.title) || !text(item.detail))) errors.push('Decisiones pendientes no válidas.');
   if (!object(doc.curriculum) || !Array.isArray(doc.curriculum.outcomes) || doc.curriculum.outcomes.some(ra => !object(ra) || !text(ra.code) || !text(ra.text)

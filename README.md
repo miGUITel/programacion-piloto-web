@@ -1,6 +1,34 @@
 # Interfaz del piloto
 
+### Vista compacta de Módulo y datos comunes
+
+La vista de Módulo utiliza de forma fija **sesión y fecha**: el número de sesión encima y la fecha debajo. La descripción completa permanece en la ayuda accesible y al abrirla. El mes aparece al comenzar la fila y al cambiar de mes; el cambio de año se identifica. Se mantiene la alineación por días y el ajuste al ancho disponible.
+
+Decisión corregida del docente: conservar sesión y fecha, sin selector provisional ni recordatorio, y mantener eliminados los comentarios «Sin sesiones» de la columna UT. Los avisos de lectura incompleta, preparación, colores y accesos permanecen.
+
+Dentro de Módulo, **Sesiones · Horario · Calendario escolar · Evaluaciones** comparten la misma zona. Las tres consultas comunes leen exclusivamente el JSON privado enlazado por `catalog.common.path`, con validación del contrato y sin métodos de escritura. Horario y Evaluaciones permiten consultar este módulo o todos; las evaluaciones se filtran por el grupo confirmado, separando carácter orientativo, límite ordinario y recuperación. Calendario muestra el comienzo/final de clases y los intervalos no lectivos originales. Las excepciones históricas de horario se conservan en su ámbito.
+
+Actualizar consulta vuelve a leer los datos comunes sin cambiar la UT abierta ni guardar sus borradores. Una lectura fallida retira el contenido común anterior y permite reintentar; las sesiones y sus notas siguen intactas. Desconectar limpia también los datos comunes y descarta resultados de peticiones anteriores. No se añaden datos docentes al código público ni sincronización con Excel o Calendar.
+
+## Información general del módulo — consulta implantada
+
+El catálogo puede incluir `modules[].profile`, limitado a `MÓDULO/module.json` del repositorio privado. El botón **Información**, junto al selector del módulo, abre Programación, Metodología y Calificación sin exigir una UT abierta. Los módulos sin documento muestran su incorporación pendiente, sin crearlo ni recuperar Excel por defecto.
+
+La lectura es independiente y utiliza GET con versión comprobada. El diálogo no guarda nada ni cambia Unidad, filtros o borradores de seguimiento. Actualizar vuelve a leer solo el documento general; una lectura fallida retira el contenido anterior de la vista y no descarta notas. Los textos se representan literalmente, sin HTML. Las cargas anuales se expresan en periodos lectivos y los datos no leídos no se interpretan como ausencia de impartición.
+
+La programación general conserva el recorrido anual y sus referencias curriculares, no copias de sesiones, tareas, estados o preparación. Las reglas de calificación, metodología, marco curricular y decisiones pendientes permanecen privadas. Las ponderaciones sin confirmar no se convierten en pesos iguales ni generan cálculos automáticos. La referencia anual no se presenta como programación inicial inmutable sin confirmación. No se modifica Moodle, Calendar ni Excel.
+
+El lector admite fichas generales de versión 1 y 2. La versión 2 describe apartados de calificación propios de cada módulo sin exigir un proyecto final ni repartir pesos desconocidos. En Unidad, **Información de la unidad · diseño, referencias y notas** muestra el contexto existente y el contenido pendiente de ubicar; las sesiones muestran también sus notas de preparación y materiales. Estas consultas no reprograman actividades ni modifican seguimiento.
+
 Cliente estático, sin compilación ni dependencias externas, preparado para GitHub Pages. `index.html`, `styles.css`, `app.mjs`, `core.mjs`, `teaching.mjs`, `unit-tools.mjs`, `general-notes.mjs`, `general-notes-ui.mjs`, `suggestions.mjs`, `suggestions-ui.mjs` y `.nojekyll` forman la aplicación. Este directorio no contiene documentos docentes ni datos de muestra.
+
+## Fuente académica vigente
+
+Desde la decisión docente del 18/10/2026, todas las UT y bloques de PRO, SR, LM, ED y SOS se preparan, planifican y siguen en los JSON privados vigentes de GitHub mediante la app web. Los Excel de módulo son solo respaldo, sin actualización operativa en paralelo; no hay sincronización automática app–Excel ni app–Calendar. El nombre histórico «piloto» no limita este flujo a SR y SOS.
+
+El JSON privado `common/course-2026-2027.json` de `miGUITel/programacion-piloto-datos`, localizado por `catalog.common.path`, es la fuente única de horario, calendario escolar y límites de evaluación. `26 COMÚN.xlsx` queda como respaldo sin actualización en paralelo. Las referencias de periodos de la app son derivadas y no lo sustituyen. La información general, metodología, criterios y definiciones de RA/CE sin destino validado quedan pendientes de migración y conciliación, no mantienen activa la antigua PD o MET.
+
+La migración sigue en curso: consultar el catálogo y los JSON remotos para conocer lo disponible y señalar lo que falte, sin inventar datos, activar entradas incompletas ni volver automáticamente a Excel. Las marcas técnicas `authority` y las versiones existentes se conservan; esta documentación no modifica los datos ni acredita que todo esté migrado. Las pruebas e hitos fechados de las secciones siguientes describen la evolución técnica, no una excepción vigente a esta regla.
 
 ## Acceso
 
@@ -211,6 +239,24 @@ Petición del docente del 17/10/2026: al marcar una tarea como Presentada, si no
 
 Petición del docente del 17/10/2026: al programar las sesiones durante el diseño de una UT en el proyecto del módulo, identificar explícitamente en qué sesión se presentará cada tarea. La marca azul de esa sesión debe generarse automáticamente a partir de esa presentación prevista, sin exigir marcarla manualmente en la app ni esperar a confirmar Presentada. No deducirla solo del título ni confundir cualquier sesión de trabajo sobre una tarea con su presentación. La marca expresa planificación; no confirma que la tarea ya se haya presentado o abierto al alumnado. Conservar la confirmación real de Presentada y su fecha como datos independientes. Implantado mediante `tasks[].presentation`; se mantiene la selección manual de tipos como excepción reversible.
 
+### Cierre de tareas y exámenes y reprogramación — requisito registrado, acción pendiente
+
+Al cerrar la planificación con la lista oficial y sus sesiones confirmadas, tareas y exámenes deben aparecer tanto en el gestor como en su sesión prevista, con azul o naranja respectivamente, sin confirmar presentación ni corrección por ese motivo. Comprobarlo desde cada nueva importación. La lista del examen deberá mostrar su fecha prevista vigente, distinta de sus fechas reales.
+
+Queda pendiente una acción de reprogramación que mueva solo el examen y actualice conjuntamente lista, destino naranja y origen cuando proceda, conservando identidad, notas, seguimiento y otras marcas. Recalcular su aviso y exigir confirmarlo para la nueva fecha. No cambiar automáticamente plazos ni ejecución real; resolver destinos entre UT y selecciones manuales antes de implementarlos. Para tareas ordinarias se admite presentar después de la sesión azul, anotar o solicitar reprogramación sin bloqueo ni cambios automáticos.
+
+Recomendación: comprobar los vínculos y la aparición durante la importación; implementar la acción de reprogramar después de completar los lotes validados, antes de usarla. El contrato y las pruebas pendientes están en `../datos/docs/MODELO_DATOS_UT.md`, apartado «Cierre de la planificación y reprogramación de exámenes». No se ha cambiado el código ni los JSON académicos por este registro.
+
+### RF 10 — Control de avance por porción — prioridad 11, pendiente de implementar
+
+Acuerdo del docente del 18/10/2026: cada porción tendrá un control **Pendiente / Parcial / Completada**, con una nota opcional de lo que falta. Al marcar expresamente la sesión como **Impartida**, todas sus porciones se marcarán por defecto como **Completadas** en el borrador; después el docente podrá retocar las que estén Pendientes o Parciales y guardar los cambios.
+
+La asignación por defecto responde a esa acción expresa; no se repite al abrir, actualizar o guardar una sesión ya impartida. Los retoques y las notas existentes se conservan. El avance permanece separado de la preparación, las confirmaciones de tareas y los avisos de examen, y no determina por sí solo la impartición de la sesión ni tiempos reales. No se rellenan sesiones históricas ni se reinterpretan marcas importadas al registrar este requisito. La prioridad se mantiene en **11**. El contrato y los criterios de aceptación están en `../datos/docs/MODELO_DATOS_UT.md`, apartado «Sesiones, porciones y notas».
+
+### Resumen temporal con reprogramaciones — criterio por revisar
+
+El resumen actual suma los minutos de todos los registros de sesión, incluidos los históricos Reprogramada; el cómputo de impartición sí depende de su estado. Al mostrar una UT con historial, esa suma puede diferir de su carga inicial y de los minutos de las sesiones vigentes. Revisar con el docente si conviene separar esas medidas o cambiar el rótulo antes de modificar el cálculo. No borrar la sesión histórica ni alterar planificación o estados para ajustar visualmente un total. Este hallazgo no introduce un cambio de código ni una regla de cómputo nueva.
+
 ### RF 3 y preparación individual de tareas — implantado el 18/10/2026
 
 La etiqueta se muestra en **Unidad** y **Módulo**. La vista **Preparación** reúne las UT del catálogo, con filtros por módulo y estado. Pulsar la etiqueta abre el editor; pulsar el código de una UT abre sus sesiones. Si otra unidad tiene notas pendientes, se ofrece guardarlas antes de cambiar o cancelar conservándolas.
@@ -243,7 +289,7 @@ Pruebas de usuario:
 
 ### Preparación de sesiones — ampliaciones pendientes
 
-RF 3 incorpora ya la marca individual de sesión lista y las acciones conjuntas en su editor. RF 4 mantiene pendientes la marca en cada cabecera y/o una vista anual específica de sesiones, y concretar qué cambios de planificación invalidan una revisión. Todas las vistas usarán `session.preparation`; no hay marcas por porción ni inferencias desde Impartida o recursos existentes.
+RF 3 incorpora ya la marca individual de sesión lista y las acciones conjuntas en su editor. RF 4 mantiene pendientes la marca en cada cabecera y/o una vista anual específica de sesiones, y concretar qué cambios de planificación invalidan una revisión. Todas las vistas usarán session.preparation; no hay marcas por porción ni inferencias desde Impartida o recursos existentes.
 
 ### Requisitos pendientes, parciales o pendientes de validación — 18/10/2026
 
@@ -254,7 +300,6 @@ Los números RF son estables. Se conservan las prioridades acordadas (1 es la m�
 | 3 | 1 | Preparación automática de las UT | Implementado; cierre de validación. Etiquetas, vista global, enlace a sesiones, cálculo automático y guardado independiente disponibles. Comprobar el recálculo tras eliminar tareas o exámenes. |
 | 5 | 2 | Preparación de PPT, web, tareas y examen | Implementado; cierre de validación. Edición de PPT/Web, preparación individual, altas y eliminación de tareas/exámenes disponibles. Comprobar Eliminar, Deshacer y persistencia tras guardar. |
 | 13 | 3 | Editar información general y configuración del módulo | Pendiente. La información validada se consulta; falta definir e implementar su edición. |
-| 1 | 4 | Completar incorporación de UT y bloques | Parcial. El catálogo se ha ampliado; falta cerrar las carencias y conciliaciones de las incorporaciones. Una entrada no acredita migración completa ni preparación. |
 | 2 | 5 | Validar edición independiente de tareas | Implementado; validación de uso pendiente del editor Guardar tarea. La prueba de Guardar preparación no sustituye esta comprobación. |
 | 4 | 6 | Preparación de sesiones | Parcial. Marcas individuales y acciones conjuntas disponibles en Preparación. Faltan el acceso desde cada cabecera y/o vista anual de sesiones y acordar cuándo revisar su preparación. |
 | 6 | 7 | Fecha prevista de exámenes en Tareas | Parcial. Existe en la referencia de sesión y la ayuda; falta mostrarla claramente en la fila, separada de las fechas reales. |
@@ -269,19 +314,21 @@ RF 3 y RF 5 no tienen funciones pendientes dentro del alcance aprobado después 
 
 ### Fuera de la lista pendiente: funciones ya implantadas
 
+**RF 1 (prioridad conservada: 4): incorporación y revisión técnica completadas para la información existente en el ámbito autorizado.** Las fichas generales de los cinco módulos tienen destino privado y consulta en la app. Se ha comprobado la cobertura de las unidades incorporadas y se ha hecho visible el contexto que faltaba en pantalla. Las decisiones académicas expresamente aplazadas por el docente y el diseño aún no elaborado permanecen identificados en los JSON; no se inventan para cerrar la incorporación. Esta comprobación no declara preparadas las unidades ni convierte el catálogo en prueba de un diseño futuro terminado.
+
 Las sugerencias sobre selectores compactos de módulo y UT, mejoras generales, banda de sesiones, vista del módulo, gestor global de tareas y ciclo de presentación/corrección tienen implementación descrita arriba. Sus ampliaciones concretas siguen en los requisitos pendientes y la implantación no sustituye la revisión del docente. Se conservan las sugerencias originales aunque su estado inicial figure como `pendiente`; esta lista consolidada determina el trabajo restante.
 
-### Transición al uso diario y ampliación — propuesta en análisis
+### Transición al uso diario y ampliación — decisión vigente y antecedentes
 
-El paso 1 dispone de una [especificación de destino en el repositorio privado de datos](https://github.com/miGUITel/programacion-piloto-datos/blob/main/docs/MODELO_DATOS_UT.md). El paso 2 independiza Tareas y Unidad. El paso 3 añade compatibilidad con unidades v3 y registros de tareas v2, conservando la lectura y guardado de los formatos anteriores. Abrir un documento no cambia su versión. La importación y activación de una primera UT corresponden al paso 4.
+El paso 1 dispone de una [especificación de destino en el repositorio privado de datos](https://github.com/miGUITel/programacion-piloto-datos/blob/main/docs/MODELO_DATOS_UT.md). El paso 2 independiza Tareas y Unidad. El paso 3 añade compatibilidad con unidades v3 y registros de tareas v2, conservando la lectura y guardado de los formatos anteriores. Abrir un documento no cambia su versión. Las incorporaciones se publican y validan en el paso 4; su estado concreto se consulta en los JSON y el catálogo privados, no se mantiene en este README.
 
-El 17/10/2026 el docente propone incorporar las UT preparadas de todos los módulos y utilizar la app para su seguimiento diario. Solicita únicamente análisis y anotación: no se autoriza una importación ni un cambio de fuente de verdad mediante este registro.
+El 17/10/2026 el docente propuso la ampliación y solicitó inicialmente solo análisis y anotación. La decisión posterior del 18/10/2026 establece JSON y app para todas las UT y módulos y deja los Excel como respaldo. El cambio de procedimiento no autoriza por sí solo una migración masiva ni certifica la incorporación de documentos pendientes.
 
-Tras validar el paso 2 de independencia de Tareas, preparar la compatibilidad del modelo y ampliar por lotes verificables. En cada incorporación, contrastar el Excel vigente con el JSON actual y conciliar las tareas históricas con la lista oficial, conservando sus identificadores, fechas y seguimiento ya confirmados. No sobrescribir datos recientes de la app con el Excel ni eliminar registros históricos cuya UT no se incorpore. La consolidación de los registros es explícita; el editor unificado no traslada tareas entre archivos automáticamente.
+Las incorporaciones pendientes se preparan por lotes verificables y expresamente autorizados. Partir siempre del catálogo y los JSON remotos actuales; si se autoriza extraer datos de un Excel de respaldo, comprobar el ámbito y su procedencia y conciliarlo con el seguimiento posterior. No abrir ni descargar los Excel de módulo por rutina para trabajar con la app, sobrescribir datos recientes o eliminar registros históricos cuya UT no se incorpore. La consolidación es explícita; el editor unificado no traslada tareas entre archivos automáticamente.
 
-Para cada alcance migrado y validado, acordar una fuente única de trabajo diario y conservar el Excel anterior como referencia; no mantener dos seguimientos editables. La planificación general, metodología, criterios y datos comunes continúan en sus fuentes vigentes hasta una migración expresamente acordada. En la app se consulta y registra el día a día; en los proyectos se diseña y revisa la planificación, se preparan recursos y se cierran las tareas oficiales.
+La fuente única de trabajo diario para todos los módulos es JSON y app, sin seguimiento paralelo en Excel. Los datos generales del módulo sin destino validado requieren conciliación específica; no se dan por disponibles ni se reconstruyen desde el respaldo. El JSON privado `common/course-2026-2027.json` de `miGUITel/programacion-piloto-datos`, localizado por `catalog.common.path`, es la fuente única de horario, calendario escolar y límites de evaluación. `26 COMÚN.xlsx` queda como respaldo sin actualización en paralelo. En los proyectos se diseña y revisa con el docente; el resultado se guarda en los JSON y se consulta o confirma en la app, sin que esta decida el diseño automáticamente.
 
-Ampliaciones de visión global propuestas: configuración de módulos, metodología, planificación anual y acceso a recursos por UT. Mantener pendientes las ampliaciones de preparación de sesiones de RF 4 y la vista ampliada de sesión. Calendar y Aula Virtual siguen siendo servicios separados; no hay sincronización o publicación automática. La app requiere conexión y guardado explícito; la recuperación de borradores tras cerrar o recargar no está implementada.
+La consulta de programación anual, metodología y calificación está implantada para los módulos con `profile` validado, desde **Información**. Siguen propuestas la edición de esa configuración y el acceso a recursos por UT. Mantener también pendientes la definición de preparación de sesiones y su vista global, y la vista ampliada de sesión. Calendar y Aula Virtual siguen siendo servicios separados; no hay sincronización o publicación automática. La app requiere conexión y guardado explícito; la recuperación de borradores tras cerrar o recargar no está implementada.
 
 ## Formato del JSON
 
@@ -293,7 +340,7 @@ En v3 la visibilidad depende de `approved: true` o de seguimiento real presentad
 
 Se validan y conservan objetivos, contenidos, notas particulares, carga con unidad de medida, referencias curriculares y a recursos, preparación de materiales y sesiones. No se infieren estos datos al leer. RF 3 añade el editor de preparación de materiales y sesiones. Cada examen v3 conserva su aviso en `announcement.examDate`; varios exámenes de una sesión tienen confirmaciones independientes. Al desmarcar se retira solo la fecha de confirmación y se conservan extensiones desconocidas. Los avisos antiguos de sesión permanecen compatibles, sin asignarlos automáticamente a varios exámenes. Las porciones de sesiones compartidas v3 se comprueban también entre UT.
 
-La preparación de importación es una herramienta separada de la app: exige inventario de las celdas y dependencias relevantes, correspondencias explícitas de tareas y evidencia de actualidad para cada lote. Genera una propuesta con versiones esperadas y archivos de procedencia; no publica por sí sola ni reemplaza un JSON operativo por el Excel. El procedimiento técnico y las herramientas se mantienen junto al proyecto local.
+La extracción desde un respaldo es una herramienta separada de la app y se utiliza solo para una incorporación o recuperación expresamente autorizada: exige inventario completo del ámbito y dependencias relevantes, correspondencias explícitas de tareas y comprobación de procedencia para ese lote. Genera una propuesta con versiones esperadas y archivos de procedencia; no publica por sí sola, no reemplaza un JSON operativo por Excel ni es un paso rutinario del diseño de una UT nueva. El procedimiento técnico y las herramientas se mantienen junto al proyecto local.
 
 Verificación del paso 3: 156 pruebas de JavaScript y cuatro pruebas del lector Excel satisfactorias, incluido un recorrido completo con OOXML ficticio. La lectura de compatibilidad de los seis documentos académicos actuales conserva sus 19 tareas únicas y todos sus objetos sin mutarlos. Prueba de navegador aislada: tarea v3 aprobada sin sesión, propuesta de hoy en las tres fechas, guardado/relectura, y confirmación de uno de dos exámenes de la misma sesión sin confirmar el otro. Esta evidencia acredita preparación técnica; los Excel reales no se han auditado ni migrado en este paso.
 
@@ -307,7 +354,7 @@ En el proyecto del módulo se cierra y aprueba la lista. Las tareas aprobadas ap
 
 ### Tareas históricas sin sesiones importadas
 
-`catalog.modules[].taskRegistry` admite únicamente `MÓDULO/tasks.json`. Cada registro privado contiene `{ schemaVersion: 1, moduleCode, tasks }`; sus tareas tienen `id`, `unitCode`, `type`, `code`, `title` y el mismo seguimiento anterior, sin sesiones inventadas ni cambios de autoridad de PD/MET. El gestor combina estas entradas con las listas de las UT sin mantener una misma tarea en ambas fuentes. Al incorporar posteriormente una UT completa se conciliará el registro histórico, conservando IDs y seguimiento; no reimportar por encima de cambios del docente.
+`catalog.modules[].taskRegistry` admite únicamente `MÓDULO/tasks.json`. Cada registro privado contiene `{ schemaVersion: 1, moduleCode, tasks }`; sus tareas tienen `id`, `unitCode`, `type`, `code`, `title` y el mismo seguimiento anterior, sin sesiones inventadas ni dar por migrada la planificación general o la metodología. Si faltan sus destinos validados, se concilian con el docente, sin reactivar PD/MET del respaldo. El gestor combina estas entradas con las listas de las UT sin mantener una misma tarea en ambas fuentes. Al incorporar posteriormente una UT completa se conciliará el registro histórico, conservando IDs y seguimiento; no reimportar por encima de cambios del docente.
 
 Desde el gestor, todas las tareas utilizan **P, C o lápiz → Guardar tarea**, incluidas las históricas. No hay escritura automática por pulsar una casilla. El guardado conserva las otras tareas y campos adicionales, utiliza el SHA leído y vuelve a leer para confirmar. Un conflicto o resultado incierto bloquea el reenvío; permite descargar el borrador y revisar GitHub explícitamente, sin reintentos automáticos. Las lecturas fallidas se señalan como lista incompleta. La vista global filtra también UT históricas que no tienen sesiones en el piloto. Las anotaciones y confirmaciones realizadas directamente en Unidad mantienen su borrador y Guardar cambios; la coordinación con Tareas impide guardar notas ajenas o perderlas.
 
@@ -355,14 +402,3 @@ La política CSP permite código y estilos únicamente del mismo origen y conexi
 Para una comprobación local se necesita servir este directorio por HTTP; abrir el HTML como `file:` puede impedir los módulos ES. No hace falta instalar paquetes ni ejecutar un proceso de compilación. El archivo `.nojekyll` evita el procesamiento de Jekyll. Los cambios del documento privado no requieren volver a publicar esta interfaz.
 
 Las comprobaciones automatizadas de esquema y persistencia corresponden a los tests de `core.mjs`. Las pruebas de interfaz deben usar datos sintéticos fuera del directorio publicable y no deben grabar credenciales reales en capturas, trazas o fixtures.
-
-
-### Vista compacta de Módulo y datos comunes
-
-La vista de Módulo utiliza de forma fija **sesión y fecha**: el número de sesión encima y la fecha debajo. La descripción completa permanece en la ayuda accesible y al abrirla. El mes aparece al comenzar la fila y al cambiar de mes; el cambio de año se identifica. Se mantiene la alineación por días y el ajuste al ancho disponible.
-
-Decisión corregida del docente: conservar sesión y fecha, sin selector provisional ni recordatorio, y mantener eliminados los comentarios «Sin sesiones» de la columna UT. Los avisos de lectura incompleta, preparación, colores y accesos permanecen.
-
-Dentro de Módulo, **Sesiones · Horario · Calendario escolar · Evaluaciones** comparten la misma zona. Las tres consultas comunes leen exclusivamente el JSON privado enlazado por `catalog.common.path`, con validación del contrato y sin métodos de escritura. Horario y Evaluaciones permiten consultar este módulo o todos; las evaluaciones se filtran por el grupo confirmado, separando carácter orientativo, límite ordinario y recuperación. Calendario muestra el comienzo/final de clases y los intervalos no lectivos originales. Las excepciones históricas de horario se conservan en su ámbito.
-
-Actualizar consulta vuelve a leer los datos comunes sin cambiar la UT abierta ni guardar sus borradores. Una lectura fallida retira el contenido común anterior y permite reintentar; las sesiones y sus notas siguen intactas. Desconectar limpia también los datos comunes y descarta resultados de peticiones anteriores. No se añaden datos docentes al código público ni sincronización con Excel o Calendar.

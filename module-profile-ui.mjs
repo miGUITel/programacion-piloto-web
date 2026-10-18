@@ -1,4 +1,5 @@
-import { annualPlanRows, annualPlannedPeriods } from './module-profile.mjs?v=20261018-module-common';
+import { annualPlanRows, annualPlannedPeriods } from './module-profile.mjs?v=20261018-rf1';
+import { preparationSummary } from './preparation.mjs?v=20261018-rf1';
 
 export function createModuleProfileUI({ isBusy, setBusy, getConnection, getTarget, getRecords, otherEditorOpen }) {
   const $ = id => document.getElementById(id);
@@ -54,7 +55,10 @@ export function createModuleProfileUI({ isBusy, setBusy, getConnection, getTarge
       if (outline.criteriaStatus === 'pending') paragraph(curriculum, 'CE pendientes de concretar', 'profile-pending');
       const detail = node('td');
       paragraph(detail, entry ? unit ? `${unit.sessions.length} sesiones en el JSON de la UT` : 'UT incorporada; detalle no leído en esta vista' : 'Pendiente de incorporar el detalle');
-      if (unit?.unit.resourcePreparation) paragraph(detail, ['ppt', 'web', 'tasks', 'exam'].map((key, index) => `${['PPT', 'WEB', 'Tareas', 'Examen'][index]}: ${unit.unit.resourcePreparation[key] ?? 'Sin confirmar'}`).join(' · '), 'scope-note');
+      if (unit) {
+        const preparation = preparationSummary(unit);
+        paragraph(detail, `${preparation.label} · ${preparation.materials}/4 materiales · ${preparation.sessions}/${preparation.total} sesiones listas`, 'scope-note');
+      }
       tr.append(curriculum, detail); body.append(tr);
     }
     table.append(body); scroll.append(table); section.append(scroll);
@@ -78,21 +82,28 @@ export function createModuleProfileUI({ isBusy, setBusy, getConnection, getTarge
   function renderAssessment(profile) {
     const section = $('profile-assessment'); section.replaceChildren();
     const grading = profile.assessment;
-    for (const [key, title] of [['overall', 'Nota final del módulo'], ['unit', 'Dentro de cada UT'], ['finalProject', 'Proyecto final']]) {
+    const sections = profile.schemaVersion === 2 ? grading.sections : [['overall', 'Nota final del módulo'], ['unit', 'Dentro de cada UT'], ['finalProject', 'Proyecto final']].map(([key, title]) => ({ ...grading[key], title }));
+    for (const { title, text, components } of sections) {
       section.append(node('h3', '', title));
-      list(section, grading[key].components.map(c => `${new Intl.NumberFormat('es-ES', { style: 'percent', maximumFractionDigits: 1 }).format(c.weight)} ${c.label}`));
+      paragraph(section, text);
+      if (components) list(section, components.map(c => `${new Intl.NumberFormat('es-ES', { style: 'percent', maximumFractionDigits: 1 }).format(c.weight)} ${c.label}`));
     }
-    paragraph(section, grading.examGuidance.text);
-    paragraph(section, grading.unit.scopeNote, 'scope-note');
+    paragraph(section, grading.examGuidance?.text);
+    paragraph(section, grading.unit?.scopeNote, 'scope-note');
     section.append(node('h3', '', 'Evaluaciones y superación'));
     paragraph(section, grading.evaluation.text); paragraph(section, grading.passing.text);
     paragraph(section, grading.learningOutcomeWeights.status === 'pending' ? 'Ponderaciones de RA pendientes del documento oficial. No se presuponen pesos iguales ni se calculan notas.' : 'Ponderaciones de RA confirmadas. Esta vista no almacena notas del alumnado.', 'profile-pending');
+    if (grading.learningOutcomeWeights.status === 'confirmed') list(section, grading.learningOutcomeWeights.values.map(item => `RA${item.raCode}: ${new Intl.NumberFormat('es-ES', { style: 'percent', maximumFractionDigits: 1 }).format(item.weight)}`));
     paragraph(section, grading.passing.scopeNote, 'scope-note');
-    section.append(node('h3', '', 'Exámenes y recuperaciones')); paragraph(section, grading.recovery.text);
-    section.append(node('h3', '', 'Rúbrica de tareas')); list(section, grading.rubric.levels.map(level => `${level.grade}: ${level.text}`));
-    paragraph(section, grading.rubric.exception);
-    section.append(node('h3', '', 'Pendiente de completar'));
-    list(section, profile.pending.map(item => `${item.title}: ${item.detail}`));
+    if (grading.recovery) { section.append(node('h3', '', 'Exámenes y recuperaciones')); paragraph(section, grading.recovery.text); }
+    if (grading.rubric) {
+      section.append(node('h3', '', 'Rúbrica de tareas')); list(section, grading.rubric.levels.map(level => `${level.grade}: ${level.text}`));
+      paragraph(section, grading.rubric.exception);
+    }
+    if (profile.pending.length) {
+      section.append(node('h3', '', 'Decisiones pendientes'));
+      list(section, profile.pending.map(item => `${item.title}: ${item.detail}`));
+    }
     paragraph(section, 'La configuración real del calificador de Aula Virtual no se ha comprobado en esta incorporación. No hay sincronización ni publicación automática.', 'scope-note');
   }
   async function load() {
