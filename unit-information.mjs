@@ -37,15 +37,19 @@ export function sessionInformationLines(session) {
     session.preparationNotes && `Preparación: ${session.preparationNotes}`, ...curriculumLines(session)].filter(text);
 }
 function node(tag, value) { const element = document.createElement(tag); if (value) element.textContent = value; return element; }
-export function renderUnitInformation(container, document) {
-  const wasOpen = container.dataset.unitId === document.unit.id && container.querySelector('details')?.open;
-  container.dataset.unitId = document.unit.id; container.replaceChildren();
-  const sections = unitInformationSections(document); container.hidden = !sections.length;
-  if (!sections.length) return;
-  const details = node('details'); details.open = Boolean(wasOpen); details.append(node('summary', 'Información de la unidad · diseño, referencias y notas'));
+export function renderUnitInformation(container, document, opener) {
+  if (container.open && container.dataset.unitId !== document.unit.id) container.close();
+  container.dataset.unitId = document.unit.id;
+  const content = container.querySelector('.unit-information-content'); content.replaceChildren();
+  const sections = unitInformationSections(document);
+  opener.hidden = !sections.length;
+  container.hidden = !sections.length;
+  if (!sections.length) { if (container.open) container.close(); return; }
+  container.querySelector('#unit-information-context').textContent = `${document.module.code} · ${document.unit.code} · ${document.unit.title}`;
+  opener.title = `Información de ${document.module.code} · ${document.unit.code}`;
+  opener.setAttribute('aria-label', `${opener.title}: diseño, referencias y notas`);
   for (const section of sections) {
-    details.append(node('h3', section.title));
-    for (const line of section.lines) details.append(node('p', line));
+    content.append(node('h3', section.title));
+    for (const line of section.lines) content.append(node('p', line));
   }
-  container.append(details);
 }
