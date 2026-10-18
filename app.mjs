@@ -30,6 +30,7 @@ let store = null;
 let connection = null;
 let catalog = null;
 let activeEntry = null;
+let openingEntry = null;
 let savedDocument = null;
 let draft = null;
 let originalSha = null;
@@ -131,22 +132,32 @@ function selectedEntry() {
   return unit ? { moduleCode: module.code, unitCode: unit.code, unitId: unit.id, path: unit.path } : null;
 }
 
+function navigationBlocked() {
+  return busy || !connection || hasPendingChanges() || blockedSave || $('editor').open || registryUI.isOpen() || preparationUI.isOpen()
+    || generalNotesUI.hasPending() || generalNotesUI.isOpen() || $('module-profile-dialog').open || $('suggestions-dialog').open;
+}
+
+function restoreUnitSelection() {
+  const entry = openingEntry ?? activeEntry;
+  if (!entry) return;
+  $('module-select').value = entry.moduleCode;
+  fillUnits(entry.unitCode);
+}
+
 function updateNavigation() {
   const editing = hasPendingChanges() || $('editor').open || (registryUI.isOpen() || preparationUI.isOpen()) || blockedSave || generalNotesUI.hasPending() || generalNotesUI.isOpen();
   const selectedModule = catalog?.modules.find(item => item.code === $('module-select').value);
   const selected = selectedEntry();
   $('module-select').disabled = busy || editing || !catalog?.modules.length;
   $('unit-select').disabled = busy || editing || !selectedModule?.units.length;
-  $('open-unit').disabled = busy || editing || !selected || selected.path === activeEntry?.path;
-  $('refresh-catalog').disabled = busy || editing || !connection;
   let help = '';
   if (blockedSave) help = 'Conserva el borrador y actualiza la unidad abierta para revisar el guardado antes de cambiar de unidad.';
   else if (generalNotesUI.hasPending() || generalNotesUI.isOpen()) help = 'Termina de revisar o guardar las mejoras generales antes de cambiar de unidad.';
   else if ($('editor').open) help = 'Termina de editar y guarda los cambios antes de abrir otra unidad.';
   else if (editing) help = 'Guarda tus cambios antes de abrir otra unidad. El borrador permanece en la unidad abierta.';
   else if (selectedModule && !selectedModule.units.length) help = `${selectedModule.code}: pendiente de incorporar su unidad. No hay planificación disponible en la app todavía.${activeEntry ? ` Sigue abierta ${activeEntry.moduleCode} · ${activeEntry.unitCode}.` : ''}`;
-  else if (activeEntry && selected?.path !== activeEntry.path) help = `En pantalla: ${activeEntry.moduleCode} · ${activeEntry.unitCode}. Pulsa Abrir unidad para mostrar la selección nueva.`;
-  else if (!activeEntry && selected) help = 'Pulsa Abrir unidad para cargarla.';
+  else if (activeEntry && selected?.path !== activeEntry.path) help = `En pantalla: ${activeEntry.moduleCode} · ${activeEntry.unitCode}.${busy ? ' Abriendo la selección…' : ' Elige una unidad para abrirla.'}`;
+  else if (!activeEntry && selected) help = busy ? 'Abriendo la unidad seleccionada…' : 'Elige una unidad para abrirla.';
   $('selection-help').textContent = help;
   $('selection-help').hidden = !help;
   generalNotesUI.updateAvailability();
@@ -198,7 +209,9 @@ function acceptCatalog(result) {
 
 async function loadSelectedDocument() {
   const entry = selectedEntry();
-  if (!entry || !connection || hasPendingChanges() || blockedSave || $('editor').open || generalNotesUI.hasPending() || generalNotesUI.isOpen() || entry.path === activeEntry?.path) return;
+  if (!entry || !connection || hasPendingChanges() || blockedSave || $('editor').open || generalNotesUI.hasPending() || generalNotesUI.isOpen()) return false;
+  if (entry.path === activeEntry?.path) return true;
+  openingEntry = entry;
   message('library-message', `Abriendo ${entry.moduleCode} · ${entry.unitCode}…`);
   try {
     const candidate = documentStores.get(entry.path) ?? connection.forDocument(entry);
@@ -217,16 +230,30 @@ async function loadSelectedDocument() {
     await loadModuleContext();
     message('library-message');
     $('unit-title').focus({ preventScroll: true });
+    return true;
   } catch {
-    message('library-message', `No se ha podido abrir ${entry.moduleCode} · ${entry.unitCode}. Comprueba el acceso, la conexión y el documento.${activeEntry ? ' La unidad anterior y sus datos siguen intactos.' : ' Puedes actualizar la lista o probar otra unidad.'}`, 'error');
+    openingEntry = null;
+    if (activeEntry) restoreUnitSelection();
+    else {
+      $('unit-select').querySelector('option[value=""]')?.remove();
+      const placeholder = node('option', '', 'Elige una unidad para reintentar');
+      placeholder.value = ''; placeholder.disabled = true;
+      $('unit-select').prepend(placeholder); $('unit-select').value = '';
+    }
+    message('library-message', `No se ha podido abrir ${entry.moduleCode} · ${entry.unitCode}. Comprueba el acceso, la conexión y el documento. Vuelve a seleccionar la unidad para reintentar.${activeEntry ? ' La unidad anterior y sus datos siguen intactos.' : ''}`, 'error');
+    return false;
+  } finally {
+    openingEntry = null;
   }
 }
 
 async function openSelectedUnit() {
-  if (busy || !connection || hasPendingChanges() || blockedSave || $('editor').open || generalNotesUI.hasPending() || generalNotesUI.isOpen()) return;
+  if (navigationBlocked()) { restoreUnitSelection(); return; }
+  if (!selectedEntry()) { updateNavigation(); return; }
   setBusy(true);
-  try { await loadSelectedDocument(); } finally { setBusy(false); }
-  selectWorkspaceView('unit');
+  let opened = false;
+  try { opened = await loadSelectedDocument(); } finally { setBusy(false); }
+  if (opened) selectWorkspaceView('unit');
 }
 
 /** Never edit a cached snapshot: load the target UT and its SHA first. */
@@ -287,18 +314,6 @@ function selectWorkspaceView(view) {
   preparationUI.render();
 }
 
-async function refreshCatalog() {
-  if (busy || !connection || hasPendingChanges() || blockedSave || $('editor').open || generalNotesUI.hasPending() || generalNotesUI.isOpen()) return;
-  setBusy(true);
-  message('library-message', 'Actualizando la lista de unidades…');
-  try {
-    acceptCatalog(await connection.loadCatalog());
-    if (draft) await loadModuleContext();
-    message('library-message', 'Lista actualizada. La unidad abierta no ha cambiado.');
-  } catch {
-    message('library-message', 'No se ha podido actualizar la lista. Se conservan la lista anterior y la unidad abierta.', 'error');
-  } finally { setBusy(false); }
-}
 
 async function loadModuleContext() {
   if (!connection || !activeEntry || !catalog) return;
@@ -1028,10 +1043,14 @@ function toggleAllSessions() {
 
 $('login-form').addEventListener('submit', connect);
 $('disconnect').addEventListener('click', disconnect);
-$('module-select').addEventListener('change', () => { fillUnits(); message('library-message'); });
-$('unit-select').addEventListener('change', () => { updateNavigation(); message('library-message'); });
-$('open-unit').addEventListener('click', openSelectedUnit);
-$('refresh-catalog').addEventListener('click', refreshCatalog);
+$('module-select').addEventListener('change', async () => {
+  if (navigationBlocked()) { restoreUnitSelection(); return; }
+  fillUnits(); message('library-message'); await openSelectedUnit();
+});
+$('unit-select').addEventListener('change', async () => {
+  if (navigationBlocked()) { restoreUnitSelection(); return; }
+  message('library-message'); await openSelectedUnit();
+});
 $('refresh').addEventListener('click', refresh);
 $('save').addEventListener('click', save);
 $('download-draft').addEventListener('click', downloadDraft);
