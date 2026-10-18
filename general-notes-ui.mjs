@@ -1,7 +1,7 @@
 import { GeneralNotesStore, getGeneralText, withGeneralText } from './general-notes.mjs?v=20261018-rf1';
 import { saveErrorFeedback } from './core.mjs?v=20261018-rf1';
 
-export function createGeneralNotesUI({ isBusy, setBusy, onStateChange, getTarget, otherEditorOpen, improvementIcon }) {
+export function createGeneralNotesUI({ isBusy, setBusy, onStateChange, getTarget, otherEditorOpen, improvementIcon, onMessage = () => {} }) {
   const $ = id => document.getElementById(id);
   const dialog = $('general-notes-dialog');
   let token = null, target = null, store = null, loaded = null, blocked = false, remote = null;
@@ -63,18 +63,20 @@ export function createGeneralNotesUI({ isBusy, setBusy, onStateChange, getTarget
   async function save(event) {
     event.preventDefault();
     if (isBusy() || !loaded || blocked || !hasPending()) return;
+    let confirmed = false;
     setBusy(true); message('Guardando tus mejoras…');
     try {
       const document = withGeneralText(loaded.document, target, $('general-notes-text').value);
       const result = await store.save(document, loaded.sha);
       accept(result);
       const revision = /^[a-f0-9]{7,64}$/i.test(result.commitSha || '') ? ` Revisión ${result.commitSha.slice(0, 8)}.` : '';
-      message(`Mejoras guardadas y confirmadas en GitHub.${revision}`);
+      onMessage(`Mejoras guardadas y confirmadas en GitHub.${revision}`);
+      confirmed = true;
     } catch (error) {
       const feedback = saveErrorFeedback(error);
       blocked = Boolean(feedback.requiresReload || error?.code === 'HTTP_422');
       message(`${feedback.message}${blocked ? ' Pulsa Revisar GitHub para comprobar el texto guardado.' : ''} [${feedback.code}]`, blocked ? 'warning' : 'error');
-    } finally { setBusy(false); }
+    } finally { setBusy(false); if (confirmed) close(); }
   }
   async function review() {
     if (isBusy() || !store) return;
@@ -109,6 +111,7 @@ export function createGeneralNotesUI({ isBusy, setBusy, onStateChange, getTarget
   function close() {
     if (isBusy()) return;
     dialog.close(); onStateChange();
+    $(target?.unitCode ? 'unit-improvements' : 'module-improvements').focus({ preventScroll: true });
   }
   function download() {
     if (!loaded || isBusy()) return;
