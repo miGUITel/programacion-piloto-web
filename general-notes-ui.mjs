@@ -18,7 +18,10 @@ export function createGeneralNotesUI({ isBusy, setBusy, onStateChange, getTarget
       const next = getTarget(scope);
       $(id).disabled = busy || !token || !next || otherEditorOpen() || (hasPending() && !sameTarget(next));
       const pending = hasPending() && sameTarget(next);
-      if (improvementIcon) { $(id).replaceChildren(improvementIcon()); $(id).classList.toggle('has-content', pending); }
+      if (improvementIcon) {
+        const label = document.createElement('span'); label.textContent = scope === 'module' ? 'Mejoras del módulo' : 'Mejoras de la UT';
+        $(id).replaceChildren(improvementIcon(), label); $(id).classList.toggle('has-content', pending);
+      }
       else $(id).textContent = `Mejoras${pending ? ' •' : ''}`;
       $(id).setAttribute('aria-label', `${scope === 'module' ? 'Mejoras generales del módulo' : 'Mejoras generales de la unidad abierta'}${pending ? ' · Borrador pendiente' : ''}`);
       $(id).title = next ? `Mejoras generales de ${next.unitCode ? `${next.moduleCode} ${next.unitCode}` : next.moduleCode}` : 'Conecta y elige el ámbito';
