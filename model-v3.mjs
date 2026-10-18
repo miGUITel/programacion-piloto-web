@@ -38,7 +38,7 @@ export function validateV3Document(doc, errors) {
     if (!object(unit.resourcePreparation)) errors.push('unit.resourcePreparation: debe ser un objeto.');
     else for (const field of ['ppt', 'web', 'tasks', 'exam']) if (own(unit.resourcePreparation, field) && !['Sin mirar', 'En proceso', 'Listo'].includes(unit.resourcePreparation[field])) errors.push(`unit.resourcePreparation.${field}: estado de preparación no válido.`);
   }
-  if (unit.preparation === 'ready' && !Array.isArray(doc.tasks)) errors.push('tasks: una UT preparada requiere su lista oficial revisada, aunque esté vacía.');
+  // RF 3 derives preparation from material/session marks; task approval stays explicit.
   const resources = new Set();
   if (own(doc, 'resources')) {
     if (!Array.isArray(doc.resources)) errors.push('resources: debe ser una lista.');

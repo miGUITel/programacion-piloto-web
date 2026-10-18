@@ -1,7 +1,8 @@
-import { moduleOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261018-1';
-import { eventTypes } from './teaching.mjs?v=20261018-1';
-import { taskStates } from './task-cycle.mjs?v=20261018-1';
-import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261018-1';
+import { moduleOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261018-rf3';
+import { eventTypes } from './teaching.mjs?v=20261018-rf3';
+import { taskStates } from './task-cycle.mjs?v=20261018-rf3';
+import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261018-rf3';
+import { preparationBadge } from './preparation-ui.mjs?v=20261018-rf3';
 
 const $ = id => document.getElementById(id);
 function el(tag, className, text) {
@@ -20,7 +21,7 @@ function monthName(month) {
   return new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(month + '-15T12:00:00Z'));
 }
 
-export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPresented, onRetry }) {
+export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPresented, onRetry, onPreparation }) {
   let filterModule = '';
 
   function capturePosition() {
@@ -79,6 +80,7 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
       const title = el('button', 'unit-link', `${row.unit.code} · ${row.record?.document.unit.title ?? row.unit.title}`);
       title.type = 'button'; title.title = title.textContent;
       title.addEventListener('click', () => onOpen(row.unit.path)); label.append(title);
+      if (row.record) label.append(preparationBadge(row.record.document, () => onPreparation(row.record.entry)));
       if (row.unit.path === activePath) label.append(el('span', 'overview-active', 'Abierta'));
       if (!row.record) label.append(el('span', 'overview-unavailable', 'Sin datos · reintenta Actualizar'));
       else if (!row.record.document.sessions.length) label.append(el('span', 'overview-unavailable', 'Sin sesiones'));

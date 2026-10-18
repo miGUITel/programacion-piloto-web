@@ -917,3 +917,32 @@ textarea{resize:vertical;line-height:1.6}
   .workspace[data-layout="compact"] .activity-top>.row-actions { grid-column:2; grid-row:1 / 3; align-self:center; gap:6px; flex-wrap:nowrap; }
   .workspace .session-timing { font-size:12px; padding:6px 8px; }
 }
+.preparation-badge { display:inline-flex; align-items:center; justify-content:center; gap:5px; border:1px solid; border-radius:999px; padding:5px 11px; font:inherit; font-size:12px; font-weight:650; white-space:nowrap; cursor:pointer; }
+.preparation-pending { color:#5b606b; background:#f1f2f4; border-color:#d1d5da; }
+.preparation-draft { color:#745000; background:#fff2cd; border-color:#d9bc63; }
+.preparation-ready { color:#155c40; background:#e0f3e8; border-color:#8cbea2; }
+.preparation-badge:focus-visible { outline:2px solid #087d78; outline-offset:3px; }
+.unit-preparation { margin:4px 0 8px; }
+.overview-unit .preparation-badge { display:flex; margin-top:5px; }
+.preparation-list { border-top:1px solid #dbe1df; }
+.preparation-row { display:grid; grid-template-columns:100px minmax(0,1fr) 205px 145px; gap:12px; align-items:center; padding:12px 8px; border-bottom:1px solid #dbe1df; }
+.preparation-unit-title { overflow-wrap:anywhere; }
+.preparation-unavailable { color:#995e2b; font-size:13px; }
+.preparation-materials { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.preparation-dialog fieldset { min-width:0; margin:14px 0; padding:12px; border:1px solid #dbe1df; border-radius:8px; }
+.preparation-dialog legend { padding:0 6px; font-weight:650; }
+.preparation-materials select { width:100%; }
+.preparation-session { display:flex; align-items:flex-start; gap:10px; padding:8px 0; font-weight:400; }
+.preparation-session input { flex:0 0 auto; width:18px; height:18px; margin:2px 0; }
+.preparation-session-actions { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
+.preparation-dialog .suggestions-content { overflow-y:auto; }
+.workspace-views { flex-wrap:wrap; }
+@media(max-width:680px) {
+  .preparation-row { grid-template-columns:minmax(0,1fr) auto; gap:8px; }
+  .preparation-unit-title { grid-column:1 / -1; grid-row:2; }
+  .preparation-row .scope-note { grid-column:1 / -1; grid-row:3; }
+  .preparation-row .preparation-badge { grid-column:2; grid-row:1; }
+  .preparation-badge { min-height:44px; }
+  .preparation-session { min-height:44px; }
+  .preparation-dialog .suggestions-footer { flex-wrap:wrap; }
+}

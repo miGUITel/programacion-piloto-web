@@ -1,16 +1,17 @@
-import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-1';
+import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-rf3';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261016-1';
-import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-1';
-import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261018-1';
-import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261018-1';
-import { libraryIntegrity } from './model-v3.mjs?v=20261018-1';
-import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-1';
-import { createModuleViews } from './module-views-ui.mjs?v=20261018-1';
-import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261018-1';
-import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261018-1';
-import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-1';
-import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261018-1';
-import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261018-1';
+import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-rf3';
+import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261018-rf3';
+import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261018-rf3';
+import { libraryIntegrity } from './model-v3.mjs?v=20261018-rf3';
+import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-rf3';
+import { createModuleViews } from './module-views-ui.mjs?v=20261018-rf3';
+import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261018-rf3';
+import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261018-rf3';
+import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-rf3';
+import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261018-rf3';
+import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261018-rf3';
+import { createPreparationUI } from './preparation-ui.mjs?v=20261018-rf3';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -73,7 +74,7 @@ function editorDirty() {
     || (!$('task-fields').hidden && JSON.stringify(readTaskEditor()) !== JSON.stringify(taskDetails(target)));
 }
 
-function hasPendingChanges() { return dirty() || editorDirty() || presentationUI.isOpen() || registryUI.hasPending(); }
+function hasPendingChanges() { return dirty() || editorDirty() || presentationUI.isOpen() || registryUI.hasPending() || preparationUI.hasPending(); }
 
 function checked(value, entry = activeEntry) {
   const errors = validateDocument(value, entry ?? undefined);
@@ -112,14 +113,15 @@ function updateSaveState() {
   } else {
     state.textContent = lastConfirmedAt ? `Guardado · ${lastConfirmedAt}` : 'Sin cambios pendientes';
   }
-  $('save').disabled = busy || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen() || registryUI.isOpen();
-  $('refresh').disabled = busy || !draft || $('editor').open || presentationUI.isOpen() || registryUI.isOpen();
+  $('save').disabled = busy || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen());
+  $('refresh').disabled = busy || !draft || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen());
   $('disconnect').disabled = busy;
   $('download-draft').disabled = busy || !draft;
   $('recovery-actions').hidden = !(dirty() || blockedSave || failedSave);
   updateGlobalExpansion();
   updateNavigation();
   suggestionsUI.updateAvailability();
+  preparationUI.availability();
 }
 
 function selectedEntry() {
@@ -129,7 +131,7 @@ function selectedEntry() {
 }
 
 function updateNavigation() {
-  const editing = hasPendingChanges() || $('editor').open || registryUI.isOpen() || blockedSave || generalNotesUI.hasPending() || generalNotesUI.isOpen();
+  const editing = hasPendingChanges() || $('editor').open || (registryUI.isOpen() || preparationUI.isOpen()) || blockedSave || generalNotesUI.hasPending() || generalNotesUI.isOpen();
   const selectedModule = catalog?.modules.find(item => item.code === $('module-select').value);
   const selected = selectedEntry();
   $('module-select').disabled = busy || editing || !catalog?.modules.length;
@@ -261,15 +263,16 @@ async function correctTask(task, value) {
 }
 
 function selectWorkspaceView(view) {
-  if (!['unit', 'module', 'tasks'].includes(view) || busy || $('editor').open) return;
+  if (!['unit', 'module', 'tasks', 'preparation'].includes(view) || busy || $('editor').open) return;
   currentView = view;
-  for (const name of ['unit', 'module', 'tasks']) {
+  for (const name of ['unit', 'module', 'tasks', 'preparation']) {
     $(name + '-view').hidden = name !== view;
     $('view-' + name).setAttribute('aria-pressed', String(name === view));
   }
   updateGlobalExpansion();
   renderStats();
   if (draft) moduleViews.render();
+  preparationUI.render();
 }
 
 async function refreshCatalog() {
@@ -309,6 +312,21 @@ async function retryExamContext() {
   if (busy || !draft || $('editor').open || presentationUI.isOpen() || generalNotesUI.isOpen()) return;
   setBusy(true);
   try { await loadModuleContext(); } finally { setBusy(false); }
+}
+
+async function refreshPreparationContext() {
+  if (busy || !draft || $('editor').open || presentationUI.isOpen() || registryUI.isOpen() || preparationUI.isOpen() || generalNotesUI.isOpen() || $('module-profile-dialog').open) return;
+  setBusy(true);
+  try {
+    const result = await store.load();
+    if (blockedSave || (dirty() && (result.sha !== originalSha || JSON.stringify(result.document) !== JSON.stringify(savedDocument)))) {
+      blockedSave = true;
+      message('workspace-message', 'La unidad abierta necesita revisión. Se conservan sus notas pendientes; su etiqueta sigue mostrando el borrador local. Las demás unidades se han consultado de nuevo.', 'warning');
+    } else if (!dirty()) acceptLoaded(result);
+    await loadModuleContext();
+  } catch {
+    message('workspace-message', 'No se ha podido actualizar la preparación. Se conservan la vista y las notas pendientes.', 'error');
+  } finally { setBusy(false); }
 }
 
 function confirmationTime() {
@@ -651,7 +669,7 @@ function renderSessions() {
   const headings = compactSessionHeaders(draft.sessions, presentationPeriods(catalog));
   draft.sessions.forEach((session, index) => container.append(makeSession(session, index, headings[index])));
   renderSessionBand();
-  moduleViews.render(); renderStats();
+  moduleViews.render(); renderStats(); preparationUI.render();
   if (busy) $('workspace').querySelectorAll('button, input, textarea, select').forEach(element => { element.disabled = true; });
   updateSaveState();
 }
@@ -735,6 +753,7 @@ async function connect(event) {
     generalNotesUI.disconnect();
     registryUI.disconnect();
     moduleProfileUI.disconnect();
+    preparationUI.clear();
     documentStores.clear();
     catalog = null;
     activeEntry = null;
@@ -770,6 +789,7 @@ function disconnect() {
   generalNotesUI.disconnect();
   registryUI.disconnect();
   moduleProfileUI.disconnect();
+  preparationUI.clear();
   presentationUI.clear();
   $('editor').close();
   editorTarget = null;
@@ -800,7 +820,7 @@ function disconnect() {
   $('task-presented').checked = false; $('task-corrected').checked = false;
   $('task-target-help').textContent = ''; $('task-fields').hidden = true;
   currentView = 'unit';
-  for (const name of ['unit', 'module', 'tasks']) {
+  for (const name of ['unit', 'module', 'tasks', 'preparation']) {
     $(name + '-view').hidden = name !== 'unit'; $('view-' + name).setAttribute('aria-pressed', String(name === 'unit'));
   }
   updateGlobalExpansion();
@@ -820,7 +840,7 @@ function disconnect() {
 }
 
 async function refresh() {
-  if (busy || !store || $('editor').open || presentationUI.isOpen() || registryUI.isOpen()) return;
+  if (busy || !store || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen())) return;
   if (dirty() && !window.confirm('Actualizar descartará el borrador y cargará la versión de GitHub. Descarga primero el borrador si quieres conservarlo. ¿Continuar?')) return;
   setBusy(true);
   message('workspace-message', 'Leyendo de nuevo la versión de GitHub…');
@@ -836,7 +856,7 @@ async function refresh() {
 }
 
 async function save() {
-  if (busy || !store || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen() || registryUI.isOpen()) return;
+  if (busy || !store || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen())) return;
   const errors = validateDocument(draft, activeEntry);
   if (!Array.isArray(errors) || errors.length) {
     failedSave = true;
@@ -1000,7 +1020,7 @@ $('refresh').addEventListener('click', refresh);
 $('save').addEventListener('click', save);
 $('download-draft').addEventListener('click', downloadDraft);
 $('toggle-sessions').addEventListener('click', toggleAllSessions);
-for (const name of ['unit', 'module', 'tasks']) $('view-' + name).addEventListener('click', () => selectWorkspaceView(name));
+for (const name of ['unit', 'module', 'tasks', 'preparation']) $('view-' + name).addEventListener('click', () => selectWorkspaceView(name));
 $('activity-event-type').addEventListener('change', syncTaskFields);
 $('task-presented').addEventListener('change', syncPresentationRequired);
 taskDateFields.forEach(field => $('task-' + field).addEventListener('input', () => $('task-' + field).setCustomValidity('')));
@@ -1034,7 +1054,7 @@ const registryUI = createTaskRegistryUI({ isBusy: () => busy, setBusy, onStateCh
     if (libraryIntegrity([...libraryRecords(), ...registryUI.records()]).some(issue => issue.code === 'DUPLICATE_TASK' && issue.moduleCode === task.entry.moduleCode && issue.taskId === (task.officialTaskId || task.registryTaskId))) {
       message('workspace-message', 'Esta tarea aparece en más de un documento. Revisa su conciliación antes de editarla.', 'warning'); return false;
     }
-    if ($('editor').open || presentationUI.isOpen() || generalNotesUI.isOpen() || generalNotesUI.hasPending() || $('suggestions-dialog').open) {
+    if ($('editor').open || preparationUI.isOpen() || presentationUI.isOpen() || generalNotesUI.isOpen() || generalNotesUI.hasPending() || $('suggestions-dialog').open) {
       message('workspace-message', 'Cierra el editor abierto antes de editar otra tarea.', 'warning'); return false;
     }
     return true;
@@ -1069,10 +1089,10 @@ const registryUI = createTaskRegistryUI({ isBusy: () => busy, setBusy, onStateCh
     if (content) message('workspace-message', content, kind);
   }
 });
-const suggestionsUI = createSuggestionsUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState, isAcademicEditorOpen: () => $('editor').open || presentationUI.isOpen() || registryUI.isOpen() || generalNotesUI.isOpen() });
+const suggestionsUI = createSuggestionsUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState, isAcademicEditorOpen: () => $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen()) || generalNotesUI.isOpen() });
 const generalNotesUI = createGeneralNotesUI({
   isBusy: () => busy, setBusy, onStateChange: updateSaveState, improvementIcon: () => noteIcon('improvements'),
-  otherEditorOpen: () => $('editor').open || presentationUI.isOpen() || registryUI.isOpen() || $('suggestions-dialog').open,
+  otherEditorOpen: () => $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen()) || $('suggestions-dialog').open,
   getTarget(scope) {
     if (!connection) return null;
     if (scope === 'unit') return activeEntry && draft && selectedEntry()?.path === activeEntry.path ? { ...activeEntry, title: draft.unit.title } : null;
@@ -1084,13 +1104,37 @@ const moduleProfileUI = createModuleProfileUI({
   isBusy: () => busy, setBusy, getConnection: () => connection,
   getTarget: () => catalog?.modules.find(item => item.code === $('module-select').value),
   getRecords: () => libraryRecords(),
-  otherEditorOpen: () => $('editor').open || presentationUI.isOpen() || registryUI.isOpen() || generalNotesUI.isOpen() || $('suggestions-dialog').open,
+  otherEditorOpen: () => $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen()) || generalNotesUI.isOpen() || $('suggestions-dialog').open,
+});
+const preparationUI = createPreparationUI({
+  getState: () => ({ catalog, records: libraryRecords(), activeEntry, draft, ready: moduleContextReady }),
+  getActive: () => activeEntry && ({ path: activeEntry.path, sha: originalSha, savedDocument, draft, blocked: blockedSave }),
+  unitStore(entry) { const candidate = documentStores.get(entry.path) ?? connection.forDocument(entry); documentStores.set(entry.path, candidate); return candidate; },
+  isBusy: () => busy, setBusy, onStateChange: updateSaveState,
+  canOpen: () => Boolean(connection) && !$('editor').open && !presentationUI.isOpen() && !registryUI.isOpen() && !generalNotesUI.isOpen() && !generalNotesUI.hasPending() && !$('suggestions-dialog').open && !$('module-profile-dialog').open,
+  onMessage: (content, kind) => message('workspace-message', content, kind),
+  onRetry: refreshPreparationContext,
+  onSaved(entry, result, prepared) {
+    if (entry.path === activeEntry?.path) {
+      savedDocument = copy(result.document); originalSha = result.sha; draft = prepared.unitDraft;
+      failedSave = false; lastConfirmedAt = confirmationTime();
+      $('loaded-version').textContent = `Versión leída: ${originalSha.slice(0, 8)} · Comprobada a las ${lastConfirmedAt}`;
+    } else {
+      moduleDocuments.set(entry.path, { entry, document: result.document });
+      moduleLoadFailures = moduleLoadFailures.filter(item => item.path !== entry.path);
+    }
+    if (draft) renderSessions();
+  },
+  onBlocked(entry) {
+    if (entry.path === activeEntry?.path) { blockedSave = true; message('workspace-message', 'Revisa la versión de esta unidad antes de guardar. Las notas y el borrador de preparación se conservan.', 'warning'); }
+  },
 });
 const moduleViews = createModuleViews({
   getState: () => ({ module: catalog?.modules.find(item => item.code === activeEntry?.moduleCode), records: moduleRecords(), allRecords: libraryRecords(), taskRecords: [...libraryRecords(), ...registryUI.records()], integrityIssues: libraryIntegrity([...libraryRecords(), ...registryUI.records()]), registryFailures: registryUI.failures(), catalog, failures: moduleFailures(), allFailures: moduleLoadFailures, errors: teachingTimeline.errors, ready: moduleContextReady, today: madridToday(), activePath: activeEntry?.path, busy }),
   onOpen: (path, sessionId) => openModuleSource(path, sessionId),
   onEdit: task => registryUI.open(task),
   onCorrected: correctTask, onPresented: presentTask, onRetry: retryExamContext,
+  onPreparation: entry => preparationUI.open(entry),
 });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && draft) { renderSessionBand(); moduleViews.render(); } });
 setInterval(() => { if (draft && $('session-band').dataset.today !== madridToday()) { renderSessionBand(); moduleViews.render(); } }, 60000);

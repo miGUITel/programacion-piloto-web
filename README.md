@@ -199,7 +199,7 @@ Aclaración del docente del 17/10/2026, implantada en la interfaz y en el modelo
 
 - Las únicas fechas necesarias en el seguimiento de tareas son **Presentada**, **Entrega** y **Corregir**. Retirar «Publicación» de la interfaz; no sustituirla por la fecha de diseño de la UT ni de creación de la tarea. «Presentada» significa presentación real al alumnado; «Entrega», su fecha máxima; «Corregir», la fecha prevista que activa el aviso y el estado Por corregir.
 - El diseño de la UT y el cierre de su lista de tareas siguen realizándose con el docente en el proyecto del módulo, no desde la aplicación web. Cuando la UT se dé por preparada, sus tareas deben aparecer en el gestor como Planificadas, sin exigir que hayan sido presentadas al alumnado ni publicadas en Aula Virtual. No inferir preparación de la mera existencia del documento o de sus recursos.
-- Preparar una UT no presenta ni corrige automáticamente sus tareas ni altera confirmaciones previas. La señal explícita es `unit.preparation: "ready"`; `"draft"` indica diseño en curso. Si no está confirmada la preparación, no se muestran tareas nuevas de la lista oficial, pero se conserva el seguimiento previo. No se asigna preparación por una importación histórica.
+- Preparar una UT no presenta ni corrige automáticamente sus tareas. RF 3 calcula su estado desde materiales y sesiones; la aprobación de la lista oficial se confirma por separado y se conserva al reabrir la UT.
 
 ### Fechas iniciales al presentar — implantado
 
@@ -211,9 +211,35 @@ Petición del docente del 17/10/2026: al marcar una tarea como Presentada, si no
 
 Petición del docente del 17/10/2026: al programar las sesiones durante el diseño de una UT en el proyecto del módulo, identificar explícitamente en qué sesión se presentará cada tarea. La marca azul de esa sesión debe generarse automáticamente a partir de esa presentación prevista, sin exigir marcarla manualmente en la app ni esperar a confirmar Presentada. No deducirla solo del título ni confundir cualquier sesión de trabajo sobre una tarea con su presentación. La marca expresa planificación; no confirma que la tarea ya se haya presentado o abierto al alumnado. Conservar la confirmación real de Presentada y su fecha como datos independientes. Implantado mediante `tasks[].presentation`; se mantiene la selección manual de tipos como excepción reversible.
 
-### Preparación de sesiones — pendiente de definición
+### RF 3 — preparación automática de UT, implantado el 18/10/2026
 
-- **Preparación de sesiones:** mostrar de un vistazo qué sesiones están preparadas. Valorar una pequeña marca en cada cabecera de sesión o una vista anual limpia que reúna las sesiones y su preparación. Queda abierto si se adopta una opción o ambas; si hay dos vistas, consultarán el mismo dato, sin registros paralelos. La preparación es distinta de la impartición, del progreso de las actividades y de la confirmación de apertura de una tarea. El control se refiere a la sesión completa, no a una marca repetida en cada porción. Antes de implementarlo, acordar cómo se marca una sesión preparada y qué implica cambiar su planificación después; no deducir preparación automáticamente de la existencia de recursos ni del estado Impartida.
+La etiqueta aparece en **Unidad** y **Módulo**. La nueva vista **Preparación** reúne las UT del catálogo, con filtros por módulo y estado. Pulsar una etiqueta abre el editor independiente de materiales y sesiones.
+
+| Estado | Regla |
+|---|---|
+| Preparada | PPT, Web, Tareas y Examen están Listo y todas las sesiones están listas. Requiere al menos una sesión. |
+| En preparación | Hay algún material o sesión listo, pero falta completar el conjunto. |
+| Pendiente | No hay ningún material ni sesión listo. Sustituye «Sin confirmar». |
+
+El estado sube o baja automáticamente al cambiar esas marcas; un material En proceso no cuenta como listo. Las marcas previas se respetan. Un antiguo resumen de UT preparada no inventa marcas en materiales o sesiones.
+
+**Guardar preparación** lee la versión vigente, envía únicamente esta edición, comprueba la respuesta y relee GitHub. Las notas pendientes de Unidad se conservan sin enviarse; se puede editar también otra UT sin cambiar la abierta. Un conflicto o resultado incierto mantiene los borradores y bloquea el reenvío. Cerrar con cambios pide confirmar su descarte. La consulta no guarda automáticamente.
+
+Reabrir una UT conserva notas, tareas aprobadas y su seguimiento. El cálculo de preparación no aprueba tareas nuevas. En formatos anteriores a v3, el primer guardado de preparación conserva mediante aprobación explícita la visibilidad previa, sin convertir la versión. Preparación no confirma impartición, Presentada, Corregida, avisos ni publicación.
+
+Este editor cubre las marcas mínimas de materiales y sesiones necesarias para RF 3. Otras vistas y ampliaciones de RF 4 y RF 5 mantienen su alcance pendiente.
+
+Pruebas de usuario:
+1. Guarda tus borradores antes de recargar la app. Abre Preparación y comprueba filtros y etiquetas.
+2. Revisa una UT: ningún elemento listo produce Pendiente; alguno listo, En preparación; los cuatro materiales y todas las sesiones listas, Preparada.
+3. Retira una marca: el estado debe bajar. Guarda, cierra y vuelve a abrir para comprobar persistencia. Deja al final las marcas que correspondan a su preparación real.
+4. Aplica una observación al borrador de Unidad sin guardarla. Guarda preparación en esa UT y después en otra: la nota debe seguir pendiente e intacta hasta que pulses Guardar cambios.
+5. Comprueba que las tareas aprobadas siguen en Tareas al retirar una marca de preparación y que no cambian sus fechas ni confirmaciones.
+6. Cierra una edición de preparación sin guardarla: cancelar el descarte conserva el editor; confirmar descarta solo sus marcas.
+
+### Preparación de sesiones — ampliaciones pendientes
+
+RF 3 incorpora ya la marca individual de sesión lista y las acciones conjuntas en su editor. RF 4 mantiene pendientes la marca en cada cabecera y/o una vista anual específica de sesiones, y concretar qué cambios de planificación invalidan una revisión. Todas las vistas usarán `session.preparation`; no hay marcas por porción ni inferencias desde Impartida o recursos existentes.
 
 ### Fuera de la lista pendiente: funciones ya implantadas
 
@@ -229,7 +255,7 @@ Tras validar el paso 2 de independencia de Tareas, preparar la compatibilidad de
 
 Para cada alcance migrado y validado, acordar una fuente única de trabajo diario y conservar el Excel anterior como referencia; no mantener dos seguimientos editables. La planificación general, metodología, criterios y datos comunes continúan en sus fuentes vigentes hasta una migración expresamente acordada. En la app se consulta y registra el día a día; en los proyectos se diseña y revisa la planificación, se preparan recursos y se cierran las tareas oficiales.
 
-Ampliaciones de visión global propuestas: configuración de módulos, metodología, planificación anual y acceso a recursos por UT. Mantener también pendientes la definición de preparación de sesiones y su vista global, y la vista ampliada de sesión. Calendar y Aula Virtual siguen siendo servicios separados; no hay sincronización o publicación automática. La app requiere conexión y guardado explícito; la recuperación de borradores tras cerrar o recargar no está implementada.
+Ampliaciones de visión global propuestas: configuración de módulos, metodología, planificación anual y acceso a recursos por UT. Mantener pendientes las ampliaciones de preparación de sesiones de RF 4 y la vista ampliada de sesión. Calendar y Aula Virtual siguen siendo servicios separados; no hay sincronización o publicación automática. La app requiere conexión y guardado explícito; la recuperación de borradores tras cerrar o recargar no está implementada.
 
 ## Formato del JSON
 
@@ -237,9 +263,9 @@ Ampliaciones de visión global propuestas: configuración de módulos, metodolog
 
 Se admiten unidades 1/2/3 y registros históricos 1/2. En unidad v3, `type` es explícito y el código oficial es texto, conservando excepciones y ceros. `presentation` puede faltar: la tarea aprobada aparece en Tareas con la indicación accesible «Sin sesión de presentación asignada» y puede presentar/corregir su seguimiento sin crear una sesión ficticia. El aviso del examen requiere una sesión prevista conocida.
 
-En v3 la visibilidad depende de `approved: true` o de seguimiento real presentado/corregido. Reabrir `unit.preparation` no oculta la lista ya aprobada y una nueva tarea no se aprueba al leerla. La versión anterior conserva su regla compatible. La identidad global de una tarea oficial es módulo e ID, independiente de su archivo para permitir un traslado explícito sin duplicarla. Los duplicados y referencias de trabajo pendientes se señalan; un duplicado no se puede editar desde Tareas hasta conciliarlo.
+En v3 la visibilidad depende de `approved: true` o de seguimiento real presentado/corregido. Reabrir `unit.preparation` no oculta la lista ya aprobada y una nueva tarea no se aprueba al leerla. Las versiones anteriores conservan su regla compatible hasta editar preparación; ese guardado fija la aprobación implícita anterior para no ocultar tareas ya incorporadas ni aprobar nuevas. La identidad global de una tarea oficial es módulo e ID, independiente de su archivo para permitir un traslado explícito sin duplicarla. Los duplicados y referencias de trabajo pendientes se señalan; un duplicado no se puede editar desde Tareas hasta conciliarlo.
 
-Se validan y conservan objetivos, contenidos, notas particulares, carga con unidad de medida, referencias curriculares y a recursos, preparación de materiales y sesiones. No se infieren estos datos al leer ni se han añadido aún sus pantallas de gestión. Cada examen v3 conserva su aviso en `announcement.examDate`; varios exámenes de una sesión tienen confirmaciones independientes. Al desmarcar se retira solo la fecha de confirmación y se conservan extensiones desconocidas. Los avisos antiguos de sesión permanecen compatibles, sin asignarlos automáticamente a varios exámenes. Las porciones de sesiones compartidas v3 se comprueban también entre UT.
+Se validan y conservan objetivos, contenidos, notas particulares, carga con unidad de medida, referencias curriculares y a recursos, preparación de materiales y sesiones. No se infieren estos datos al leer. RF 3 añade el editor de preparación de materiales y sesiones. Cada examen v3 conserva su aviso en `announcement.examDate`; varios exámenes de una sesión tienen confirmaciones independientes. Al desmarcar se retira solo la fecha de confirmación y se conservan extensiones desconocidas. Los avisos antiguos de sesión permanecen compatibles, sin asignarlos automáticamente a varios exámenes. Las porciones de sesiones compartidas v3 se comprueban también entre UT.
 
 La preparación de importación es una herramienta separada de la app: exige inventario de las celdas y dependencias relevantes, correspondencias explícitas de tareas y evidencia de actualidad para cada lote. Genera una propuesta con versiones esperadas y archivos de procedencia; no publica por sí sola ni reemplaza un JSON operativo por el Excel. El procedimiento técnico y las herramientas se mantienen junto al proyecto local.
 
@@ -249,7 +275,7 @@ Verificación del paso 3: 156 pruebas de JavaScript y cuatro pruebas del lector 
 
 El modelo actual añade una lista opcional `tasks` al JSON de la UT. Cada entrada contiene `id` estable, `code` oficial como texto (conserva ceros), `title`, `type: "task" | "exam"`, `presentation: { sessionId, activityId? }`, `taskPresented?` y `task: { presentedOn?, dueOn?, correctBy?, corrected? }`. Las referencias de presentación deben pertenecer a la UT. Hay una sola entrada por tarea; sus distintas fases o porciones no generan tareas nuevas. El código de tarea utiliza cuatro cifras; el examen también admite el código de unidad de dos cifras, sin inventar un número de tarea.
 
-En el proyecto del módulo se cierra la lista y se marca `unit.preparation: "ready"`; mientras se diseña, `"draft"`. La aplicación no diseña ni da por preparada la UT. Las tareas nuevas aparecen como Planificadas al estar preparada; el seguimiento ya confirmado se mantiene visible aunque se reabra el diseño o falte una preparación histórica confirmada. Los documentos antiguos sin `tasks` mantienen su comportamiento hasta una conciliación explícita. No se migra ni se asignan códigos al abrir un documento.
+En el proyecto del módulo se cierra y aprueba la lista. Las tareas aprobadas aparecen como Planificadas y conservan su visibilidad al reabrir el diseño. RF 3 calcula automáticamente la preparación desde sus marcas de materiales y sesiones, sin aprobar nuevas tareas ni cambiar el seguimiento. Los documentos antiguos sin `tasks` mantienen su comportamiento hasta una conciliación explícita. No se migra ni se asignan códigos al abrir un documento.
 
 `presentation` genera las marcas de sesión, porción, banda y vista del módulo, aunque todavía no se haya presentado al alumnado. No colorea otras sesiones solo por trabajar sobre esa tarea. Se conservan las selecciones manuales `eventTypes`; restablecer recupera las previstas. La lista de tareas no desaparece por ocultar manualmente una marca de color. El seguimiento se modifica en la entrada oficial, no en una segunda copia de la porción. `publishedOn` anterior se conserva como histórico compatible, pero no se muestra ni se modifica desde los formularios.
 

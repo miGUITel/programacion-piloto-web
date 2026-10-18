@@ -1,5 +1,5 @@
-import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261018-1';
-import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261018-1';
+import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261018-rf3';
+import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261018-rf3';
 
 const OWNER = 'miGUITel';
 const REPOSITORY = 'programacion-piloto-datos';
