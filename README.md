@@ -199,19 +199,19 @@ Petición del 17/10/2026: retirar las etiquetas visibles «Módulo» y «Unidad�
 
 ### Tareas oficiales, fechas al presentar y ciclo de corrección
 
-#### Independencia entre Tareas y Unidad — implantado, pendiente de validación de uso
+#### Independencia entre Tareas y Unidad — implantado y validado
 
 Implantado como paso 2 el 17/10/2026: editar, presentar o corregir una tarea de cualquier módulo o UT sin cambiar la unidad abierta ni perder sus borradores, filtros o posición. Un único diálogo y Guardar tarea para tareas oficiales, antiguas por sesión/porción e históricas. Cada operación conserva su documento de origen y SHA. Solo se envían los campos de seguimiento cambiados; las notas locales de Unidad permanecen pendientes. Se mantienen títulos, identificadores, planificación y campos adicionales. Los conflictos entre dos cambios locales del mismo campo, cambios remotos y resultados inciertos se muestran sin sobrescribir ni descartar borradores. Cerrar permite cancelar; Revisar GitHub requiere confirmar el descarte y una lectura fallida conserva el formulario anterior.
 
 Verificación del paso 2: 137 pruebas automatizadas satisfactorias, incluidos formularios, cancelación, escrituras con SHA, relectura, respuestas perdidas y conservación exacta de campos ajenos. Comprobaciones de navegador con datos ficticios: P de otra UT manteniendo LM abierta y su filtro, P de la misma UT con notas pendientes, C de un examen histórico con notas pendientes, guardado posterior de las notas y relectura. La confirmación nativa del navegador de pruebas bloqueó la automatización posterior de errores; esos casos se verificaron con los manejadores reales del formulario en pruebas aisladas. No se modificaron Excel ni JSON académicos reales.
 
-Prueba del docente: guardar borradores antes de recargar; abrir LM; editar una tarea de SR y comprobar que LM sigue abierta; repetir dejando una nota aplicada pero sin guardar en LM; guardar una tarea de esa misma LM y comprobar que la nota continúa pendiente; guardar después la nota y actualizar; revisar P, C, lápiz, filtros y una cancelación. Usar cambios reales o revertir los de prueba. Comprobar persistencia después de desconectar y conectar solo cuando no queden borradores pendientes. La prueba docente de fechas por defecto con una tarea real sin fechas sigue pendiente.
+**Validación del docente, 18/10/2026 — RF 2:** pruebas 4–6 correctas. Se confirma Guardar tarea desde otra UT y desde la UT abierta, conservando notas pendientes, filtros y posición; el guardado posterior de Unidad y la relectura mantienen ambos cambios. P, C, lápiz y cancelación comprobados. Las fechas por defecto de RF 11 se han validado por separado en las pruebas 7–8.
 
 #### Barra de filtros de Tareas — implantado
 
 Petición del docente del 17/10/2026, implantada: retirar las etiquetas visibles «Módulo», «Unidad» y «Mostrar» de los tres selectores de la vista Tareas, igual que se ha solicitado para los selectores superiores de Unidad. Mantener nombres accesibles diferenciados para módulo, UT y estado. Las opciones generales predeterminadas serán, respectivamente, **Todos**, **Todas** y **Todos**. Quitar el título visible «Todas las tareas» situado antes de los filtros y abreviar el contador como **visibles/total**, por ejemplo `6/6`, sin «de» ni «tareas»; conservar su significado mediante texto accesible. El objetivo es compactar la barra y aprovechar mejor el espacio sin cambiar el filtrado, su ámbito global o el botón Actualizar tareas. El ajuste no cambia por sí mismo los datos académicos.
 
-**Modelo oficial, ciclo y fechas implantados el 17/10/2026; pendiente de revisión del docente.** Cada tarea oficial tiene una identidad única y una presentación prevista. Los datos nuevos se cierran en el proyecto del módulo, sin deducir códigos de las porciones. Los documentos antiguos siguen siendo compatibles.
+**Modelo oficial, ciclo y fechas implantados el 17/10/2026. Edición independiente (RF 2) y fechas iniciales al presentar (RF 11) validadas por el docente el 18/10/2026.** Cada tarea oficial tiene una identidad única y una presentación prevista. Los datos nuevos se cierran en el proyecto del módulo, sin deducir códigos de las porciones. Los documentos antiguos siguen siendo compatibles.
 
 - **Títulos oficiales:** el gestor debe identificar cada tarea por el título cerrado con el docente al diseñar la UT, no por el título genérico de su sesión o porción. Normalmente tendrá código `UTTT` y unas palabras clave: `0102` corresponde a la tarea 2 de la UT01. La numeración de tareas se reinicia en cada UT. Conservar las excepciones acordadas y los identificadores existentes; no inferir ni renombrar automáticamente tareas anteriores. Una misma tarea puede desarrollarse en varias actividades sin convertirse por ello en varias tareas oficiales. El ajuste del modelo deberá mantener esa identidad y sus referencias sin duplicar los datos de seguimiento.
 - **Presentar desde la vista UT:** al marcar la casilla Presentada, solicitar la fecha máxima de entrega y la fecha de aviso de corrección. Si hay fechas ya previstas, mostrarlas para confirmar o ajustar; no sustituirlas silenciosamente. Confirmar la presentación junto con las fechas; cancelar el diálogo debe conservar la situación anterior. Si una acción afecta a varias tareas, permitir confirmar las fechas de cada una, sin aplicar una pareja de fechas a todas de forma implícita. Mantener el guardado explícito del borrador y las protecciones de versión.
@@ -235,11 +235,11 @@ Aclaración del docente del 17/10/2026, implantada en la interfaz y en el modelo
 - El diseño de la UT y el cierre de su lista de tareas siguen realizándose con el docente en el proyecto del módulo, no desde la aplicación web. Cuando la UT se dé por preparada, sus tareas deben aparecer en el gestor como Planificadas, sin exigir que hayan sido presentadas al alumnado ni publicadas en Aula Virtual. No inferir preparación de la mera existencia del documento o de sus recursos.
 - Preparar una UT no presenta ni corrige automáticamente sus tareas. RF 3 calcula su estado desde materiales y sesiones; la aprobación de la lista oficial se confirma por separado y se conserva al reabrir la UT.
 
-### Fechas iniciales al presentar — implantado
+### Fechas iniciales al presentar — implantado y validado
 
 Petición del docente del 17/10/2026: al marcar una tarea como Presentada, si no tiene ninguna fecha de seguimiento previamente configurada, proponer por defecto **Presentada**, **Entrega** y **Corregir** en la fecha de hoy según `Europe/Madrid`. Sirve como base editable y permite reflejar tareas presentadas, realizadas y entregadas durante la misma sesión. Si existen fechas previas, no sobrescribirlas por esta regla; el caso de fechas parcialmente configuradas no queda ampliado por este requisito. Mantener la confirmación del formulario, la cancelación sin cambios y el guardado explícito. Corregir hoy habilita el aviso/estado Por corregir, pero no confirma Corregida automáticamente. Implantado: los valores solo son propuestas hasta confirmar y guardar; no se rellenan fechas históricas al cargar.
 
-**Prueba de usuario pendiente, 17/10/2026:** el docente indica que no dispone de ninguna tarea sin fechas, por lo que aún no ha podido comprobar la propuesta automática de hoy. Mantener pendiente hasta disponer de una tarea real nueva sin fechas o de una prueba aislada. Las pruebas sintéticas existentes no sustituyen esa validación; no borrar fechas reales ni inventar tareas académicas para provocarla.
+**Validación del docente, 18/10/2026 — RF 11:** pruebas 7–8 correctas. En una tarea sin fechas se propone hoy en Presentada, Entrega y Corregir; cancelar conserva la situación anterior. Confirmar y guardar conserva las fechas elegidas y reabrir el formulario no las sustituye.
 
 ### Marca de presentación prevista de tareas — implantado
 
@@ -263,7 +263,7 @@ La asignación por defecto responde a esa acción expresa; no se repite al abrir
 
 El resumen actual suma los minutos de todos los registros de sesión, incluidos los históricos Reprogramada; el cómputo de impartición sí depende de su estado. Al mostrar una UT con historial, esa suma puede diferir de su carga inicial y de los minutos de las sesiones vigentes. Revisar con el docente si conviene separar esas medidas o cambiar el rótulo antes de modificar el cálculo. No borrar la sesión histórica ni alterar planificación o estados para ajustar visualmente un total. Este hallazgo no introduce un cambio de código ni una regla de cómputo nueva.
 
-### RF 3 y preparación individual de tareas — implantado el 18/10/2026
+### RF 3 y preparación individual de tareas — implantados y validados el 18/10/2026
 
 La etiqueta se muestra en **Unidad** y **Módulo**. La vista **Preparación** reúne las UT del catálogo, con filtros por módulo y estado. Pulsar la etiqueta abre el editor; pulsar el código de una UT abre sus sesiones. Si otra unidad tiene notas pendientes, se ofrece guardarlas antes de cambiar o cancelar conservándolas.
 
@@ -297,27 +297,29 @@ Pruebas de usuario:
 
 RF 3 incorpora ya la marca individual de sesión lista y las acciones conjuntas en su editor. RF 4 mantiene pendientes la marca en cada cabecera y/o una vista anual específica de sesiones, y concretar qué cambios de planificación invalidan una revisión. Todas las vistas usarán session.preparation; no hay marcas por porción ni inferencias desde Impartida o recursos existentes.
 
-### Requisitos pendientes, parciales o pendientes de validación — 18/10/2026
+### Requisitos pendientes y parciales — 18/10/2026
 
-Los números RF son estables. Se conservan las prioridades acordadas (1 es la máxima); no se renumeran al completar un requisito. «Validación pendiente» significa que la función está implementada y probada técnicamente, pero falta la comprobación de uso del docente. La prueba 6 de conservación de observaciones al guardar preparación está confirmada.
+Los números RF son estables. Se conservan las prioridades acordadas (1 es la máxima); no se renumeran al completar un requisito. El docente ha confirmado correctas las pruebas 1–8 y ha validado RF 2, RF 3, RF 5 y RF 11 el 18/10/2026. Se retiran de esta tabla, al igual que RF 9 ya validado.
 
 | RF | Prioridad | Requisito | Estado y trabajo restante |
 |---:|---:|---|---|
-| 3 | 1 | Preparación automática de las UT | Implementado; cierre de validación. Etiquetas, vista global, enlace a sesiones, cálculo automático y guardado independiente disponibles. Comprobar el recálculo tras eliminar tareas o exámenes. |
-| 5 | 2 | Preparación de PPT, web, tareas y examen | Implementado; cierre de validación. Edición de PPT/Web, preparación individual, altas y eliminación de tareas/exámenes disponibles. Comprobar Eliminar, Deshacer y persistencia tras guardar. |
 | 13 | 3 | Editar información general y configuración del módulo | Pendiente y aplazado por decisión del docente. La información validada se consulta; falta definir e implementar su edición. |
-| 2 | 5 | Validar edición independiente de tareas | Implementado; validación de uso pendiente del editor Guardar tarea. La prueba de Guardar preparación no sustituye esta comprobación. |
 | 4 | 6 | Preparación de sesiones | Parcial. Marcas individuales y acciones conjuntas disponibles en Preparación. Faltan el acceso desde cada cabecera y/o vista anual de sesiones y acordar cuándo revisar su preparación. |
 | 6 | 7 | Fecha prevista de exámenes en Tareas | Parcial. Existe en la referencia de sesión y la ayuda; falta mostrarla claramente en la fila, separada de las fechas reales. |
 | 7 | 8 | Reprogramar exámenes | Pendiente. Acción que conserve identidad y seguimiento, actualice marcas y requiera aviso para la nueva fecha. |
 | 8 | 9 | Totales de duración con reprogramaciones | Decisión pendiente. Distinguir carga inicial, planificación vigente e historial antes de cambiar el cálculo. |
 | 10 | 11 | Avance por porción | Definido; pendiente de implementar. Pendiente/Parcial/Completada y nota opcional; marcar Impartida completa por defecto las porciones y permite retocarlas. |
-| 11 | 12 | Fechas por defecto al presentar | Implementado; validación pendiente con tarea sin fechas, comprobando propuesta de hoy y cancelación sin cambios. |
 | 12 | 13 | Acceso a recursos de cada UT | Pendiente. Definir selección de recursos, enlaces y presentación desde la app. |
 
-RF 3 y RF 5 no tienen funciones pendientes dentro del alcance aprobado después de esta ampliación. Queda la validación de uso del borrado y sus efectos. La vista de sesiones de RF 4, los enlaces a recursos de RF 12 y la reprogramación de RF 7 conservan sus propios alcances y prioridades.
+RF 3 y RF 5 quedan cerrados dentro del alcance aprobado: el docente ha confirmado Eliminar, Deshacer, persistencia y recálculo automático en las pruebas 1–3. La vista de sesiones de RF 4, los enlaces a recursos de RF 12 y la reprogramación de RF 7 conservan sus propios alcances y prioridades.
 
 ### Fuera de la lista pendiente: funciones ya implantadas
+
+**RF 3 (prioridad conservada: 1) y RF 5 (prioridad conservada: 2): implementados y validados por el docente el 18/10/2026.** Pruebas 1–3 correctas: eliminar y deshacer tareas/exámenes, guardar y releer su eliminación, conservar el resto de datos y recalcular contadores y preparación de la UT. No queda trabajo pendiente dentro de sus alcances aprobados.
+
+**RF 2 (prioridad conservada: 5): implementado y validado por el docente el 18/10/2026.** Pruebas 4–6 correctas: edición y guardado independiente de tareas de otra UT o de la misma, conservación de notas pendientes, persistencia posterior y controles P/C/lápiz con cancelación sin cambios.
+
+**RF 11 (prioridad conservada: 12): implementado y validado por el docente el 18/10/2026.** Pruebas 7–8 correctas: propuesta de hoy en las tres fechas para tareas sin fechas, cancelación sin cambios, confirmación y persistencia de las fechas elegidas.
 
 **RF 9 (prioridad conservada: 10): implementado y validado por el docente el 18/10/2026.** Edición de títulos y descripciones con guardado independiente en el JSON y conservación de notas pendientes. Todas las pruebas de uso propuestas se han confirmado correctas; se retira de la tabla de pendientes sin renumerar los demás RF.
 
