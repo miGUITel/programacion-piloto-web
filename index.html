@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261018-module-common">
-  <script type="module" src="./app.mjs?v=20261018-module-common"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261018-module-fixeddate">
+  <script type="module" src="./app.mjs?v=20261018-module-fixeddate"></script>
 </head>
 <body>
   <header class="topbar">
@@ -74,9 +74,9 @@
         <section id="module-view" aria-label="Vista general del módulo" hidden>
           <nav class="module-sections" aria-label="Consultas del módulo"><button id="module-tab-sessions" class="layout-button" type="button" aria-pressed="true">Sesiones</button><button id="module-tab-timetable" class="layout-button" type="button" aria-pressed="false">Horario</button><button id="module-tab-calendar" class="layout-button" type="button" aria-pressed="false">Calendario escolar</button><button id="module-tab-evaluations" class="layout-button" type="button" aria-pressed="false">Evaluaciones</button></nav>
           <div id="module-sessions-panel">
-          <div class="module-view-toolbar"><label class="visually-hidden" for="overview-month">Fechas</label><select id="overview-month"></select><label class="visually-hidden" for="overview-layout">Diseño provisional</label><select id="overview-layout" title="Selector provisional: lo retiraremos cuando elijas el diseño"><option value="2">2 · Sesión y fecha</option><option value="3">3 · Solo fecha</option></select><span class="module-legend"><span class="band-key task-key"></span>Tarea <span class="band-key exam-key"></span>Examen</span></div>
+          <div class="module-view-toolbar"><label class="visually-hidden" for="overview-month">Fechas</label><select id="overview-month"></select><span class="module-legend"><span class="band-key task-key"></span>Tarea <span class="band-key exam-key"></span>Examen</span></div>
           <p id="module-scope" class="scope-note"></p>
-          <div class="module-grid-scroll compact-module-scroll" tabindex="0" role="region" aria-label="Sesiones alineadas por día de la semana"><div id="module-grid" class="compact-module-grid" data-layout="2" data-days="2" data-cycles="3"></div></div>
+          <div class="module-grid-scroll compact-module-scroll" tabindex="0" role="region" aria-label="Sesiones alineadas por día de la semana"><div id="module-grid" class="compact-module-grid" data-days="2" data-cycles="3"></div></div>
           <p id="overview-empty" class="empty-sessions" hidden>No hay sesiones en este intervalo.</p>
           <p class="scope-note">Columnas por día de la semana, no por fecha. Tachado: cancelada o reprogramada; subrayado rojo: fecha pasada.</p>
           </div>
