@@ -359,9 +359,9 @@ Las comprobaciones automatizadas de esquema y persistencia corresponden a los te
 
 ### Vista compacta de Módulo y datos comunes
 
-La vista de Módulo utiliza de forma fija **solo la fecha** en cada sesión. El número de sesión y su descripción completa permanecen en la ayuda accesible y al abrirla. El mes aparece al comenzar la fila y al cambiar de mes; el cambio de año se identifica. Se mantiene la alineación por días y el ajuste al ancho disponible.
+La vista de Módulo utiliza de forma fija **sesión y fecha**: el número de sesión encima y la fecha debajo. La descripción completa permanece en la ayuda accesible y al abrirla. El mes aparece al comenzar la fila y al cambiar de mes; el cambio de año se identifica. Se mantiene la alineación por días y el ajuste al ancho disponible.
 
-Decisión del docente: conservar solo fecha, retirar el selector provisional y su recordatorio, y eliminar los comentarios «Sin sesiones» de la columna UT. Los avisos de lectura incompleta, preparación, colores y accesos permanecen.
+Decisión corregida del docente: conservar sesión y fecha, sin selector provisional ni recordatorio, y mantener eliminados los comentarios «Sin sesiones» de la columna UT. Los avisos de lectura incompleta, preparación, colores y accesos permanecen.
 
 Dentro de Módulo, **Sesiones · Horario · Calendario escolar · Evaluaciones** comparten la misma zona. Las tres consultas comunes leen exclusivamente el JSON privado enlazado por `catalog.common.path`, con validación del contrato y sin métodos de escritura. Horario y Evaluaciones permiten consultar este módulo o todos; las evaluaciones se filtran por el grupo confirmado, separando carácter orientativo, límite ordinario y recuperación. Calendario muestra el comienzo/final de clases y los intervalos no lectivos originales. Las excepciones históricas de horario se conservan en su ámbito.
 
