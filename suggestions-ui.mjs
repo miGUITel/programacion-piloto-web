@@ -20,7 +20,8 @@ export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademic
     const busy = isBusy();
     $('open-suggestions').disabled = busy || !store || isAcademicEditorOpen();
     $('open-suggestions').title = store ? 'Sugerir mejoras de la aplicación, no de los cursos' : 'Conecta con GitHub para enviar una sugerencia';
-    $('open-suggestions').textContent = hasPending() ? 'Sugerencias •' : 'Sugerencias';
+    $('open-suggestions').classList.toggle('has-content', hasPending());
+    $('open-suggestions').setAttribute('aria-label', `Sugerencias sobre la aplicación${hasPending() ? ' · Borrador pendiente' : ''}`);
     for (const id of inputs) $(id).disabled = busy || Boolean(entry) || saved;
     $('send-suggestion').disabled = busy || !store || uncertain || saved;
     $('send-suggestion').hidden = saved;
@@ -116,7 +117,7 @@ export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademic
     else $('hide-suggestions').focus();
   });
   $('suggestions-form').addEventListener('submit', send);
-  $('suggestions-form').addEventListener('input', updateAvailability);
+  $('suggestions-form').addEventListener('input', () => { updateAvailability(); onStateChange(); });
   $('close-suggestions').addEventListener('click', close);
   $('hide-suggestions').addEventListener('click', close);
   dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
