@@ -2,6 +2,10 @@ import { eventTypes } from './teaching.mjs?v=20261018-rf1';
 import { timeToMinutes } from './core.mjs?v=20261018-rf1';
 
 /** Presentation helpers. Codes, titles, dates and academic states remain unchanged. */
+export function orderedUnits(units) {
+  return [...units].sort((left, right) => left.code.localeCompare(right.code, 'es', { numeric: true }));
+}
+
 export function compactUnitLabel(unit) {
   const [, digits, suffix] = unit.code.match(/^(?:UT|RA|B)(\d+)([A-Z]?)$/);
   const number = digits.padStart(2, '0') + suffix;
