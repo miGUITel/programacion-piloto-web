@@ -183,13 +183,13 @@ Lista consolidada y ordenada el 17/10/2026, contrastada con la conversación y l
 
 Los cuatro requisitos prioritarios ya tienen implementación y pruebas técnicas; queda la revisión visual del docente. El detalle vigente está en «Presentación»: vista Agenda con descripciones de dos líneas, cabecera de dos líneas sin metadatos repetidos, control global único y accesos por iconos. No se han modificado los documentos académicos de las UT ni los Excel. Las propuestas «elegir vista» y «Mejor aprovechamiento del espacio» quedan atendidas en este alcance, sin borrar sus registros originales ni dar por resueltos futuros retoques.
 
-### RF 9 — Edición ampliada de sesión — implantado
+### RF 9 — Edición ampliada de sesión — implantado y validado
 
 Hacer clic en una zona libre de la fila abre una ventana amplia con todas sus actividades, incluidos título y descripción completos de la primera porción que representa la cabecera. El título es un campo de una línea y la descripción un área de texto ampliable. El título de la fila también es un botón accesible por teclado. El «+», las casillas, desplegables, iconos y enlaces mantienen su función; seleccionar texto no abre el editor. Una fila de actividad abre el mismo editor situado en esa actividad.
 
 **Guardar sesión** cambia únicamente `activity.title` y `activity.planned` editados, en el JSON de la UT correspondiente y sin cambiar su versión de formato. Se lee primero la versión remota, se guarda contra su SHA y se confirma mediante relectura exacta. La base de Unidad se actualiza conservando sus notas y otros cambios pendientes, sin enviarlos. No se duplican textos en la sesión, no se renombran tareas oficiales ni se modifican fechas, horarios, estados, preparación o avisos. Las sesiones compartidas conservan las porciones de cada UT en su archivo original.
 
-Cerrar o Escape permiten descartar únicamente este formulario previa confirmación si cambió. Ante conflicto, identidad modificada o resultado incierto se conservan ambos borradores, se bloquea el reenvío y se ofrece descargar los textos antes de revisar la unidad. Un guardado confirmado permite seguir editando o cerrar y volver a la misma posición. Prioridad conservada: **10**. Implementación y pruebas técnicas completadas; pendiente de validación de uso del docente.
+Cerrar o Escape permiten descartar únicamente este formulario previa confirmación si cambió. Ante conflicto, identidad modificada o resultado incierto se conservan ambos borradores, se bloquea el reenvío y se ofrece descargar los textos antes de revisar la unidad. Un guardado confirmado permite seguir editando o cerrar y volver a la misma posición. Prioridad conservada: **10**. Implementación, pruebas técnicas y validación de uso completadas. El docente confirmó el 18/10/2026 que todas las comprobaciones de RF 9 son correctas.
 
 ### Selectores superiores — implantado
 
@@ -303,13 +303,12 @@ Los números RF son estables. Se conservan las prioridades acordadas (1 es la m�
 |---:|---:|---|---|
 | 3 | 1 | Preparación automática de las UT | Implementado; cierre de validación. Etiquetas, vista global, enlace a sesiones, cálculo automático y guardado independiente disponibles. Comprobar el recálculo tras eliminar tareas o exámenes. |
 | 5 | 2 | Preparación de PPT, web, tareas y examen | Implementado; cierre de validación. Edición de PPT/Web, preparación individual, altas y eliminación de tareas/exámenes disponibles. Comprobar Eliminar, Deshacer y persistencia tras guardar. |
-| 13 | 3 | Editar información general y configuración del módulo | Pendiente. La información validada se consulta; falta definir e implementar su edición. |
+| 13 | 3 | Editar información general y configuración del módulo | Pendiente y aplazado por decisión del docente. La información validada se consulta; falta definir e implementar su edición. |
 | 2 | 5 | Validar edición independiente de tareas | Implementado; validación de uso pendiente del editor Guardar tarea. La prueba de Guardar preparación no sustituye esta comprobación. |
 | 4 | 6 | Preparación de sesiones | Parcial. Marcas individuales y acciones conjuntas disponibles en Preparación. Faltan el acceso desde cada cabecera y/o vista anual de sesiones y acordar cuándo revisar su preparación. |
 | 6 | 7 | Fecha prevista de exámenes en Tareas | Parcial. Existe en la referencia de sesión y la ayuda; falta mostrarla claramente en la fila, separada de las fechas reales. |
 | 7 | 8 | Reprogramar exámenes | Pendiente. Acción que conserve identidad y seguimiento, actualice marcas y requiera aviso para la nueva fecha. |
 | 8 | 9 | Totales de duración con reprogramaciones | Decisión pendiente. Distinguir carga inicial, planificación vigente e historial antes de cambiar el cálculo. |
-| 9 | 10 | Edición ampliada de sesión | Implementado; validación de uso pendiente. Edición de títulos y descripciones con Guardar sesión independiente. Comprobar persistencia, conservación de notas pendientes, cancelación y controles de la fila. |
 | 10 | 11 | Avance por porción | Definido; pendiente de implementar. Pendiente/Parcial/Completada y nota opcional; marcar Impartida completa por defecto las porciones y permite retocarlas. |
 | 11 | 12 | Fechas por defecto al presentar | Implementado; validación pendiente con tarea sin fechas, comprobando propuesta de hoy y cancelación sin cambios. |
 | 12 | 13 | Acceso a recursos de cada UT | Pendiente. Definir selección de recursos, enlaces y presentación desde la app. |
@@ -317,6 +316,8 @@ Los números RF son estables. Se conservan las prioridades acordadas (1 es la m�
 RF 3 y RF 5 no tienen funciones pendientes dentro del alcance aprobado después de esta ampliación. Queda la validación de uso del borrado y sus efectos. La vista de sesiones de RF 4, los enlaces a recursos de RF 12 y la reprogramación de RF 7 conservan sus propios alcances y prioridades.
 
 ### Fuera de la lista pendiente: funciones ya implantadas
+
+**RF 9 (prioridad conservada: 10): implementado y validado por el docente el 18/10/2026.** Edición de títulos y descripciones con guardado independiente en el JSON y conservación de notas pendientes. Todas las pruebas de uso propuestas se han confirmado correctas; se retira de la tabla de pendientes sin renumerar los demás RF.
 
 **RF 1 (prioridad conservada: 4): incorporación y revisión técnica completadas para la información existente en el ámbito autorizado.** Las fichas generales de los cinco módulos tienen destino privado y consulta en la app. Se ha comprobado la cobertura de las unidades incorporadas y se ha hecho visible el contexto que faltaba en pantalla. Las decisiones académicas expresamente aplazadas por el docente y el diseño aún no elaborado permanecen identificados en los JSON; no se inventan para cerrar la incorporación. Esta comprobación no declara preparadas las unidades ni convierte el catálogo en prueba de un diseño futuro terminado.
 
@@ -332,7 +333,7 @@ Las incorporaciones pendientes se preparan por lotes verificables y expresamente
 
 La fuente única de trabajo diario para todos los módulos es JSON y app, sin seguimiento paralelo en Excel. Los datos generales del módulo sin destino validado requieren conciliación específica; no se dan por disponibles ni se reconstruyen desde el respaldo. El JSON privado `common/course-2026-2027.json` de `miGUITel/programacion-piloto-datos`, localizado por `catalog.common.path`, es la fuente única de horario, calendario escolar y límites de evaluación. `26 COMÚN.xlsx` queda como respaldo sin actualización en paralelo. En los proyectos se diseña y revisa con el docente; el resultado se guarda en los JSON y se consulta o confirma en la app, sin que esta decida el diseño automáticamente.
 
-La consulta de programación anual, metodología y calificación está implantada para los módulos con `profile` validado, desde **Información**. Siguen propuestas la edición de esa configuración y el acceso a recursos por UT. Mantener también pendientes la definición de preparación de sesiones y su vista global, y la vista ampliada de sesión. Calendar y Aula Virtual siguen siendo servicios separados; no hay sincronización o publicación automática. La app requiere conexión y guardado explícito; la recuperación de borradores tras cerrar o recargar no está implementada.
+La consulta de programación anual, metodología y calificación está implantada para los módulos con `profile` validado, desde **Información**. Siguen propuestas la edición de esa configuración y el acceso a recursos por UT. Mantener pendientes las ampliaciones de preparación de sesiones y su vista global. La edición ampliada de sesión de RF 9 ya está implantada y validada. Calendar y Aula Virtual siguen siendo servicios separados; no hay sincronización o publicación automática. La app requiere conexión y guardado explícito; la recuperación de borradores tras cerrar o recargar no está implementada.
 
 ## Formato del JSON
 
