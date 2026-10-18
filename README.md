@@ -2,6 +2,8 @@
 
 ## Cabecera compacta
 
+Las listas de UT se muestran por código en orden natural, incluidos los bloques y sufijos, independientemente del orden de incorporación al catálogo. La ordenación se aplica a la copia de consulta de la app y no cambia los JSON, identificadores ni sesiones. El indicador de preparación permanece editable junto al título **Sesiones**, antes de la leyenda de fecha pasada, sin una fila propia.
+
 Una fila en escritorio y dos hasta 760 px de ancho. Los selectores de módulo y UT quedan a la izquierda, junto a **UT**, **Mo**, **Ta · n** (tareas por corregir), una caja de herramientas para Preparación y **+ / −** para las sesiones. En móvil, las vistas ocupan la segunda fila y los controles mantienen al menos 44 px de pulsación. No se muestran la marca, el distintivo Piloto, textos de conexión ni hora de guardado.
 
 A la derecha, el punto verde indica una sesión conectada y rojo ausencia de conexión o red; no acredita permiso de escritura ni sincronización automática. Pulsarlo abre Información del módulo, mejoras del módulo/UT, resumen de la vista y Desconectar. El icono de conversación separado corresponde solo a sugerencias de la app. Todos los iconos conservan nombre accesible, ayuda y funcionamiento por teclado.
