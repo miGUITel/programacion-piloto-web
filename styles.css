@@ -741,6 +741,61 @@ textarea{resize:vertical;line-height:1.6}
 }
 
 /* Module overview and task index: derived views, one draft and explicit save. */
+.module-sections { display:flex; flex-wrap:wrap; gap:5px; margin:8px 0; }
+.module-sections .layout-button { padding:7px 12px; }
+.compact-module-scroll { overflow-x:hidden; }
+.compact-module-grid { --overview-days:2; --overview-cycles:3; font-size:12px; width:100%; min-width:0; }
+.compact-module-grid[data-days="1"] { --overview-days:1; }
+.compact-module-grid[data-days="2"] { --overview-days:2; }
+.compact-module-grid[data-days="3"] { --overview-days:3; }
+.compact-module-grid[data-days="4"] { --overview-days:4; }
+.compact-module-grid[data-days="5"] { --overview-days:5; }
+.compact-module-grid[data-days="6"] { --overview-days:6; }
+.compact-module-grid[data-days="7"] { --overview-days:7; }
+.compact-module-grid[data-cycles="1"] { --overview-cycles:1; }
+.compact-module-grid[data-cycles="2"] { --overview-cycles:2; }
+.compact-module-grid[data-cycles="3"] { --overview-cycles:3; }
+.compact-module-grid[data-cycles="4"] { --overview-cycles:4; }
+.compact-module-grid[data-cycles="5"] { --overview-cycles:5; }
+.compact-module-grid[data-cycles="6"] { --overview-cycles:6; }
+.compact-module-grid[data-cycles="7"] { --overview-cycles:7; }
+.compact-module-grid[data-cycles="8"] { --overview-cycles:8; }
+.compact-module-grid[data-cycles="9"] { --overview-cycles:9; }
+.compact-module-grid[data-cycles="10"] { --overview-cycles:10; }
+.overview-row { display:grid; grid-template-columns:minmax(0,180px) minmax(0,1fr); border-bottom:1px solid #dbe3de; }
+.overview-head { position:sticky; top:0; z-index:2; background:#eaf0eb; font-weight:650; }
+.overview-label { min-width:0; padding:7px 9px; background:#f5f6ee; }
+.overview-label .preparation-badge { max-width:100%; white-space:normal; }
+.overview-content { min-width:0; padding:4px; }
+.overview-weekdays,.overview-strip { display:grid; grid-template-columns:repeat(calc(var(--overview-days) * var(--overview-cycles)),minmax(0,1fr)); gap:3px; }
+.overview-weekdays { margin:0 4px; text-align:center; align-items:center; min-width:0; }
+.overview-strip { align-items:start; }
+.overview-slot { min-width:0; display:flex; flex-direction:column; gap:3px; }
+.compact-module-grid .overview-session.band-day { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; width:100%; min-width:0; height:45px; margin:0; padding:2px; border-radius:5px; }
+.overview-number { font-size:12px; line-height:1.1; }
+.overview-cell-date { font-size:10px; line-height:1.2; white-space:nowrap; }
+.compact-module-grid[data-layout="3"] .overview-session { height:31px; }
+.compact-module-grid[data-layout="3"] .overview-cell-date { font-size:12px; font-weight:650; }
+.overview-slot.is-today .overview-session { outline:2px solid #087e78; outline-offset:-2px; }
+.overview-exceptions { display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-top:4px; }
+.overview-exceptions .overview-slot { width:74px; }
+.common-readonly { min-width:0; }
+.common-context,.common-course-range { margin:7px 0; font-size:13px; font-weight:600; }
+.common-table { width:100%; table-layout:fixed; border-collapse:collapse; background:#fffefa; font-size:13px; }
+.common-table th,.common-table td { border:1px solid #dbe3de; padding:7px; text-align:left; vertical-align:top; white-space:pre-line; overflow-wrap:anywhere; }
+.common-table th { background:#eaf0eb; font-weight:650; }
+.common-readonly details { margin:10px 0; font-size:13px; }
+.common-readonly summary { cursor:pointer; }
+@media (max-width:600px) {
+  .overview-row { grid-template-columns:minmax(0,88px) minmax(0,1fr); }
+  .overview-label { padding:6px 4px; }
+  .overview-label .unit-link { font-size:11px; }
+  .compact-module-grid .overview-session.band-day,.compact-module-grid[data-layout="3"] .overview-session { min-height:44px; height:auto; }
+  .overview-cell-date { font-size:10px; }
+  .module-sections .layout-button { min-height:44px; padding:7px 9px; font-size:13px; }
+  .common-table { font-size:11px; }
+  .common-table th,.common-table td { padding:5px 3px; }
+}
 .workspace-views { display:flex; gap:6px; margin:8px 0; }
 .workspace-views .layout-button { padding:7px 18px; }
 .module-view-toolbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:16px 0 8px; }
