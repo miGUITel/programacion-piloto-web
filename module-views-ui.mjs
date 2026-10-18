@@ -34,7 +34,7 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
     if (!header || !overviewDays.length) return;
     const width = header.getBoundingClientRect().width;
     if (!width) return;
-    const minimum = $('overview-layout').value === '3' ? 53 : 64;
+    const minimum = 53;
     const cycles = Math.max(1, Math.min(10, Math.floor(width / (minimum * overviewDays.length))));
     grid.dataset.cycles = String(cycles);
     header.replaceChildren();
@@ -84,7 +84,6 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
     fillSelect($('overview-month'), [['', 'Todas las fechas'], ...overview.months.map(month => [month, monthName(month)])], $('overview-month').value);
     const model = weekdayOverview(module, records, common, $('overview-month').value);
     const grid = $('module-grid'); grid.replaceChildren();
-    grid.dataset.layout = $('overview-layout').value;
     grid.dataset.days = String(model.days.length || 1); overviewDays = model.days;
     const header = el('div', 'overview-row overview-head');
     header.append(el('span', 'overview-label', 'UT'), el('div', 'overview-weekdays'));
@@ -97,8 +96,6 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
       if (row.record) label.append(preparationBadge(row.record.document, () => onPreparation(row.record.entry)));
       if (row.unit.path === activePath) label.append(el('span', 'overview-active', 'Abierta'));
       if (!row.record) label.append(el('span', 'overview-unavailable', 'Sin datos · reintenta Actualizar'));
-      else if (!row.record.document.sessions.length) label.append(el('span', 'overview-unavailable', 'Sin sesiones'));
-      else if (!row.slots.some(Boolean) && !row.exceptions.length) label.append(el('span', 'overview-unavailable', 'Sin sesiones en este intervalo'));
       tr.append(label);
       const content = el('div', 'overview-content'), strip = el('div', 'overview-strip');
       let previousMonth = '', previousYear = '';
@@ -113,7 +110,6 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
           const types = eventTypes(session, row.record.document);
           const button = el('button', `overview-session band-day${types.includes('task') ? ' has-task' : ''}${types.includes('exam') ? ' has-exam' : ''}${['Cancelada', 'Reprogramada'].includes(session.state) ? ' excluded-session' : ''}${session.date < today ? ' elapsed-session' : ''}`);
           button.type = 'button'; button.dataset.sessionId = session.id; button.dataset.weekday = String(cell.weekday);
-          if (grid.dataset.layout === '2') button.append(el('strong', 'overview-number', `S${session.number}`));
           button.append(el('span', 'overview-cell-date', dateText));
           const description = `${row.unit.code} · Sesión ${session.number} · ${shortDate(session.date)} · ${session.activities[0].start} · ${session.activities[0].title}${types.length ? ' · ' + types.map(type => type === 'task' ? 'Tarea' : 'Examen').join(' y ') : ''}${session.state ? ' · ' + session.state : ''}`;
           button.title = description; button.setAttribute('aria-label', description);
@@ -233,14 +229,14 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
     if (busy) for (const root of [$('module-view'), $('tasks-view')]) root.querySelectorAll('button,select,input').forEach(element => { element.disabled = true; });
   }
 
-  ['overview-month', 'overview-layout', 'common-scope', 'tasks-module', 'tasks-unit', 'tasks-status'].forEach(id => $(id).addEventListener('change', render));
+  ['overview-month', 'common-scope', 'tasks-module', 'tasks-unit', 'tasks-status'].forEach(id => $(id).addEventListener('change', render));
   for (const name of ['sessions', 'timetable', 'calendar', 'evaluations']) $('module-tab-' + name).addEventListener('click', () => { section = name; render(); });
   $('common-refresh').addEventListener('click', readCommon);
   $('retry-tasks').addEventListener('click', onRetry);
   return { render, capturePosition, restorePosition, clear() {
     generation++; common = null; commonError = ''; commonLoading = false; commonAttempted = false; commonConnection = null; commonKey = ''; section = 'sessions';
     $('common-content').replaceChildren(); $('common-message').textContent = ''; $('common-message').hidden = true;
-    $('overview-layout').value = '2'; $('common-scope').value = 'module';
+    $('common-scope').value = 'module';
     filterModule = ''; $('module-grid').replaceChildren(); $('tasks-list').replaceChildren();
     for (const id of ['module-scope', 'tasks-scope', 'tasks-count']) $(id).textContent = '';
     for (const id of ['overview-month', 'tasks-module', 'tasks-unit']) $(id).replaceChildren();
