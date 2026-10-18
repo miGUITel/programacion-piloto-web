@@ -20,6 +20,8 @@
 .unit-title-row{display:flex;align-items:center;gap:10px;min-width:0}
 .general-improvements{color:#775521;border-color:#d4c098;background:#fff9eb;flex-shrink:0;width:34px;min-width:34px;padding:6px!important;position:relative;display:grid;place-items:center}
 .general-improvements svg{width:19px;height:19px}
+.library-bar .module-info-icon{display:grid;place-items:center;width:34px;min-width:34px;height:34px;padding:0;flex-shrink:0}
+.module-info-icon>span{display:block;width:19px;height:19px;border:1.5px solid currentColor;border-radius:50%;font-family:Georgia,serif;font-style:normal;font-size:16px;font-weight:700;line-height:17px;text-align:center}
 .general-improvements.has-content::after{content:'';position:absolute;width:7px;height:7px;border-radius:50%;background:#a96a00;right:3px;top:3px}
 .module-picker select{width:80px!important;flex:0 0 80px!important}
 .library-bar .unit-picker select{max-width:240px}
@@ -736,6 +738,8 @@ textarea{resize:vertical;line-height:1.6}
   .library-bar .module-picker select{width:80px!important}
   .library-bar .general-improvements{margin-left:0}
   .library-bar .general-improvements{width:44px;min-width:44px;min-height:44px}
+  .library-bar .module-picker{grid-template-columns:minmax(0,1fr) auto auto}
+  .library-bar .module-info-icon{width:44px;min-width:44px;height:44px;min-height:44px;padding:0}
   .library-bar .stats{flex-basis:100%;justify-content:space-between;gap:8px;margin:0;padding:2px 0 0}
   .library-bar .stat-value{font-size:14px}
   .library-bar .stat-label{font-size:11px}
