@@ -307,6 +307,20 @@ Pruebas de usuario:
 
 RF 3 incorpora ya la marca individual de sesión lista y las acciones conjuntas en su editor. RF 4 mantiene pendientes la marca en cada cabecera y/o una vista anual específica de sesiones, y concretar qué cambios de planificación invalidan una revisión. Todas las vistas usarán session.preparation; no hay marcas por porción ni inferencias desde Impartida o recursos existentes.
 
+### RF 12 — Recursos de la UT — implantado, pendiente de validación de uso
+
+Debajo de las sesiones, **Recursos de la UT** muestra enunciados y fichas docentes asociados por ID a cada tarea o examen, PPT, Web y herramientas/entornos. Las referencias sin destino confirmado se señalan; no se inventan enlaces ni se deduce una página HTML a partir de un nombre Markdown. **Gestionar recursos** permite añadir, editar, eliminar y deshacer antes de **Guardar recursos**. Eliminar retira la referencia, nunca el archivo original. Se conservan las extensiones desconocidas y las asociaciones; las referencias desde sesiones o porciones requieren revisión antes de retirar un recurso.
+
+El guardado de la UT usa su JSON, versión y relectura exacta, conserva las notas pendientes de Unidad sin enviarlas y no cambia el formato del documento. Los enlaces generales de PPT y Web se guardan independientemente en `MÓDULO/resources.json` y se muestran en las UT del módulo; leer un registro inexistente muestra una lista vacía y no crea archivos. Una escritura incierta o conflicto conserva el borrador, bloquea el reenvío y permite descargarlo. Cancelar no publica nada. Los enlaces abren en otra pestaña sin trasladar el token.
+
+Las **fichas docentes de tarea** son recursos privados nuevos, distintos del enunciado y de la memoria didáctica de la UT. Se elaboran en el proyecto del módulo y se enlazan a su tarea. La app lee Markdown UTF-8 desde GitHub con la conexión actual y lo muestra dentro de una ventana amplia. No requiere publicar la ficha ni pasar credenciales por URL. El token debe poder leer el repositorio indicado; el repositorio de datos es el destino predeterminado. Un fallo retira el contenido anterior y cerrar o desconectar limpia el texto. El lector no ejecuta HTML, carga imágenes remotas ni modifica la ficha.
+
+Cada recurso conserva `id`, `title`, `type`, `audience?`, `location?`, `description?` y `version?`. Las ubicaciones son enlaces HTTPS confirmados, referencias locales compatibles o rutas Markdown privadas de GitHub. OneDrive requiere confirmar expresamente que el enlace es público. Las asociaciones oficiales siguen en `tasks[].resourceRefs`; no se crea otra lista de tareas. Las conversaciones del proyecto leen el JSON actual, añaden o actualizan referencias por ID y guardan contra la versión leída, conservando las notas y campos ajenos.
+
+Los recursos son una recomendación importante para el diseño y revisión. Su presencia **no interviene en la preparación automática** ni confirma Presentada, Corregida, impartición o publicación. Prioridad conservada: **13**. Implementación y pruebas técnicas completadas; pendiente de validación de uso. No se han creado fichas, recursos ni enlaces académicos ficticios.
+
+Pruebas del docente: añadir un enunciado HTML y asociarlo a una tarea; enlazar una ficha privada real cuando exista y leerla en la app; añadir una herramienta con su uso; editar y cancelar; eliminar/deshacer y verificar la retirada tras guardar; guardar recursos con una observación pendiente y comprobar que sigue intacta; añadir PPT/Web del módulo y comprobarlos en otra UT. Guardar las notas antes de actualizar o reconectar. La etiqueta de preparación debe permanecer igual en todos estos casos.
+
 ### Requisitos pendientes y parciales — 18/10/2026
 
 Los números RF son estables. Se conservan las prioridades acordadas (1 es la máxima); no se renumeran al completar un requisito. El docente ha confirmado correctas las pruebas 1–8 y ha validado RF 2, RF 3, RF 5 y RF 11 el 18/10/2026. Se retiran de esta tabla, al igual que RF 9 ya validado.
@@ -319,7 +333,7 @@ Los números RF son estables. Se conservan las prioridades acordadas (1 es la m�
 | 7 | 8 | Reprogramar exámenes | Pendiente. Acción que conserve identidad y seguimiento, actualice marcas y requiera aviso para la nueva fecha. |
 | 8 | 9 | Totales de duración con reprogramaciones | Decisión pendiente. Distinguir carga inicial, planificación vigente e historial antes de cambiar el cálculo. |
 | 10 | 11 | Avance por porción | Definido; pendiente de implementar. Pendiente/Parcial/Completada y nota opcional; marcar Impartida completa por defecto las porciones y permite retocarlas. |
-| 12 | 13 | Acceso a recursos de cada UT | Pendiente. Definir selección de recursos, enlaces y presentación desde la app. |
+| 12 | 13 | Recursos de cada UT | Implementado; validación de uso pendiente. Enunciados, fichas privadas en la app, PPT/Web comunes y herramientas; gestión y guardado independientes sin afectar a preparación. |
 
 RF 3 y RF 5 quedan cerrados dentro del alcance aprobado: el docente ha confirmado Eliminar, Deshacer, persistencia y recálculo automático en las pruebas 1–3. La vista de sesiones de RF 4, los enlaces a recursos de RF 12 y la reprogramación de RF 7 conservan sus propios alcances y prioridades.
 
@@ -347,7 +361,7 @@ Las incorporaciones pendientes se preparan por lotes verificables y expresamente
 
 La fuente única de trabajo diario para todos los módulos es JSON y app, sin seguimiento paralelo en Excel. Los datos generales del módulo sin destino validado requieren conciliación específica; no se dan por disponibles ni se reconstruyen desde el respaldo. El JSON privado `common/course-2026-2027.json` de `miGUITel/programacion-piloto-datos`, localizado por `catalog.common.path`, es la fuente única de horario, calendario escolar y límites de evaluación. `26 COMÚN.xlsx` queda como respaldo sin actualización en paralelo. En los proyectos se diseña y revisa con el docente; el resultado se guarda en los JSON y se consulta o confirma en la app, sin que esta decida el diseño automáticamente.
 
-La consulta de programación anual, metodología y calificación está implantada para los módulos con `profile` validado, desde **Información**. Siguen propuestas la edición de esa configuración y el acceso a recursos por UT. Mantener pendientes las ampliaciones de preparación de sesiones y su vista global. La edición ampliada de sesión de RF 9 ya está implantada y validada. Calendar y Aula Virtual siguen siendo servicios separados; no hay sincronización o publicación automática. La app requiere conexión y guardado explícito; la recuperación de borradores tras cerrar o recargar no está implementada.
+La consulta de programación anual, metodología y calificación está implantada para los módulos con `profile` validado, desde **Información**. La edición de esa configuración sigue pendiente. El acceso y gestión de recursos por UT de RF 12 está implantado, pendiente de validación de uso. Mantener pendientes las ampliaciones de preparación de sesiones y su vista global. La edición ampliada de sesión de RF 9 ya está implantada y validada. Calendar y Aula Virtual siguen siendo servicios separados; no hay sincronización o publicación automática. La app requiere conexión y guardado explícito; la recuperación de borradores tras cerrar o recargar no está implementada.
 
 ## Formato del JSON
 

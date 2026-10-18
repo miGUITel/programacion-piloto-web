@@ -40,32 +40,7 @@ export function validateV3Document(doc, errors) {
   }
   // RF 3 derives preparation from material/session marks; task approval stays explicit.
   const resources = new Set();
-  if (own(doc, 'resources')) {
-    if (!Array.isArray(doc.resources)) errors.push('resources: debe ser una lista.');
-    else doc.resources.forEach((resource, index) => {
-      const path = `resources[${index}]`;
-      if (!object(resource)) { errors.push(`${path}: debe ser un objeto.`); return; }
-      if (!text(resource.id) || resources.has(resource.id)) errors.push(`${path}.id: identificador no válido o duplicado.`);
-      resources.add(resource.id);
-      if (!text(resource.title) || !['presentation', 'notes', 'example', 'assignment', 'exam', 'solution', 'guide', 'moodle', 'other'].includes(resource.type)) errors.push(`${path}: título y tipo de recurso requeridos.`);
-      if (own(resource, 'audience') && !['students', 'teacher', 'both'].includes(resource.audience)) errors.push(`${path}.audience: destinatario no válido.`);
-      if (own(resource, 'location')) {
-        const location = resource.location;
-        let valid = false;
-        if (object(location) && location.kind === 'workspace') valid = text(location.path) && !/^(?:[a-z]:|[/\\])/i.test(location.path) && !location.path.split(/[/\\]/).some(part => part === '..');
-        if (object(location) && location.kind === 'https') {
-          try {
-            const url = new URL(location.url);
-            const sensitive = /^(?:access_token|refresh_token|token|auth|authorization|password|secret|session(?:id|key)?|sesskey|sid|api[-_]?key|code|signature|sig)$/i;
-            valid = url.protocol === 'https:' && !url.username && !url.password && ![...url.searchParams.keys()].some(key => sensitive.test(key))
-              && !/(?:^|[&#?])(?:access_token|token|sessionid|sesskey|password|secret)=/i.test(url.hash.slice(1))
-              && !/(^|\.)(?:1drv\.ms|onedrive\.live\.com|sharepoint\.com)$/i.test(url.hostname);
-          } catch { /* Invalid URL. */ }
-        }
-        if (!valid) errors.push(`${path}.location: ruta relativa o enlace HTTPS confirmado sin credenciales ni parámetros de sesión requerido.`);
-      }
-    });
-  }
+  for (const resource of Array.isArray(doc.resources) ? doc.resources : []) resources.add(resource?.id);
   function refs(value, path) {
     if (!object(value)) return;
     curriculum(value, path, errors); optionalList(value, 'resourceRefs', path, errors);

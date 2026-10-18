@@ -1,6 +1,7 @@
-import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261018-rf1';
-import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261018-rf1';
-import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261018-rf1';
+import { validateResources, validateModuleResources, moduleResourcePath, validGithubLocation } from './resources.mjs?v=20261018-rf12';
+import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261018-rf12';
+import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261018-rf12';
+import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261018-rf12';
 
 const OWNER = 'miGUITel';
 const REPOSITORY = 'programacion-piloto-datos';
@@ -174,6 +175,7 @@ export function validateDocument(doc, expectedEntry) {
   if (!isObject(doc)) return ['El documento debe ser un objeto JSON.'];
   validateJson(doc, 'document', errors);
   if (![1, 2, 3].includes(doc.schemaVersion)) errors.push('schemaVersion: debe ser 1, 2 o 3.');
+  validateResources(doc.resources, errors);
   const isV2 = doc.schemaVersion === 2 || doc.schemaVersion === 3;
   const isV3 = doc.schemaVersion === 3;
   if (doc.pilot !== true) errors.push('pilot: debe ser true.');
@@ -389,7 +391,7 @@ export class GithubStore {
     return result;
   }
 
-  async #request(method, body, path) {
+  async #request(method, body, path, repository = `${OWNER}/${REPOSITORY}`) {
     const writing = method === 'PUT';
     const controller = new AbortController();
     let timer;
@@ -402,7 +404,7 @@ export class GithubStore {
     const request = (async () => {
       let response;
       try {
-        const endpoint = `${CONTENTS_ENDPOINT}${path}`;
+        const endpoint = repository === `${OWNER}/${REPOSITORY}` ? `${CONTENTS_ENDPOINT}${path}` : `https://api.github.com/repos/${repository}/contents/${path}`;
         response = await this.#fetch(writing ? endpoint : `${endpoint}?ref=${BRANCH}`, {
           method,
           signal: controller.signal,
@@ -481,6 +483,51 @@ export class GithubStore {
       if (errors.length) throw new ApiError('La información general no cumple el contrato.', { code: 'INVALID_DOCUMENT', errors });
       return { document, sha };
     });
+  }
+
+  loadPrivateResource(location) {
+    if (!validGithubLocation(location)) return Promise.reject(new ApiError('La referencia privada no es válida.', { code: 'INVALID_TARGET' }));
+    return this.#enqueue(async () => {
+      const path = location.path.split('/').map(encodeURIComponent).join('/');
+      const result = await this.#request('GET', undefined, path, location.repository);
+      if (!isObject(result) || result.encoding !== 'base64' || !nonemptyText(result.sha) || result.path !== location.path || typeof result.content !== 'string' || result.content.length > 1500000 || result.size > 1000000) throw new ApiError('La ficha no contiene Markdown UTF-8 legible de hasta 1 MB.', { code: 'INVALID_RESOURCE' });
+      try { return { content: decodeUtf8Base64(result.content), sha: result.sha, path: result.path }; }
+      catch { throw new ApiError('No se ha podido leer el texto UTF-8 de la ficha.', { code: 'INVALID_RESOURCE' }); }
+    });
+  }
+
+  forModuleResources(code) {
+    const path = moduleResourcePath(code);
+    if (!path) throw new ApiError('Módulo no válido.', { code: 'INVALID_TARGET' });
+    const bound = new GithubStore({ token: this.#token, fetchImpl: this.#fetch, timeoutMs: this.#timeout });
+    let missingRead = false;
+    return {
+      load: () => bound.#enqueue(async () => {
+        try {
+          const { value: document, sha } = await bound.#readJson(path, 'INVALID_DOCUMENT');
+          const errors = validateModuleResources(document, code); validateJson(document, 'resources', errors);
+          if (errors.length) throw new ApiError('El registro de recursos no cumple el contrato.', { code: 'INVALID_DOCUMENT', errors });
+          missingRead = false; bound.#needsReload = false; return { document, sha };
+        } catch (error) {
+          if (error.code !== 'HTTP_404') throw error;
+          missingRead = true; bound.#needsReload = false;
+          return { document: { schemaVersion: 1, kind: 'module-resources', moduleCode: code, resources: [] }, sha: null };
+        }
+      }),
+      save: (document, sha) => bound.#enqueue(async () => {
+        const errors = validateModuleResources(document, code); validateJson(document, 'resources', errors);
+        if (errors.length) throw new ApiError('Revisa los recursos del módulo.', { code: 'INVALID_DOCUMENT', errors });
+        if (bound.#needsReload) throw new UnknownSaveError('reload-required');
+        if (!nonemptyText(sha) && !(sha === null && missingRead)) throw new ApiError('Falta la versión leída.', { code: 'MISSING_SHA' });
+        const snapshot = structuredClone(document);
+        try {
+          const result = await bound.#request('PUT', { message: `Actualizar recursos ${code}`, content: encodeUtf8Base64(JSON.stringify(snapshot, null, 2) + '\n'), ...(sha ? { sha } : {}), branch: BRANCH }, path);
+          if (!nonemptyText(result?.content?.sha) || !nonemptyText(result?.commit?.sha) || result.content.path !== path) throw new UnknownSaveError('invalid-response');
+          missingRead = false;
+          return { document: snapshot, sha: result.content.sha, commitSha: result.commit.sha };
+        } catch (error) { if (error instanceof UnknownSaveError || error.code === 'HTTP_422' || error.code === 'CONFLICT') bound.#needsReload = true; throw error; }
+      }),
+    };
   }
 
   load() {

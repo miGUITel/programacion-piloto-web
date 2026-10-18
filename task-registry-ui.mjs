@@ -1,9 +1,9 @@
-import { TaskRegistryStore } from './general-notes.mjs?v=20261018-rf1';
-import { taskDateFields, taskDetails } from './module-views.mjs?v=20261018-rf1';
-import { TaskEditError, taskEditTarget, taskEditSnapshot, assertTaskRead, prepareTaskSave, saveTaskDocument } from './task-edit.mjs?v=20261018-rf1';
-import { presentationDefaults } from './task-cycle.mjs?v=20261018-rf1';
-import { taskHeading } from './task-plan.mjs?v=20261018-rf1';
-import { saveErrorFeedback, isValidDate } from './core.mjs?v=20261018-rf1';
+import { TaskRegistryStore } from './general-notes.mjs?v=20261018-rf12';
+import { taskDateFields, taskDetails } from './module-views.mjs?v=20261018-rf12';
+import { TaskEditError, taskEditTarget, taskEditSnapshot, assertTaskRead, prepareTaskSave, saveTaskDocument } from './task-edit.mjs?v=20261018-rf12';
+import { presentationDefaults } from './task-cycle.mjs?v=20261018-rf12';
+import { taskHeading } from './task-plan.mjs?v=20261018-rf12';
+import { saveErrorFeedback, isValidDate } from './core.mjs?v=20261018-rf12';
 
 const $ = id => document.getElementById(id);
 

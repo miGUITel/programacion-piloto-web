@@ -1,5 +1,5 @@
-import { eventTypes } from './teaching.mjs?v=20261018-rf1';
-import { timeToMinutes } from './core.mjs?v=20261018-rf1';
+import { eventTypes } from './teaching.mjs?v=20261018-rf12';
+import { timeToMinutes } from './core.mjs?v=20261018-rf12';
 
 /** Presentation helpers. Codes, titles, dates and academic states remain unchanged. */
 export function orderedUnits(units) {

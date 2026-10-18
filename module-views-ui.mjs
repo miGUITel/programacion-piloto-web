@@ -1,10 +1,10 @@
-import { moduleOverview, weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261018-rf1';
-import { dayLetters, dayNames, commonCoursePath } from './common-course.mjs?v=20261018-rf1';
-import { renderCommonCourse } from './common-course-ui.mjs?v=20261018-rf1';
-import { eventTypes } from './teaching.mjs?v=20261018-rf1';
-import { taskStates } from './task-cycle.mjs?v=20261018-rf1';
-import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261018-rf1';
-import { preparationBadge } from './preparation-ui.mjs?v=20261018-rf1';
+import { moduleOverview, weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261018-rf12';
+import { dayLetters, dayNames, commonCoursePath } from './common-course.mjs?v=20261018-rf12';
+import { renderCommonCourse } from './common-course-ui.mjs?v=20261018-rf12';
+import { eventTypes } from './teaching.mjs?v=20261018-rf12';
+import { taskStates } from './task-cycle.mjs?v=20261018-rf12';
+import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261018-rf12';
+import { preparationBadge } from './preparation-ui.mjs?v=20261018-rf12';
 
 const $ = id => document.getElementById(id);
 function el(tag, className, text) {

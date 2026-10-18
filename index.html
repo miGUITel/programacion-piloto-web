@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261018-unit-info-icon">
-  <script type="module" src="./app.mjs?v=20261018-unit-info-icon"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261018-rf12">
+  <script type="module" src="./app.mjs?v=20261018-rf12"></script>
 </head>
 <body>
   <header class="app-header">
@@ -85,6 +85,10 @@
         <div class="list-heading session-list-heading"><h2>Sesiones</h2><div class="session-preparation-tools"><div id="unit-preparation" class="unit-preparation"></div><button id="unit-information-open" class="unit-information-open" type="button" aria-label="Información de la unidad: diseño, referencias y notas" title="Información de la unidad" aria-haspopup="dialog" aria-controls="unit-information" hidden><span aria-hidden="true">i</span></button></div><p><span class="past-legend" aria-hidden="true"></span>Fecha anterior a hoy; no indica impartición ni retraso.</p></div>
         <div class="column-guide" aria-hidden="true"><span></span><span>Fecha</span><span>Sesión / contenido</span><span>Descripción prevista</span><span>Seguimiento</span><span>Estado</span><span>Anotar</span></div>
         <div id="sessions" class="sessions"></div>
+        <section id="unit-resources" class="unit-resources" aria-labelledby="resources-heading">
+          <div class="resources-heading"><h2 id="resources-heading">Recursos de la UT</h2><div class="resource-row-actions"><button id="resources-manage" type="button" class="button button-small">Gestionar recursos</button><button id="resources-module-manage" type="button" class="button button-small">Enlaces del módulo</button></div></div>
+          <p class="scope-note">Enunciados, fichas docentes, materiales y herramientas. Los enlaces no cambian la preparación de la UT.</p><div id="resources-list"></div>
+        </section>
         </div>
         <section id="module-view" aria-label="Vista general del módulo" hidden>
           <nav class="module-sections" aria-label="Consultas del módulo"><button id="module-tab-sessions" class="layout-button" type="button" aria-pressed="true">Sesiones</button><button id="module-tab-timetable" class="layout-button" type="button" aria-pressed="false">Horario</button><button id="module-tab-calendar" class="layout-button" type="button" aria-pressed="false">Calendario escolar</button><button id="module-tab-evaluations" class="layout-button" type="button" aria-pressed="false">Evaluaciones</button></nav>
@@ -125,6 +129,29 @@
     </div>
   </dialog>
 
+  <dialog id="resources-dialog" class="suggestions-dialog resources-dialog" aria-labelledby="resources-editor-title" aria-describedby="resources-editor-context">
+    <form id="resources-save-form" class="suggestions-form">
+      <header class="suggestions-header"><div><h2 id="resources-editor-title"></h2><p id="resources-editor-context"></p></div><button id="resources-close" type="button" class="icon-button" aria-label="Cerrar recursos">×</button></header>
+      <div id="resources-editor-content" class="suggestions-content">
+        <p class="field-help">Añade, edita o retira referencias. Los archivos originales se conservan. Esta lista no modifica la preparación de la UT.</p>
+        <div id="resources-editor-list"></div><button id="resource-add" type="button" class="button">Añadir recurso</button>
+        <fieldset id="resource-form" class="resource-form" hidden><legend id="resource-form-heading">Añadir recurso</legend>
+          <div class="resource-form-grid"><label>Título<input id="resource-title" type="text"></label><label>Tipo<select id="resource-type"></select></label></div>
+          <label>Destino<select id="resource-location-kind"><option value="https">Enlace web público</option><option value="github">Ficha privada en GitHub</option><option value="workspace">Referencia a un archivo local</option></select></label>
+          <label><span id="resource-location-label">Enlace HTTPS</span><input id="resource-location" type="text" autocomplete="off" spellcheck="false" aria-describedby="resource-location-help"></label><p id="resource-location-help" class="field-help"></p>
+          <label id="resource-public-label" class="resource-task-choice"><input id="resource-public" type="checkbox">Confirmo que es un enlace público de OneDrive</label>
+          <div class="resource-form-grid"><label>Destinatario<select id="resource-audience"><option value="">Sin especificar</option><option value="both">Alumnado y docente</option><option value="students">Alumnado</option><option value="teacher">Docente</option></select></label><label>Versión o configuración relevante (opcional)<input id="resource-version" type="text"></label></div>
+          <label>Uso o descripción (opcional)<textarea id="resource-description" rows="3"></textarea></label>
+          <fieldset id="resource-task-fieldset"><legend>Tareas o exámenes asociados (opcional)</legend><div id="resource-task-options"></div></fieldset>
+          <p id="resource-form-message" class="message error" role="status"></p><div class="resource-row-actions"><button id="resource-form-cancel" type="button" class="button">Cancelar edición</button><button id="resource-apply" type="button" class="button button-primary">Añadir a la lista</button></div>
+        </fieldset>
+      </div>
+      <footer class="suggestions-footer resource-footer"><div><p class="field-help">El guardado conserva las notas pendientes de Unidad sin enviarlas.</p><p id="resources-message" class="message" role="status" aria-live="polite" hidden></p></div><button id="resources-download" type="button" class="button" hidden>Descargar borrador</button><button id="resources-cancel" type="button" class="button">Cerrar</button><button id="resources-save" type="submit" class="button button-primary">Guardar recursos</button></footer>
+    </form>
+  </dialog>
+  <dialog id="resource-private-dialog" class="suggestions-dialog resources-dialog" aria-labelledby="resource-private-title">
+    <div class="suggestions-form"><header class="suggestions-header"><div><h2 id="resource-private-title"></h2><p id="resource-private-version" class="scope-note"></p></div><button id="resource-private-close" type="button" class="button">Cerrar ficha</button></header><div class="suggestions-content"><p id="resource-private-message" class="message" role="status"></p><article id="resource-private-content" class="private-markdown"></article></div></div>
+  </dialog>
   <dialog id="session-editor-dialog" class="suggestions-dialog session-editor-dialog" aria-labelledby="session-editor-title" aria-describedby="session-editor-context">
     <form id="session-editor-form" class="suggestions-form">
       <header class="suggestions-header"><div><h2 id="session-editor-title"></h2><p id="session-editor-context"></p></div><button id="session-editor-close" type="button" class="icon-button" aria-label="Cerrar edición de sesión">×</button></header>
