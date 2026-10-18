@@ -1,4 +1,5 @@
-import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261017-5';
+import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261018-1';
+import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261018-1';
 
 const OWNER = 'miGUITel';
 const REPOSITORY = 'programacion-piloto-datos';
@@ -148,6 +149,7 @@ export function validateCatalog(catalog) {
     if (modules.has(module.code)) errors.push(`${prefix}.code: módulo duplicado.`);
     modules.add(module.code);
     if (!nonemptyText(module.name)) errors.push(`${prefix}.name: debe ser texto no vacío.`);
+    if (Object.hasOwn(module, 'profile') && module.profile !== moduleProfilePath(module.code)) errors.push(`${prefix}.profile: ruta de información general no válida.`);
     if (Object.hasOwn(module, 'taskRegistry') && module.taskRegistry !== `${module.code}/tasks.json`) errors.push(`${prefix}.taskRegistry: ruta de tareas del módulo no válida.`);
     if (!Array.isArray(module.units)) { errors.push(`${prefix}.units: debe ser una lista.`); return; }
     module.units.forEach((unit, unitIndex) => {
@@ -452,6 +454,18 @@ export class GithubStore {
       const errors = validateCatalog(catalog);
       if (errors.length) throw new ApiError('El catálogo privado no cumple el formato del piloto.', { code: 'INVALID_CATALOG', errors });
       return { catalog, sha };
+    });
+  }
+
+  loadModuleProfile(module) {
+    const code = module?.code;
+    const path = moduleProfilePath(code);
+    if (!path || module.profile !== path) return Promise.reject(new ApiError('El módulo no tiene un destino general confirmado.', { code: 'INVALID_TARGET' }));
+    return this.#enqueue(async () => {
+      const { value: document, sha } = await this.#readJson(path, 'INVALID_DOCUMENT');
+      const errors = validateModuleProfile(document, code);
+      if (errors.length) throw new ApiError('La información general no cumple el contrato.', { code: 'INVALID_DOCUMENT', errors });
+      return { document, sha };
     });
   }
 

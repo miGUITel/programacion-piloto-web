@@ -1,6 +1,6 @@
-import { eventTypes } from './teaching.mjs?v=20261017-5';
-import { taskState } from './task-cycle.mjs?v=20261017-5';
-import { hasTaskPlan, visiblePlanTasks } from './task-plan.mjs?v=20261017-5';
+import { eventTypes } from './teaching.mjs?v=20261018-1';
+import { taskState } from './task-cycle.mjs?v=20261018-1';
+import { hasTaskPlan, visiblePlanTasks } from './task-plan.mjs?v=20261018-1';
 
 export const taskDateFields = ['presentedOn', 'dueOn', 'correctBy'];
 

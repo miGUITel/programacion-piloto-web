@@ -1,7 +1,7 @@
-import { moduleOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261017-5';
-import { eventTypes } from './teaching.mjs?v=20261017-5';
-import { taskStates } from './task-cycle.mjs?v=20261017-5';
-import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261017-5';
+import { moduleOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261018-1';
+import { eventTypes } from './teaching.mjs?v=20261018-1';
+import { taskStates } from './task-cycle.mjs?v=20261018-1';
+import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261018-1';
 
 const $ = id => document.getElementById(id);
 function el(tag, className, text) {

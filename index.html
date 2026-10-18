@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261017-5">
-  <script type="module" src="./app.mjs?v=20261017-5"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261018-1">
+  <script type="module" src="./app.mjs?v=20261018-1"></script>
 </head>
 <body>
   <header class="topbar">
@@ -44,7 +44,7 @@
 
     <section id="library-view" class="library-bar" hidden aria-label="Elegir módulo y unidad">
       <div class="document-picker">
-        <div class="picker-field module-picker"><label class="visually-hidden" for="module-select">Módulo</label><select id="module-select" aria-describedby="selection-help"></select><button id="module-improvements" class="button button-small general-improvements" type="button" aria-label="Mejoras generales del módulo" aria-haspopup="dialog" aria-controls="general-notes-dialog" disabled>Mejoras</button></div>
+        <div class="picker-field module-picker"><label class="visually-hidden" for="module-select">Módulo</label><select id="module-select" aria-describedby="selection-help"></select><button id="module-improvements" class="button button-small general-improvements" type="button" aria-label="Mejoras generales del módulo" aria-haspopup="dialog" aria-controls="general-notes-dialog" disabled>Mejoras</button><button id="module-profile" class="button button-small" type="button" aria-label="Información general del módulo" aria-haspopup="dialog" aria-controls="module-profile-dialog" disabled>Información</button></div>
         <div class="picker-field unit-picker"><label class="visually-hidden" for="unit-select">Unidad</label><select id="unit-select" aria-describedby="selection-help"></select><button id="unit-improvements" class="button button-small general-improvements" type="button" aria-label="Mejoras generales de la unidad abierta" aria-haspopup="dialog" aria-controls="general-notes-dialog" disabled>Mejoras</button></div>
         <button id="open-unit" class="button button-primary button-small" type="button">Abrir unidad</button>
         <button id="refresh-catalog" class="button button-small" type="button">Actualizar lista</button>
@@ -157,6 +157,14 @@
       </div>
       <footer class="suggestions-footer"><button id="hide-general-notes" class="button" type="button">Cerrar</button><button id="save-general-notes" class="button button-primary" type="submit">Guardar mejoras</button></footer>
     </form>
+  </dialog>
+  <dialog id="module-profile-dialog" class="module-profile-dialog" aria-labelledby="profile-title" aria-describedby="profile-context">
+    <div class="module-profile-layout">
+      <header class="suggestions-header"><div><h2 id="profile-title"></h2><p id="profile-context"></p></div><button id="profile-close" class="icon-button" type="button" aria-label="Cerrar información del módulo">×</button></header>
+      <nav class="profile-tabs" aria-label="Información del módulo"><button id="profile-tab-plan" class="button" type="button" aria-pressed="true">Programación</button><button id="profile-tab-method" class="button" type="button" aria-pressed="false">Metodología</button><button id="profile-tab-assessment" class="button" type="button" aria-pressed="false">Calificación</button></nav>
+      <div class="profile-body"><p id="profile-message" class="message" role="status" aria-live="polite" hidden></p><section id="profile-plan" aria-label="Programación anual"></section><section id="profile-method" aria-label="Metodología" hidden></section><section id="profile-assessment" aria-label="Criterios de calificación" hidden></section></div>
+      <footer class="suggestions-footer"><span id="profile-version" class="scope-note"></span><button id="profile-refresh" class="button" type="button">Actualizar</button></footer>
+    </div>
   </dialog>
 </body>
 </html>

@@ -1,15 +1,16 @@
-import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261017-5';
+import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-1';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261016-1';
-import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261017-5';
-import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261017-5';
-import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261017-5';
-import { libraryIntegrity } from './model-v3.mjs?v=20261017-5';
-import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261017-5';
-import { createModuleViews } from './module-views-ui.mjs?v=20261017-5';
-import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261017-5';
-import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261017-5';
-import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261017-5';
-import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261017-5';
+import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-1';
+import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261018-1';
+import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261018-1';
+import { libraryIntegrity } from './model-v3.mjs?v=20261018-1';
+import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-1';
+import { createModuleViews } from './module-views-ui.mjs?v=20261018-1';
+import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261018-1';
+import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261018-1';
+import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-1';
+import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261018-1';
+import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261018-1';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -146,6 +147,7 @@ function updateNavigation() {
   $('selection-help').textContent = help;
   $('selection-help').hidden = !help;
   generalNotesUI.updateAvailability();
+  moduleProfileUI.updateAvailability();
 }
 
 function fillUnits(preferredCode = '') {
@@ -732,6 +734,7 @@ async function connect(event) {
     suggestionsUI.disconnect();
     generalNotesUI.disconnect();
     registryUI.disconnect();
+    moduleProfileUI.disconnect();
     documentStores.clear();
     catalog = null;
     activeEntry = null;
@@ -766,6 +769,7 @@ function disconnect() {
   suggestionsUI.disconnect();
   generalNotesUI.disconnect();
   registryUI.disconnect();
+  moduleProfileUI.disconnect();
   presentationUI.clear();
   $('editor').close();
   editorTarget = null;
@@ -1075,6 +1079,12 @@ const generalNotesUI = createGeneralNotesUI({
     const module = catalog?.modules.find(item => item.code === $('module-select').value);
     return module ? { moduleCode: module.code, title: module.name } : null;
   },
+});
+const moduleProfileUI = createModuleProfileUI({
+  isBusy: () => busy, setBusy, getConnection: () => connection,
+  getTarget: () => catalog?.modules.find(item => item.code === $('module-select').value),
+  getRecords: () => libraryRecords(),
+  otherEditorOpen: () => $('editor').open || presentationUI.isOpen() || registryUI.isOpen() || generalNotesUI.isOpen() || $('suggestions-dialog').open,
 });
 const moduleViews = createModuleViews({
   getState: () => ({ module: catalog?.modules.find(item => item.code === activeEntry?.moduleCode), records: moduleRecords(), allRecords: libraryRecords(), taskRecords: [...libraryRecords(), ...registryUI.records()], integrityIssues: libraryIntegrity([...libraryRecords(), ...registryUI.records()]), registryFailures: registryUI.failures(), catalog, failures: moduleFailures(), allFailures: moduleLoadFailures, errors: teachingTimeline.errors, ready: moduleContextReady, today: madridToday(), activePath: activeEntry?.path, busy }),

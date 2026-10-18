@@ -1,4 +1,21 @@
 @charset "UTF-8";
+.module-profile-dialog{padding:0;border:1px solid var(--line);border-radius:12px;background:var(--white);color:var(--ink);width:min(1020px,calc(100% - 32px));max-width:none;max-height:calc(100dvh - 32px);box-shadow:0 20px 80px #10253340}
+.module-profile-dialog::backdrop{background:#10253380}
+.module-profile-layout{display:flex;flex-direction:column;max-height:calc(100dvh - 34px)}
+.module-profile-dialog .suggestions-header h2{font-size:23px}
+.module-profile-dialog .suggestions-header p{font-size:13px;margin:6px 0 0}
+.profile-tabs{display:flex;gap:8px;padding:12px 24px;border-bottom:1px solid var(--line);flex-shrink:0;flex-wrap:wrap}
+.profile-tabs [aria-pressed=true]{background:var(--teal);border-color:var(--teal);color:white}
+.profile-body{overflow-y:auto;padding:16px 24px;min-height:160px;line-height:1.55;overflow-wrap:anywhere}
+.profile-body h3{font-size:17px;margin:22px 0 8px}.profile-body h3:first-child{margin-top:0}
+.profile-body p{margin:8px 0}.profile-body li{margin:6px 0}.profile-body ul{padding-left:22px}
+.profile-summary{font-weight:650}.profile-pending{color:#785212;background:#fff4d8;padding:8px 10px;border-radius:5px}
+.profile-table-scroll{overflow-x:auto;margin:15px 0}.profile-table{border-collapse:collapse;width:100%;font-size:13px;min-width:620px}
+.profile-table th,.profile-table td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--line)}
+.profile-table thead{background:#edf3ef}.profile-table tbody th{font-weight:400;width:29%}.profile-unit-title{display:block;margin-top:3px}
+.profile-table .scope-note{font-size:11px}.profile-curriculum{margin:18px 0}.profile-curriculum summary{cursor:pointer;padding:9px 0}.profile-curriculum details{padding-left:10px}
+.module-profile-dialog .suggestions-footer{align-items:center}.module-profile-dialog .suggestions-footer span{margin-right:auto}
+@media(max-width:600px){.module-profile-dialog{width:calc(100% - 16px);max-height:calc(100dvh - 16px)}.module-profile-layout{max-height:calc(100dvh - 18px)}.module-profile-dialog .suggestions-header{padding:14px}.module-profile-dialog .suggestions-header h2{font-size:19px}.profile-tabs{padding:10px 14px;gap:5px}.profile-tabs button{min-height:44px;font-size:12px;padding:8px}.profile-body{padding:12px 14px;font-size:15px}.module-profile-dialog .suggestions-footer{padding:12px 14px;flex-wrap:wrap}.module-profile-dialog .suggestions-footer button{min-height:44px}}
 .unit-title-row{display:flex;align-items:center;gap:10px;min-width:0}
 .general-improvements{color:#775521;border-color:#d4c098;background:#fff9eb;flex-shrink:0;width:34px;min-width:34px;padding:6px!important;position:relative;display:grid;place-items:center}
 .general-improvements svg{width:19px;height:19px}
