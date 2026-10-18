@@ -70,17 +70,17 @@ export function createSessionEditorUI({ isBusy, setBusy, canOpen, getActive, uni
   $('session-editor-form').addEventListener('submit', async event => {
     event.preventDefault(); if (isBusy() || blocked || !changed()) return;
     for (const { title } of inputs) { title.setCustomValidity(title.value.trim() ? '' : 'Escribe un título para esta actividad.'); if (!title.reportValidity()) return; }
+    let confirmed = false;
     setBusy(true);
     try {
       const prepared = prepareSessionSave(loaded, entry, sessionId, read(), getActive());
       const result = await saveTaskDocument(sourceStore, prepared, { entry }, loaded.sha);
       onSaved(entry, result, prepared); loaded = result;
-      // Keep the fields and scroll position; their exact values now match the confirmed source.
-      message('Sesión guardada y confirmada en GitHub. Las notas pendientes de Unidad se conservan.');
+      confirmed = true;
     } catch (error) {
       if (error instanceof SessionEditError) { message(error.message, 'warning'); if (error.code === 'SESSION_STALE') { blocked = true; onBlocked(entry); } }
       else { const feedback = saveErrorFeedback(error); blocked = feedback.requiresReload || error.code === 'HTTP_422'; if (blocked) onBlocked(entry); message(feedback.message + (blocked ? ' Descarga los textos antes de cerrar y revisa después la unidad. Se conservan ambos borradores.' : ''), feedback.kind); }
-    } finally { setBusy(false); availability(); onStateChange(); }
+    } finally { setBusy(false); availability(); onStateChange(); if (confirmed) close(); }
   });
   for (const id of ['session-editor-close', 'session-editor-cancel']) $(id).addEventListener('click', close);
   $('session-editor-dialog').addEventListener('cancel', event => { event.preventDefault(); close(); });
