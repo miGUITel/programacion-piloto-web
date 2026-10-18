@@ -357,11 +357,11 @@ Para una comprobación local se necesita servir este directorio por HTTP; abrir 
 Las comprobaciones automatizadas de esquema y persistencia corresponden a los tests de `core.mjs`. Las pruebas de interfaz deben usar datos sintéticos fuera del directorio publicable y no deben grabar credenciales reales en capturas, trazas o fixtures.
 
 
-### Comparador provisional de Módulo y datos comunes
+### Vista compacta de Módulo y datos comunes
 
-El selector de prueba ofrece **2 · Sesión y fecha**, con el número encima de la fecha, y **3 · Solo fecha**, con el número completo en su ayuda accesible. El mes aparece al comenzar la fila y al cambiar de mes; el cambio de año se identifica. El selector cambia solo la presentación y no guarda preferencias ni datos académicos.
+La vista de Módulo utiliza de forma fija **solo la fecha** en cada sesión. El número de sesión y su descripción completa permanecen en la ayuda accesible y al abrirla. El mes aparece al comenzar la fila y al cambiar de mes; el cambio de año se identifica. Se mantiene la alineación por días y el ajuste al ancho disponible.
 
-**Pendiente: retirar este selector y conservar únicamente el diseño elegido cuando el docente confirme su decisión.** Cambiar la opción para probarla no equivale a esa confirmación.
+Decisión del docente: conservar solo fecha, retirar el selector provisional y su recordatorio, y eliminar los comentarios «Sin sesiones» de la columna UT. Los avisos de lectura incompleta, preparación, colores y accesos permanecen.
 
 Dentro de Módulo, **Sesiones · Horario · Calendario escolar · Evaluaciones** comparten la misma zona. Las tres consultas comunes leen exclusivamente el JSON privado enlazado por `catalog.common.path`, con validación del contrato y sin métodos de escritura. Horario y Evaluaciones permiten consultar este módulo o todos; las evaluaciones se filtran por el grupo confirmado, separando carácter orientativo, límite ordinario y recuperación. Calendario muestra el comienzo/final de clases y los intervalos no lectivos originales. Las excepciones históricas de horario se conservan en su ámbito.
 
