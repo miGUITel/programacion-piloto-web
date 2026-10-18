@@ -1119,3 +1119,16 @@ textarea{resize:vertical;line-height:1.6}
   .app-toolbar,.app-header .toolbar-views { gap:2px; }
   .app-header #view-tasks { padding:0 4px; font-size:13px; }
 }
+
+/* Preparation belongs to the Sessions heading, not a separate row. */
+.workspace .session-list-heading { display:grid; grid-template-columns:auto auto minmax(0,1fr); gap:8px; align-items:center; }
+.session-list-heading h2 { margin:0; white-space:nowrap; }
+.session-list-heading .unit-preparation { margin:0; }
+.session-list-heading .preparation-badge { padding:4px 8px; font-size:11px; }
+.workspace .session-list-heading p { min-width:0; max-width:none; margin:0; justify-self:end; }
+@media(max-width:760px) {
+  .workspace .session-list-heading { gap:6px; }
+  .workspace .session-list-heading h2 { font-size:16px; }
+  .session-list-heading .preparation-badge { min-height:44px; }
+  .workspace .session-list-heading p { font-size:10.5px; line-height:1.25; }
+}
