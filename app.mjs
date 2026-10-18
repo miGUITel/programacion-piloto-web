@@ -1,6 +1,6 @@
 import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-rf1';
-import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261018-rf1';
-import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-rf1';
+import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261018-save-close';
+import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-save-close';
 import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261018-rf1';
 import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261018-rf1';
 import { libraryIntegrity } from './model-v3.mjs?v=20261018-rf1';
@@ -9,11 +9,11 @@ import { createModuleViews } from './module-views-ui.mjs?v=20261018-rf1';
 import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261018-rf1';
 import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261018-rf1';
 import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-rf1';
-import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261018-rf1';
+import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261018-save-close';
 import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261018-rf1';
 import { renderUnitInformation, sessionInformationLines } from './unit-information.mjs?v=20261018-rf1';
-import { createPreparationUI } from './preparation-ui.mjs?v=20261018-rf1';
-import { createSessionEditorUI, bindSessionEditRow } from './session-editor-ui.mjs?v=20261018-rf9';
+import { createPreparationUI } from './preparation-ui.mjs?v=20261018-save-close';
+import { createSessionEditorUI, bindSessionEditRow } from './session-editor-ui.mjs?v=20261018-save-close';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -1145,9 +1145,19 @@ const registryUI = createTaskRegistryUI({ isBusy: () => busy, setBusy, onStateCh
     if (content) message('workspace-message', content, kind);
   }
 });
-const suggestionsUI = createSuggestionsUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState, isAcademicEditorOpen: () => $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen()) || generalNotesUI.isOpen() });
+const suggestionsUI = createSuggestionsUI({
+  isBusy: () => busy, setBusy, onStateChange: updateSaveState,
+  isAcademicEditorOpen: () => $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen()) || generalNotesUI.isOpen(),
+  onSaved({ message: content, url }) {
+    message('workspace-message', content);
+    const link = node('a', '', 'Ver registro privado en GitHub');
+    link.href = url; link.target = '_blank'; link.rel = 'noopener noreferrer';
+    $('workspace-message').append(document.createTextNode(' '), link);
+  },
+});
 const generalNotesUI = createGeneralNotesUI({
   isBusy: () => busy, setBusy, onStateChange: updateSaveState, improvementIcon: () => noteIcon('improvements'),
+  onMessage: (content, kind) => message('workspace-message', content, kind),
   otherEditorOpen: () => $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen()) || $('suggestions-dialog').open,
   getTarget(scope) {
     if (!connection) return null;
