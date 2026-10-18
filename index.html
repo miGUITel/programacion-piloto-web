@@ -9,7 +9,7 @@
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
   <link rel="stylesheet" href="./styles.css?v=20261018-info-icon">
-  <script type="module" src="./app.mjs?v=20261018-rf1"></script>
+  <script type="module" src="./app.mjs?v=20261018-auto-unit"></script>
 </head>
 <body>
   <header class="topbar">
@@ -46,8 +46,6 @@
       <div class="document-picker">
         <div class="picker-field module-picker"><label class="visually-hidden" for="module-select">Módulo</label><select id="module-select" aria-describedby="selection-help"></select><button id="module-improvements" class="button button-small general-improvements" type="button" aria-label="Mejoras generales del módulo" aria-haspopup="dialog" aria-controls="general-notes-dialog" disabled>Mejoras</button><button id="module-profile" class="button button-small module-info-icon" type="button" aria-label="Información general del módulo" aria-haspopup="dialog" aria-controls="module-profile-dialog" disabled><span aria-hidden="true">i</span></button></div>
         <div class="picker-field unit-picker"><label class="visually-hidden" for="unit-select">Unidad</label><select id="unit-select" aria-describedby="selection-help"></select><button id="unit-improvements" class="button button-small general-improvements" type="button" aria-label="Mejoras generales de la unidad abierta" aria-haspopup="dialog" aria-controls="general-notes-dialog" disabled>Mejoras</button></div>
-        <button id="open-unit" class="button button-primary button-small" type="button">Abrir unidad</button>
-        <button id="refresh-catalog" class="button button-small" type="button">Actualizar lista</button>
         <div id="stats" class="stats" aria-label="Resumen de la unidad" hidden></div>
       </div>
       <p id="selection-help" class="selection-help" role="status" hidden></p>
