@@ -8,13 +8,42 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261018-rf9">
-  <script type="module" src="./app.mjs?v=20261018-save-close"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261018-compact-header">
+  <script type="module" src="./app.mjs?v=20261018-compact-header"></script>
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="./" aria-label="Cuaderno, inicio"><span class="brand-mark" aria-hidden="true">c.</span><span>cuaderno<span class="brand-subtitle">PROGRAMACIÓN DOCENTE</span></span></a>
-    <div class="topbar-right"><div class="pilot-actions"><span class="pilot-tag">PILOTO</span><button id="open-suggestions" type="button" class="button button-ghost" aria-haspopup="dialog" aria-controls="suggestions-dialog" title="Conecta con GitHub para enviar una sugerencia" disabled>Sugerencias</button></div><span id="connection-label" class="connection-label"><span class="status-dot" aria-hidden="true"></span>Sin conectar</span><button id="disconnect" type="button" class="button button-ghost" hidden>Desconectar</button></div>
+  <header class="app-header">
+    <div class="app-toolbar">
+      <section id="library-view" class="toolbar-picker" hidden aria-label="Elegir módulo y unidad">
+        <label class="visually-hidden" for="module-select">Módulo</label><select id="module-select" aria-describedby="selection-help"></select>
+        <label class="visually-hidden" for="unit-select">Unidad</label><select id="unit-select" aria-describedby="selection-help"></select>
+      </section>
+      <nav id="workspace-nav" class="workspace-views toolbar-views" aria-label="Vista del cuaderno" hidden>
+        <button id="view-unit" class="layout-button" type="button" aria-label="Vista de la unidad" title="Unidad" aria-pressed="true">UT</button>
+        <button id="view-module" class="layout-button" type="button" aria-label="Vista general del módulo" title="Módulo" aria-pressed="false">Mo</button>
+        <button id="view-tasks" class="layout-button" type="button" aria-label="Tareas de todos los módulos" title="Tareas de todos los módulos" aria-pressed="false">Ta · 0</button>
+        <button id="view-preparation" class="layout-button toolbar-icon" type="button" aria-label="Preparación de las unidades" title="Preparación" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7V4h8v3M3 10h18M9 10v3h6v-3"/><rect x="3" y="7" width="18" height="13" rx="2"/></svg></button>
+        <button id="toggle-sessions" class="session-toggle global-session-toggle" type="button" aria-label="Desplegar todas las sesiones" title="Desplegar todas las sesiones" aria-controls="sessions" aria-expanded="false">+</button>
+      </nav>
+      <div class="toolbar-suggestions"><button id="open-suggestions" type="button" class="button toolbar-icon" aria-label="Sugerencias sobre la aplicación" aria-haspopup="dialog" aria-controls="suggestions-dialog" title="Sugerencias sobre la aplicación" disabled hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15a3 3 0 0 1-3 3H8l-5 3V6a3 3 0 0 1 3-3h11a3 3 0 0 1 3 3Z"/><path d="M7 8h9M7 12h6"/></svg></button></div>
+      <div class="toolbar-actions">
+        <details id="connection-menu" class="connection-menu">
+          <summary id="connection-status" class="toolbar-icon" aria-label="Sin conectar. Opciones del cuaderno" title="Sin conectar. Opciones del cuaderno"><span id="connection-label" class="connection-label" role="img" aria-label="Sin conectar"><span class="status-dot" aria-hidden="true"></span></span></summary>
+          <div class="toolbar-menu">
+            <div id="stats" class="stats toolbar-summary" aria-label="Resumen de la unidad" hidden></div>
+            <button id="module-profile" class="button toolbar-menu-action" type="button" aria-haspopup="dialog" aria-controls="module-profile-dialog" disabled><span class="menu-info-icon" aria-hidden="true">i</span><span>Información del módulo</span></button>
+            <button id="module-improvements" class="button general-improvements toolbar-menu-action" type="button" aria-label="Mejoras generales del módulo" aria-haspopup="dialog" aria-controls="general-notes-dialog" disabled>Mejoras del módulo</button>
+            <button id="unit-improvements" class="button general-improvements toolbar-menu-action" type="button" aria-label="Mejoras generales de la unidad abierta" aria-haspopup="dialog" aria-controls="general-notes-dialog" disabled>Mejoras de la UT</button>
+            <button id="disconnect" type="button" class="button toolbar-menu-action" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H4v16h6M13 7l5 5-5 5M8 12h10"/></svg><span>Desconectar</span></button>
+          </div>
+        </details>
+        <button id="refresh" type="button" class="button toolbar-icon" aria-label="Actualizar la unidad desde GitHub" title="Actualizar la unidad desde GitHub" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 6.1a8.3 8.3 0 0 1 13.4 3M4.5 14.9a8.3 8.3 0 0 0 13.4 3"/></svg></button>
+        <button id="save" type="button" class="button toolbar-icon save-disk" aria-label="Guardar cambios" aria-describedby="save-state" title="Guardar cambios" data-state="empty" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h13l4 4v14H3V3ZM7 3v6h9V3M7 21v-8h10v8"/></svg><span class="save-attention" aria-hidden="true">!</span></button>
+        <span id="save-state" class="visually-hidden" role="status" aria-live="polite"></span>
+      </div>
+    </div>
+    <p id="selection-help" class="selection-help" role="status" hidden></p>
+    <p id="library-message" class="message" role="status" aria-live="polite" hidden></p>
   </header>
 
   <main>
@@ -42,20 +71,9 @@
       </section>
     </section>
 
-    <section id="library-view" class="library-bar" hidden aria-label="Elegir módulo y unidad">
-      <div class="document-picker">
-        <div class="picker-field module-picker"><label class="visually-hidden" for="module-select">Módulo</label><select id="module-select" aria-describedby="selection-help"></select><button id="module-improvements" class="button button-small general-improvements" type="button" aria-label="Mejoras generales del módulo" aria-haspopup="dialog" aria-controls="general-notes-dialog" disabled>Mejoras</button><button id="module-profile" class="button button-small module-info-icon" type="button" aria-label="Información general del módulo" aria-haspopup="dialog" aria-controls="module-profile-dialog" disabled><span aria-hidden="true">i</span></button></div>
-        <div class="picker-field unit-picker"><label class="visually-hidden" for="unit-select">Unidad</label><select id="unit-select" aria-describedby="selection-help"></select><button id="unit-improvements" class="button button-small general-improvements" type="button" aria-label="Mejoras generales de la unidad abierta" aria-haspopup="dialog" aria-controls="general-notes-dialog" disabled>Mejoras</button></div>
-        <div id="stats" class="stats" aria-label="Resumen de la unidad" hidden></div>
-      </div>
-      <p id="selection-help" class="selection-help" role="status" hidden></p>
-      <p id="library-message" class="message" role="status" aria-live="polite" hidden></p>
-    </section>
-
     <section id="workspace" class="workspace" data-layout="compact" hidden aria-labelledby="unit-title">
       <div class="workspace-main">
         <h1 id="unit-title" class="visually-hidden" tabindex="-1"></h1>
-        <div class="work-toolbar compact-work-toolbar"><nav class="workspace-views" aria-label="Vista del cuaderno"><button id="view-unit" class="layout-button" type="button" aria-pressed="true">Unidad</button><button id="view-module" class="layout-button" type="button" aria-pressed="false">Módulo</button><button id="view-tasks" class="layout-button" type="button" aria-pressed="false">Tareas</button><button id="view-preparation" class="layout-button" type="button" aria-pressed="false">Preparación</button><button id="toggle-sessions" class="session-toggle global-session-toggle" type="button" aria-label="Desplegar todas las sesiones" title="Desplegar todas las sesiones" aria-controls="sessions" aria-expanded="false">+</button></nav><div class="save-controls"><span id="save-state" class="save-state" role="status" aria-live="polite"></span><button id="refresh" type="button" class="button button-small">Actualizar</button><button id="save" type="button" class="button button-primary">Guardar cambios</button></div></div>
         <div id="workspace-message" class="message workspace-message" role="status" aria-live="polite" hidden></div>
         <div id="recovery-actions" class="recovery-actions" hidden><button id="download-draft" type="button" class="button button-small">Descargar borrador JSON</button><span>El borrador permanece aquí hasta que lo descartes o cierres la página.</span></div>
         <div id="unit-view">
