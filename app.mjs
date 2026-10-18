@@ -1,4 +1,4 @@
-import { createResourcesUI } from './resources-ui.mjs?v=20261018-rf12';
+import { createResourcesUI } from './resources-ui.mjs?v=20261018-rf12b';
 import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-rf12';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261018-rf12';
 import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-rf12';

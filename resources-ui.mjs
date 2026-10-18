@@ -165,7 +165,7 @@ export function createResourcesUI({ getState, getActive, getConnection, unitStor
   }
   function close() {
     if (isBusy() || pending() && !window.confirm('Hay recursos sin guardar. ¿Descartar estos cambios y cerrar? Las notas de Unidad se conservan.')) return;
-    const previous = position; clearEditor(); onStateChange(); $('resources-manage').focus({preventScroll:true}); if (previous) window.scrollTo({left:previous.x,top:previous.y,behavior:'instant'});
+    const previous = position; clearEditor(); availability(); onStateChange(); $('resources-manage').focus({preventScroll:true}); if (previous) window.scrollTo({left:previous.x,top:previous.y,behavior:'instant'});
   }
   function clearEditor() { $('resources-dialog').close(); loaded = null; source = null; target = null; values = null; blocked = false; removed.clear(); resetForm(); message(); $('resources-editor-list').replaceChildren(); $('resources-editor-title').textContent = ''; $('resources-editor-context').textContent = ''; position = null; }
   async function save(event) {
@@ -190,7 +190,7 @@ export function createResourcesUI({ getState, getActive, getConnection, unitStor
     catch { if (generation === privateGeneration) { $('resource-private-content').replaceChildren(); $('resource-private-message').textContent = 'No se ha podido leer la ficha. Comprueba que exista en GitHub y que el token tenga acceso al repositorio. No se han modificado recursos ni notas.'; } }
     finally { setBusy(false); availability(); }
   }
-  function closePrivate() { if (isBusy()) return; ++privateGeneration; $('resource-private-dialog').close(); $('resource-private-content').replaceChildren(); $('resource-private-title').textContent = ''; $('resource-private-message').textContent = ''; $('resource-private-version').textContent = ''; }
+  function closePrivate() { if (isBusy()) return; ++privateGeneration; $('resource-private-dialog').close(); $('resource-private-content').replaceChildren(); $('resource-private-title').textContent = ''; $('resource-private-message').textContent = ''; $('resource-private-version').textContent = ''; availability(); onStateChange(); }
   function clear() { ++privateGeneration; clearEditor(); $('resource-private-dialog').close(); $('resource-private-content').replaceChildren(); $('resource-private-title').textContent = ''; $('resource-private-message').textContent = ''; $('resource-private-version').textContent = ''; modules.clear(); stores.clear(); $('resources-list').replaceChildren(); }
   function isOpen() { return $('resources-dialog').open || $('resource-private-dialog').open; }
   $('resources-manage').addEventListener('click',() => open('unit')); $('resources-module-manage').addEventListener('click',() => open('module'));
