@@ -1,5 +1,5 @@
-import { eventTypes } from './teaching.mjs?v=20261018-rf35-delete';
-import { timeToMinutes } from './core.mjs?v=20261018-rf35-delete';
+import { eventTypes } from './teaching.mjs?v=20261018-module-common';
+import { timeToMinutes } from './core.mjs?v=20261018-module-common';
 
 /** Presentation helpers. Codes, titles, dates and academic states remain unchanged. */
 export function compactUnitLabel(unit) {
