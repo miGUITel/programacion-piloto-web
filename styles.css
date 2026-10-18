@@ -1042,3 +1042,22 @@ textarea{resize:vertical;line-height:1.6}
 .unit-information p, .session-information { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
 .unit-information p { margin: .4rem 0; }
 .session-information { margin: .4rem 0; color: var(--muted, #5c7379); font-size: .86rem; }
+
+.session-editable-row { cursor: pointer; }
+.session-editable-row:hover { box-shadow: inset 0 0 0 1px #087b7330; }
+.session-text-open { display:block; width:100%; padding:0; border:0; border-radius:2px; background:transparent; color:inherit; text-align:left; font:inherit; line-height:inherit; cursor:pointer; }
+.session-text-open:hover { text-decoration:underline; text-underline-offset:3px; }
+.session-text-open:focus-visible { outline:2px solid var(--teal); outline-offset:4px; }
+.session-editor-dialog { width:calc(100vw - 44px); max-width:none; }
+.session-editor-dialog .suggestions-form { display:flex; flex-direction:column; max-height:calc(100dvh - 34px); }
+.session-editor-content { min-height:0; overflow-y:auto; }
+.session-text-activity { border:1px solid var(--line); border-radius:8px; padding:14px 18px 18px; margin:18px 0; min-width:0; }
+.session-text-activity legend { font-size:14px; font-weight:700; padding:0 6px; }
+.session-text-activity input,.session-text-activity textarea { width:100%; box-sizing:border-box; }
+.session-text-activity textarea { min-height:110px; resize:vertical; line-height:1.5; }
+.session-text-activity label { margin-top:10px; }
+.session-editor-footer { align-items:center; flex-wrap:wrap; }
+.session-editor-status { flex:1 1 320px; }
+.session-editor-status .field-help,.session-editor-status .message { margin:0; }
+.session-editor-status .message { margin-top:6px; }
+@media(max-width:600px) { .session-editor-dialog { width:calc(100vw - 16px); } .session-text-activity { padding:10px; } .session-editor-footer .button { min-height:44px; } }

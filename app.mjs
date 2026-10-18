@@ -13,6 +13,7 @@ import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261018-rf1';
 import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261018-rf1';
 import { renderUnitInformation, sessionInformationLines } from './unit-information.mjs?v=20261018-rf1';
 import { createPreparationUI } from './preparation-ui.mjs?v=20261018-rf1';
+import { createSessionEditorUI, bindSessionEditRow } from './session-editor-ui.mjs?v=20261018-rf9';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -76,7 +77,7 @@ function editorDirty() {
     || (!$('task-fields').hidden && JSON.stringify(readTaskEditor()) !== JSON.stringify(taskDetails(target)));
 }
 
-function hasPendingChanges() { return dirty() || editorDirty() || presentationUI.isOpen() || registryUI.hasPending() || preparationUI.hasPending(); }
+function hasPendingChanges() { return dirty() || editorDirty() || presentationUI.isOpen() || registryUI.hasPending() || preparationUI.hasPending() || sessionEditorUI.hasPending(); }
 
 function checked(value, entry = activeEntry) {
   const errors = validateDocument(value, entry ?? undefined);
@@ -115,8 +116,8 @@ function updateSaveState() {
   } else {
     state.textContent = lastConfirmedAt ? `Guardado · ${lastConfirmedAt}` : 'Sin cambios pendientes';
   }
-  $('save').disabled = busy || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen());
-  $('refresh').disabled = busy || !draft || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen());
+  $('save').disabled = busy || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen());
+  $('refresh').disabled = busy || !draft || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen());
   $('disconnect').disabled = busy;
   $('download-draft').disabled = busy || !draft;
   $('recovery-actions').hidden = !(dirty() || blockedSave || failedSave);
@@ -124,6 +125,7 @@ function updateSaveState() {
   updateNavigation();
   suggestionsUI.updateAvailability();
   preparationUI.availability();
+  sessionEditorUI.availability();
 }
 
 function selectedEntry() {
@@ -133,7 +135,7 @@ function selectedEntry() {
 }
 
 function navigationBlocked() {
-  return busy || !connection || hasPendingChanges() || blockedSave || $('editor').open || registryUI.isOpen() || preparationUI.isOpen()
+  return busy || !connection || hasPendingChanges() || blockedSave || $('editor').open || registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen()
     || generalNotesUI.hasPending() || generalNotesUI.isOpen() || $('module-profile-dialog').open || $('suggestions-dialog').open;
 }
 
@@ -145,7 +147,7 @@ function restoreUnitSelection() {
 }
 
 function updateNavigation() {
-  const editing = hasPendingChanges() || $('editor').open || (registryUI.isOpen() || preparationUI.isOpen()) || blockedSave || generalNotesUI.hasPending() || generalNotesUI.isOpen();
+  const editing = hasPendingChanges() || $('editor').open || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen()) || blockedSave || generalNotesUI.hasPending() || generalNotesUI.isOpen();
   const selectedModule = catalog?.modules.find(item => item.code === $('module-select').value);
   const selected = selectedEntry();
   $('module-select').disabled = busy || editing || !catalog?.modules.length;
@@ -302,7 +304,7 @@ async function correctTask(task, value) {
 }
 
 function selectWorkspaceView(view) {
-  if (!['unit', 'module', 'tasks', 'preparation'].includes(view) || busy || $('editor').open) return;
+  if (!['unit', 'module', 'tasks', 'preparation'].includes(view) || busy || sessionEditorUI.isOpen() || $('editor').open) return;
   currentView = view;
   for (const name of ['unit', 'module', 'tasks', 'preparation']) {
     $(name + '-view').hidden = name !== view;
@@ -342,7 +344,7 @@ async function retryExamContext() {
 }
 
 async function refreshPreparationContext() {
-  if (busy || !draft || $('editor').open || presentationUI.isOpen() || registryUI.isOpen() || preparationUI.isOpen() || generalNotesUI.isOpen() || $('module-profile-dialog').open) return;
+  if (busy || !draft || $('editor').open || presentationUI.isOpen() || registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen() || generalNotesUI.isOpen() || $('module-profile-dialog').open) return;
   setBusy(true);
   try {
     const result = await store.load();
@@ -456,6 +458,21 @@ function makeStateSelect(session, index) {
   return section;
 }
 
+function openSessionText(sessionIndex, activityIndex) {
+  if (busy || !draft) return;
+  const session = draft.sessions[sessionIndex];
+  sessionEditorUI.open(activeEntry, session.id, session.activities[activityIndex].id, `session-text-open-${sessionIndex}-${activityIndex}`);
+}
+
+function sessionTextButton(sessionIndex, activityIndex, title) {
+  const button = node('button', 'session-text-open', title); button.type = 'button';
+  button.id = `session-text-open-${sessionIndex}-${activityIndex}`;
+  button.title = 'Editar títulos y descripciones de la sesión';
+  button.setAttribute('aria-label', `Editar sesión ${draft.sessions[sessionIndex].number}, actividad ${activityIndex + 1}: ${title}`);
+  button.setAttribute('aria-haspopup', 'dialog'); button.setAttribute('aria-controls', 'session-editor-dialog');
+  button.addEventListener('click', () => openSessionText(sessionIndex, activityIndex)); return button;
+}
+
 function makeActivity(activity, sessionIndex, activityIndex) {
   const container = node('section', 'activity');
   const type = activityEventType(draft.sessions[sessionIndex], activity, draft);
@@ -463,7 +480,9 @@ function makeActivity(activity, sessionIndex, activityIndex) {
   const top = node('div', 'activity-top');
   const time = node('div', 'activity-time', `${activity.start}–${activity.end}`);
   const description = node('div', 'activity-description');
-  const title = node('h4', 'activity-title', activity.title || 'Actividad');
+  const title = node('h4', 'activity-title');
+  title.append(sessionTextButton(sessionIndex, activityIndex, activity.title || 'Actividad'));
+  bindSessionEditRow(top, () => openSessionText(sessionIndex, activityIndex));
   title.title = activity.title || 'Actividad';
   description.append(title);
   if (type === 'task') {
@@ -627,7 +646,9 @@ function makeSession(session, sessionIndex, heading) {
   if (heading.monthLabel) dateLine.append(node('span', 'date-month', heading.monthLabel));
   dateTile.append(node('span', 'session-number-line', heading.sessionLabel), dateLine);
   const description = node('div', 'session-description');
-  const title = node('h3', 'session-title', first?.title || 'Sesión');
+  const title = node('h3', 'session-title');
+  title.append(sessionTextButton(sessionIndex, 0, first?.title || 'Sesión'));
+  bindSessionEditRow(top, () => openSessionText(sessionIndex, 0));
   title.title = first?.title || 'Sesión';
   title.tabIndex = -1;
   description.append(title, makeTeachingControls(session, sessionIndex));
@@ -782,7 +803,7 @@ async function connect(event) {
     generalNotesUI.disconnect();
     registryUI.disconnect();
     moduleProfileUI.disconnect();
-    preparationUI.clear();
+    preparationUI.clear(); sessionEditorUI.clear();
     documentStores.clear();
     catalog = null;
     activeEntry = null;
@@ -818,7 +839,7 @@ function disconnect() {
   generalNotesUI.disconnect();
   registryUI.disconnect();
   moduleProfileUI.disconnect();
-  preparationUI.clear();
+  preparationUI.clear(); sessionEditorUI.clear();
   presentationUI.clear();
   $('editor').close();
   editorTarget = null;
@@ -871,7 +892,7 @@ function disconnect() {
 }
 
 async function refresh() {
-  if (busy || !store || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen())) return;
+  if (busy || !store || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen())) return;
   if (dirty() && !window.confirm('Actualizar descartará el borrador y cargará la versión de GitHub. Descarga primero el borrador si quieres conservarlo. ¿Continuar?')) return;
   setBusy(true);
   message('workspace-message', 'Leyendo de nuevo la versión de GitHub…');
@@ -887,7 +908,7 @@ async function refresh() {
 }
 
 async function save() {
-  if (busy || !store || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen())) return;
+  if (busy || !store || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen())) return;
   const errors = validateDocument(draft, activeEntry);
   if (!Array.isArray(errors) || errors.length) {
     failedSave = true;
@@ -1089,7 +1110,7 @@ const registryUI = createTaskRegistryUI({ isBusy: () => busy, setBusy, onStateCh
     if (libraryIntegrity([...libraryRecords(), ...registryUI.records()]).some(issue => issue.code === 'DUPLICATE_TASK' && issue.moduleCode === task.entry.moduleCode && issue.taskId === (task.officialTaskId || task.registryTaskId))) {
       message('workspace-message', 'Esta tarea aparece en más de un documento. Revisa su conciliación antes de editarla.', 'warning'); return false;
     }
-    if ($('editor').open || preparationUI.isOpen() || presentationUI.isOpen() || generalNotesUI.isOpen() || generalNotesUI.hasPending() || $('suggestions-dialog').open) {
+    if ($('editor').open || sessionEditorUI.isOpen() || preparationUI.isOpen() || presentationUI.isOpen() || generalNotesUI.isOpen() || generalNotesUI.hasPending() || $('suggestions-dialog').open) {
       message('workspace-message', 'Cierra el editor abierto antes de editar otra tarea.', 'warning'); return false;
     }
     return true;
@@ -1124,10 +1145,10 @@ const registryUI = createTaskRegistryUI({ isBusy: () => busy, setBusy, onStateCh
     if (content) message('workspace-message', content, kind);
   }
 });
-const suggestionsUI = createSuggestionsUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState, isAcademicEditorOpen: () => $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen()) || generalNotesUI.isOpen() });
+const suggestionsUI = createSuggestionsUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState, isAcademicEditorOpen: () => $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen()) || generalNotesUI.isOpen() });
 const generalNotesUI = createGeneralNotesUI({
   isBusy: () => busy, setBusy, onStateChange: updateSaveState, improvementIcon: () => noteIcon('improvements'),
-  otherEditorOpen: () => $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen()) || $('suggestions-dialog').open,
+  otherEditorOpen: () => $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen()) || $('suggestions-dialog').open,
   getTarget(scope) {
     if (!connection) return null;
     if (scope === 'unit') return activeEntry && draft && selectedEntry()?.path === activeEntry.path ? { ...activeEntry, title: draft.unit.title } : null;
@@ -1139,14 +1160,14 @@ const moduleProfileUI = createModuleProfileUI({
   isBusy: () => busy, setBusy, getConnection: () => connection,
   getTarget: () => catalog?.modules.find(item => item.code === $('module-select').value),
   getRecords: () => libraryRecords(),
-  otherEditorOpen: () => $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen()) || generalNotesUI.isOpen() || $('suggestions-dialog').open,
+  otherEditorOpen: () => $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen()) || generalNotesUI.isOpen() || $('suggestions-dialog').open,
 });
 const preparationUI = createPreparationUI({
   getState: () => ({ catalog, records: libraryRecords(), activeEntry, draft, ready: moduleContextReady }),
   getActive: () => activeEntry && ({ path: activeEntry.path, sha: originalSha, savedDocument, draft, blocked: blockedSave }),
   unitStore(entry) { const candidate = documentStores.get(entry.path) ?? connection.forDocument(entry); documentStores.set(entry.path, candidate); return candidate; },
   isBusy: () => busy, setBusy, onStateChange: updateSaveState,
-  canOpen: () => Boolean(connection) && !$('editor').open && !presentationUI.isOpen() && !registryUI.isOpen() && !generalNotesUI.isOpen() && !generalNotesUI.hasPending() && !$('suggestions-dialog').open && !$('module-profile-dialog').open,
+  canOpen: () => Boolean(connection) && !sessionEditorUI.isOpen() && !$('editor').open && !presentationUI.isOpen() && !registryUI.isOpen() && !generalNotesUI.isOpen() && !generalNotesUI.hasPending() && !$('suggestions-dialog').open && !$('module-profile-dialog').open,
   onMessage: (content, kind) => message('workspace-message', content, kind),
   onRetry: refreshPreparationContext,
   onOpenUnit: openPreparationUnit,
@@ -1175,6 +1196,25 @@ const preparationUI = createPreparationUI({
   },
   onBlocked(entry) {
     if (entry.path === activeEntry?.path) { blockedSave = true; message('workspace-message', 'Revisa la versión de esta unidad antes de guardar. Las notas y el borrador de preparación se conservan.', 'warning'); }
+  },
+});
+const sessionEditorUI = createSessionEditorUI({
+  isBusy: () => busy, setBusy, onStateChange: updateSaveState,
+  canOpen: () => Boolean(connection && draft) && !$('editor').open && !presentationUI.isOpen() && !registryUI.isOpen() && !preparationUI.isOpen() && !generalNotesUI.isOpen() && !generalNotesUI.hasPending() && !$('suggestions-dialog').open && !$('module-profile-dialog').open,
+  getActive: () => activeEntry && ({ path: activeEntry.path, sha: originalSha, savedDocument, draft, blocked: blockedSave }),
+  unitStore(entry) { const candidate = documentStores.get(entry.path) ?? connection.forDocument(entry); documentStores.set(entry.path, candidate); return candidate; },
+  onMessage: (content, kind) => message('workspace-message', content, kind),
+  onSaved(entry, result, prepared) {
+    savedDocument = copy(result.document); originalSha = result.sha; draft = prepared.unitDraft;
+    failedSave = false; lastConfirmedAt = confirmationTime();
+    $('loaded-version').textContent = `Versión leída: ${originalSha.slice(0, 8)} · Comprobada a las ${lastConfirmedAt}`;
+    renderSessions();
+    message('workspace-message', dirty() ? 'Textos de la sesión guardados. Las demás notas y cambios de Unidad siguen pendientes de guardar.' : 'Textos de la sesión guardados y confirmados en GitHub.');
+  },
+  onBlocked() { blockedSave = true; message('workspace-message', 'Conserva los textos de la sesión y las notas de Unidad. Revisa su versión antes de volver a guardar.', 'warning'); },
+  onReturn(position) {
+    if (position?.focusId) $(position.focusId)?.focus({ preventScroll: true });
+    if (position) window.scrollTo({ left: position.x, top: position.y, behavior: 'instant' });
   },
 });
 const moduleViews = createModuleViews({

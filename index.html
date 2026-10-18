@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261018-info-icon">
-  <script type="module" src="./app.mjs?v=20261018-auto-unit"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261018-rf9">
+  <script type="module" src="./app.mjs?v=20261018-rf9"></script>
 </head>
 <body>
   <header class="topbar">
@@ -95,12 +95,25 @@
           <div class="module-view-toolbar"><label class="visually-hidden" for="preparation-module">Módulo</label><select id="preparation-module"></select><label class="visually-hidden" for="preparation-status">Preparación</label><select id="preparation-status"><option value="">Todos los estados</option><option value="pending">Pendiente</option><option value="draft">En preparación</option><option value="ready">Preparada</option><option value="unavailable">Sin leer</option></select><button id="preparation-refresh" class="button button-small" type="button">Actualizar preparación</button></div>
           <p id="preparation-count" class="scope-note" role="status"></p><p id="preparation-scope" class="scope-note"></p><div id="preparation-list" class="preparation-list"></div>
         </section>
-        <footer class="workspace-footer"><span id="loaded-version"></span><span>Planificación de solo lectura · No modifica Excel ni Calendar · Guardado explícito</span></footer>
+        <footer class="workspace-footer"><span id="loaded-version"></span><span>Títulos y descripciones editables · Guardado explícito</span></footer>
       </div>
     </section>
     <noscript><p class="noscript">Activa JavaScript para conectar con el repositorio privado. Esta página no contiene los datos del cuaderno.</p></noscript>
   </main>
 
+  <dialog id="session-editor-dialog" class="suggestions-dialog session-editor-dialog" aria-labelledby="session-editor-title" aria-describedby="session-editor-context">
+    <form id="session-editor-form" class="suggestions-form">
+      <header class="suggestions-header"><div><h2 id="session-editor-title"></h2><p id="session-editor-context"></p></div><button id="session-editor-close" type="button" class="icon-button" aria-label="Cerrar edición de sesión">×</button></header>
+      <div class="suggestions-content session-editor-content">
+        <p class="field-help">Edita los títulos y las descripciones. La primera actividad es la que aparece en la cabecera de la sesión.</p>
+        <div id="session-editor-fields"></div>
+      </div>
+      <footer class="suggestions-footer session-editor-footer">
+        <div class="session-editor-status"><p class="field-help">Guardar sesión conserva estos textos. Las demás notas pendientes de Unidad mantienen su propio guardado.</p><p id="session-editor-message" class="message" role="status" aria-live="polite" hidden></p></div>
+        <button id="session-editor-download" type="button" class="button" hidden>Descargar textos</button><button id="session-editor-cancel" type="button" class="button">Cerrar</button><button id="session-editor-save" type="submit" class="button button-primary">Guardar sesión</button>
+      </footer>
+    </form>
+  </dialog>
   <dialog id="editor" class="editor" aria-labelledby="editor-title">
     <form id="editor-form" class="editor-form">
       <header class="editor-header"><div><p id="editor-kicker" class="eyebrow"></p><h2 id="editor-title"></h2></div><button id="close-editor" type="button" class="icon-button" aria-label="Cerrar editor">×</button></header>

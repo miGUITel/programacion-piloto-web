@@ -46,7 +46,7 @@ Los selectores muestran solo el código del módulo y número más título breve
 
 Si hay cambios sin guardar, un editor abierto o un guardado incierto, se bloquean el selector y la apertura de otra unidad. Primero se guardan o se revisan los cambios en la unidad actual. No se descartan borradores al navegar. Cada documento conserva su destino y control de versión independientes; una carga fallida deja intacto el documento anterior y restaura su selección. Para reintentar, se vuelve a elegir la unidad; no hay reintentos automáticos. Los nombres de los borradores descargados y los mensajes de commit identifican el módulo y la unidad correspondientes.
 
-La planificación es de solo lectura. El estado se edita en la sesión; observaciones, mejoras y los campos secundarios de seguimiento se editan en un panel lateral. Aplicar en el panel modifica el borrador en memoria y Guardar cambios guarda ese borrador. Desde Tareas, Guardar tarea conserva únicamente el seguimiento editado, con versión propia y sin guardar las notas pendientes de Unidad. Las sugerencias y mejoras generales tienen también su propio guardado explícito.
+Los títulos y descripciones se editan desde la fila de sesión con Guardar sesión independiente. Las fechas y los horarios permanecen de consulta. El estado se edita en la sesión; observaciones, mejoras y los campos secundarios de seguimiento se editan en un panel lateral. Aplicar en el panel modifica el borrador en memoria y Guardar cambios guarda ese borrador. Desde Tareas, Guardar tarea conserva únicamente el seguimiento editado, con versión propia y sin guardar las notas pendientes de Unidad. Las sugerencias y mejoras generales tienen también su propio guardado explícito.
 
 Se conserva el documento leído y su SHA. Un guardado utiliza esa versión; no se reemplaza automáticamente por una versión más reciente. Si existe conflicto, el borrador permanece disponible, se bloquea el guardado y se ofrece su descarga como JSON. También se bloquea el reenvío cuando no puede confirmarse el resultado de una escritura. Actualizar exige confirmación si descartaría un borrador y solo lo reemplaza después de una lectura válida. No hay reintentos automáticos.
 
@@ -183,9 +183,13 @@ Lista consolidada y ordenada el 17/10/2026, contrastada con la conversación y l
 
 Los cuatro requisitos prioritarios ya tienen implementación y pruebas técnicas; queda la revisión visual del docente. El detalle vigente está en «Presentación»: vista Agenda con descripciones de dos líneas, cabecera de dos líneas sin metadatos repetidos, control global único y accesos por iconos. No se han modificado los documentos académicos de las UT ni los Excel. Las propuestas «elegir vista» y «Mejor aprovechamiento del espacio» quedan atendidas en este alcance, sin borrar sus registros originales ni dar por resueltos futuros retoques.
 
-### Prioridad pendiente de interfaz: vista ampliada de sesión
+### RF 9 — Edición ampliada de sesión — implantado
 
-Abrir una vista dedicada de la sesión al hacer clic o tocar cualquier zona de su representación que no tenga otra funcionalidad. Los botones, desplegables, enlaces y demás controles conservarán su acción propia sin abrir además esta vista. Quedan pendientes de definir su contenido, distribución, edición y navegación, así como su relación con el despliegue actual de actividades; no implementar todavía. No obliga a desplegar más información en la lista principal.
+Hacer clic en una zona libre de la fila abre una ventana amplia con todas sus actividades, incluidos título y descripción completos de la primera porción que representa la cabecera. El título es un campo de una línea y la descripción un área de texto ampliable. El título de la fila también es un botón accesible por teclado. El «+», las casillas, desplegables, iconos y enlaces mantienen su función; seleccionar texto no abre el editor. Una fila de actividad abre el mismo editor situado en esa actividad.
+
+**Guardar sesión** cambia únicamente `activity.title` y `activity.planned` editados, en el JSON de la UT correspondiente y sin cambiar su versión de formato. Se lee primero la versión remota, se guarda contra su SHA y se confirma mediante relectura exacta. La base de Unidad se actualiza conservando sus notas y otros cambios pendientes, sin enviarlos. No se duplican textos en la sesión, no se renombran tareas oficiales ni se modifican fechas, horarios, estados, preparación o avisos. Las sesiones compartidas conservan las porciones de cada UT en su archivo original.
+
+Cerrar o Escape permiten descartar únicamente este formulario previa confirmación si cambió. Ante conflicto, identidad modificada o resultado incierto se conservan ambos borradores, se bloquea el reenvío y se ofrece descargar los textos antes de revisar la unidad. Un guardado confirmado permite seguir editando o cerrar y volver a la misma posición. Prioridad conservada: **10**. Implementación y pruebas técnicas completadas; pendiente de validación de uso del docente.
 
 ### Selectores superiores — implantado
 
@@ -305,7 +309,7 @@ Los números RF son estables. Se conservan las prioridades acordadas (1 es la m�
 | 6 | 7 | Fecha prevista de exámenes en Tareas | Parcial. Existe en la referencia de sesión y la ayuda; falta mostrarla claramente en la fila, separada de las fechas reales. |
 | 7 | 8 | Reprogramar exámenes | Pendiente. Acción que conserve identidad y seguimiento, actualice marcas y requiera aviso para la nueva fecha. |
 | 8 | 9 | Totales de duración con reprogramaciones | Decisión pendiente. Distinguir carga inicial, planificación vigente e historial antes de cambiar el cálculo. |
-| 9 | 10 | Vista ampliada de sesión | Pendiente de definición e implementación. Las ventanas más anchas no completan esta vista. |
+| 9 | 10 | Edición ampliada de sesión | Implementado; validación de uso pendiente. Edición de títulos y descripciones con Guardar sesión independiente. Comprobar persistencia, conservación de notas pendientes, cancelación y controles de la fila. |
 | 10 | 11 | Avance por porción | Definido; pendiente de implementar. Pendiente/Parcial/Completada y nota opcional; marcar Impartida completa por defecto las porciones y permite retocarlas. |
 | 11 | 12 | Fechas por defecto al presentar | Implementado; validación pendiente con tarea sin fechas, comprobando propuesta de hoy y cancelación sin cambios. |
 | 12 | 13 | Acceso a recursos de cada UT | Pendiente. Definir selección de recursos, enlaces y presentación desde la app. |
