@@ -1,5 +1,13 @@
 # Interfaz del piloto
 
+## Cabecera compacta
+
+Una fila en escritorio y dos hasta 760 px de ancho. Los selectores de módulo y UT quedan a la izquierda, junto a **UT**, **Mo**, **Ta · n** (tareas por corregir), una caja de herramientas para Preparación y **+ / −** para las sesiones. En móvil, las vistas ocupan la segunda fila y los controles mantienen al menos 44 px de pulsación. No se muestran la marca, el distintivo Piloto, textos de conexión ni hora de guardado.
+
+A la derecha, el punto verde indica una sesión conectada y rojo ausencia de conexión o red; no acredita permiso de escritura ni sincronización automática. Pulsarlo abre Información del módulo, mejoras del módulo/UT, resumen de la vista y Desconectar. El icono de conversación separado corresponde solo a sugerencias de la app. Todos los iconos conservan nombre accesible, ayuda y funcionamiento por teclado.
+
+**↻** relee la unidad y mantiene la confirmación previa si hay un borrador que descartar. Un único **disco** permite guardar los cambios de Unidad e indica el estado: rojo si hay cambios pendientes, verde si no los hay y se ha leído la versión confirmada, animado durante una operación y rojo con **!** ante error o revisión necesaria. Cuenta también textos aún sin aplicar y borradores de las ventanas independientes, pero no los guarda desde Unidad: cada ventana conserva su propio botón de guardado. El verde no acredita que nadie haya cambiado posteriormente el repositorio remoto. Los mensajes de error y recuperación se mantienen visibles cuando corresponda; las instrucciones rutinarias quedan accesibles sin reservar otra fila.
+
 ### Vista compacta de Módulo y datos comunes
 
 La vista de Módulo utiliza de forma fija **sesión y fecha**: el número de sesión encima y la fecha debajo. La descripción completa permanece en la ayuda accesible y al abrirla. El mes aparece al comenzar la fila y al cambiar de mes; el cambio de año se identifica. Se mantiene la alineación por días y el ajuste al ancho disponible.
@@ -12,7 +20,7 @@ Actualizar consulta vuelve a leer los datos comunes sin cambiar la UT abierta ni
 
 ## Información general del módulo — consulta implantada
 
-El catálogo puede incluir `modules[].profile`, limitado a `MÓDULO/module.json` del repositorio privado. El botón **Información**, junto al selector del módulo, abre Programación, Metodología y Calificación sin exigir una UT abierta. Los módulos sin documento muestran su incorporación pendiente, sin crearlo ni recuperar Excel por defecto.
+El catálogo puede incluir `modules[].profile`, limitado a `MÓDULO/module.json` del repositorio privado. **Información del módulo**, en el menú del punto de conexión, abre Programación, Metodología y Calificación sin exigir una UT abierta. Los módulos sin documento muestran su incorporación pendiente, sin crearlo ni recuperar Excel por defecto.
 
 La lectura es independiente y utiliza GET con versión comprobada. El diálogo no guarda nada ni cambia Unidad, filtros o borradores de seguimiento. Actualizar vuelve a leer solo el documento general; una lectura fallida retira el contenido anterior de la vista y no descarta notas. Los textos se representan literalmente, sin HTML. Las cargas anuales se expresan en periodos lectivos y los datos no leídos no se interpretan como ausencia de impartición.
 
@@ -42,7 +50,7 @@ La interfaz pública no constituye una protección de datos: el control de acces
 
 Todas las ventanas de edición se cierran tras completar su acción con éxito. **Aplicar al borrador** y **Confirmar presentación** solo aplican en memoria y cierran: el borrador de Unidad sigue requiriendo **Guardar cambios**. **Guardar tarea**, **Guardar sesión**, **Guardar preparación**, **Guardar mejoras** y **Guardar sugerencia** cierran únicamente después de confirmar el guardado mediante relectura. El aviso de éxito permanece en la pantalla principal; no se envían otros borradores pendientes. Un error de validación, permisos, conexión, conflicto o resultado incierto mantiene la ventana abierta y el texto intacto, sin reenvíos automáticos.
 
-El selector compacto superior abre la unidad al seleccionarla, sin un botón adicional. Al cambiar de módulo se abre su primera unidad disponible. Los selectores, sus botones de mejoras y el resumen de sesiones, impartidas y tiempo previsto comparten una única cabecera. No se repiten el nombre completo del módulo, el título de la UT ni la etiqueta «Abierta» en otra fila. Un módulo sin unidades se muestra como pendiente, sin generar archivos vacíos ni planificación ficticia. El catálogo se consulta al conectar; para recoger nuevas unidades basta recargar la página y volver a conectar, después de guardar los borradores. No hay un botón separado para actualizar la lista. Cuando la selección coincide con lo abierto, la ayuda de estado queda oculta sin reservar espacio.
+El selector compacto superior abre la unidad al seleccionarla, sin un botón adicional. Al cambiar de módulo se abre su primera unidad disponible. Las mejoras generales y el resumen de sesiones, impartidas y tiempo previsto están en el menú del punto de conexión. No se repiten el nombre completo del módulo, el título de la UT ni la etiqueta «Abierta» en otra fila. Un módulo sin unidades se muestra como pendiente, sin generar archivos vacíos ni planificación ficticia. El catálogo se consulta al conectar; para recoger nuevas unidades basta recargar la página y volver a conectar, después de guardar los borradores. No hay un botón separado para actualizar la lista. Cuando la selección coincide con lo abierto, la ayuda de estado queda oculta sin reservar espacio.
 
 Los selectores muestran solo el código del módulo y número más título breve de la unidad: `02 HTML`, por ejemplo. El título breve usa `shortTitle` si existe; en su ausencia, toma hasta tres palabras del primer segmento del título. El código completo y el título original no se modifican y siguen disponibles en la ayuda de la opción y en el encabezado accesible de la unidad.
 
@@ -157,7 +165,7 @@ Una sesión con varias tareas pide fechas independientes para las todavía no pr
 
 Verificación técnica del ciclo: 111 pruebas automatizadas satisfactorias. Pruebas de navegador con transporte ficticio: cancelar, fecha obligatoria, dos tareas con fechas independientes, P/C, cuatro estados y colores, filtros globales, cambio entre módulos con y sin borrador, guardado/relectura, lectura parcial y rechazo HTTP 403. Escritorio: filas de 46 píxeles en el entorno probado; móvil a 390/320 píxeles sin desbordamiento y controles de 44 píxeles. No se escribieron tareas, fechas ni notas de prueba en GitHub ni se modificaron Excel.
 
-El botón **Mejoras** junto al selector de módulo se refiere al módulo seleccionado; el botón junto al selector de unidad se refiere a la unidad abierta y solo se habilita cuando coincide con la selección. El diálogo muestra siempre ese destino antes de escribir. **Guardar mejoras** realiza un guardado independiente, confirmado mediante una nueva lectura de GitHub. Cerrar conserva el borrador en memoria. Mientras haya un borrador de mejoras o el diálogo esté abierto se bloquea el cambio de unidad; guardar, revisar o descartar permite continuar. Las notas de las sesiones y las sugerencias de la app mantienen sus propios guardados.
+En el menú del punto de conexión, **Mejoras del módulo** se refiere al módulo seleccionado; **Mejoras de la UT**, a la unidad abierta, y solo se habilita cuando coincide con la selección. El diálogo muestra siempre ese destino antes de escribir. **Guardar mejoras** realiza un guardado independiente, confirmado mediante una nueva lectura de GitHub, y cierra la ventana. Cerrar manualmente conserva el borrador en memoria. Mientras haya un borrador de mejoras o el diálogo esté abierto se bloquea el cambio de unidad; guardar, revisar o descartar permite continuar. Las notas de las sesiones y las sugerencias de la app mantienen sus propios guardados.
 
 `general-notes.mjs` conserva un único archivo privado por módulo en `APP/mejoras/MÓDULO.json`: `{schemaVersion: 1, moduleCode, improvements, units: {UNIDAD: {id, improvements}}}`. `improvements` recoge las mejoras generales del módulo; cada entrada de `units` recoge las de esa unidad. No se copian fechas, sesiones, recursos ni estados de preparación. Los textos y campos desconocidos se conservan al editar otro ámbito. El archivo se crea en el primer guardado real del docente, sin rellenar registros ficticios.
 
@@ -167,7 +175,7 @@ Cuando una actividad contiene `progress` con valor 0, 1 o 2, se muestra su progr
 
 ## Sugerencias sobre la aplicación
 
-El botón **Sugerencias**, junto a **Piloto**, abre un formulario después de conectar con GitHub. Recoge tipo (mejora, error o idea), título y descripción sobre la propia app, nunca notas académicas de la UT abierta. Reutiliza el permiso Contents de lectura y escritura en `miGUITel/programacion-piloto-datos`; no necesita habilitar Issues ni conceder permisos nuevos.
+El icono de conversación **Sugerencias sobre la aplicación**, en la cabecera, abre un formulario después de conectar con GitHub. Recoge tipo (mejora, error o idea), título y descripción sobre la propia app, nunca notas académicas de la UT abierta. Reutiliza el permiso Contents de lectura y escritura en `miGUITel/programacion-piloto-datos`; no necesita habilitar Issues ni conceder permisos nuevos.
 
 Cada envío crea exclusivamente `APP/sugerencias/<uuid>.json`, con formato 1, identificador, fecha de creación UTC, tipo, título, descripción y estado inicial `pendiente`. No incorpora automáticamente módulo, UT, URL, datos de sesión ni credenciales. La app no modifica ni elimina propuestas existentes; el historial Git conserva cada creación. El enlace **Ver registro privado en GitHub** permite consultar los archivos con la sesión de GitHub correspondiente.
 
