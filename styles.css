@@ -940,7 +940,11 @@ textarea{resize:vertical;line-height:1.6}
 .preparation-task { display:flex; gap:10px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--line); }
 .preparation-task:last-of-type { margin-bottom:12px; }
 .preparation-task input { flex:0 0 auto; width:18px; height:18px; margin:3px 0; }
-.preparation-task>span { min-width:0; overflow-wrap:anywhere; }
+.preparation-task>span,.preparation-task-label { min-width:0; flex:1; overflow-wrap:anywhere; }
+.preparation-dialog .preparation-task-label { display:flex; align-items:flex-start; gap:10px; font-size:14px; font-weight:400; margin:0; }
+.preparation-task-label>span { min-width:0; }
+.preparation-remove { color:#9a342f; flex:0 0 auto; }
+.preparation-removed { background:var(--paper); color:var(--muted); }
 .preparation-task .scope-note { display:block; margin-top:5px; font-weight:400; }
 .preparation-dialog .preparation-task { font-size:14px; line-height:1.5; font-weight:400; margin-top:0; }
 .preparation-dialog .preparation-session { font-size:13px; line-height:1.5; margin-top:0; }

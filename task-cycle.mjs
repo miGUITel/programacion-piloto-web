@@ -1,6 +1,6 @@
-import { isValidDate } from './core.mjs?v=20261018-rf35';
-import { sessionTaskTargets } from './teaching.mjs?v=20261018-rf35';
-import { madridToday } from './unit-tools.mjs?v=20261018-rf35';
+import { isValidDate } from './core.mjs?v=20261018-rf35-delete';
+import { sessionTaskTargets } from './teaching.mjs?v=20261018-rf35-delete';
+import { madridToday } from './unit-tools.mjs?v=20261018-rf35-delete';
 
 export const taskStates = Object.freeze({ planned: 'Planificada', presented: 'Presentada', 'to-correct': 'Por corregir', corrected: 'Corregida' });
 

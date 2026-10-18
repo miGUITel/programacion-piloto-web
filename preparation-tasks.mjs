@@ -1,5 +1,9 @@
 /** Individual preparation belongs to each official task, independently of its follow-up. */
 export const taskType = task => task.type || 'task';
+export function taskRemovalIssue(document, id) {
+  return (document.sessions ?? []).some(session => (session.activities ?? []).some(activity => Array.isArray(activity.taskRefs) && activity.taskRefs.includes(id)))
+    ? 'Este elemento está vinculado al trabajo de alguna porción. Revisa esos vínculos antes de eliminarlo; sus sesiones y notas se conservan.' : '';
+}
 export function taskPreparationGroups(document) {
   return Object.fromEntries([['tasks', 'task'], ['exam', 'exam']].map(([key, type]) => {
     const items = (document.tasks ?? []).filter(task => taskType(task) === type);

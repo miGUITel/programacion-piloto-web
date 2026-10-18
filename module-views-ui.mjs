@@ -1,8 +1,8 @@
-import { moduleOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261018-rf35';
-import { eventTypes } from './teaching.mjs?v=20261018-rf35';
-import { taskStates } from './task-cycle.mjs?v=20261018-rf35';
-import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261018-rf35';
-import { preparationBadge } from './preparation-ui.mjs?v=20261018-rf35';
+import { moduleOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261018-rf35-delete';
+import { eventTypes } from './teaching.mjs?v=20261018-rf35-delete';
+import { taskStates } from './task-cycle.mjs?v=20261018-rf35-delete';
+import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261018-rf35-delete';
+import { preparationBadge } from './preparation-ui.mjs?v=20261018-rf35-delete';
 
 const $ = id => document.getElementById(id);
 function el(tag, className, text) {

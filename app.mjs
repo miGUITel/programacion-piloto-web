@@ -1,17 +1,17 @@
-import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-rf35';
+import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-rf35-delete';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261016-1';
-import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-rf35';
-import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261018-rf35';
-import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261018-rf35';
-import { libraryIntegrity } from './model-v3.mjs?v=20261018-rf35';
-import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-rf35';
-import { createModuleViews } from './module-views-ui.mjs?v=20261018-rf35';
-import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261018-rf35';
-import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261018-rf35';
-import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-rf35';
-import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261018-rf35';
-import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261018-rf35';
-import { createPreparationUI } from './preparation-ui.mjs?v=20261018-rf35';
+import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-rf35-delete';
+import { compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261018-rf35-delete';
+import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261018-rf35-delete';
+import { libraryIntegrity } from './model-v3.mjs?v=20261018-rf35-delete';
+import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-rf35-delete';
+import { createModuleViews } from './module-views-ui.mjs?v=20261018-rf35-delete';
+import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261018-rf35-delete';
+import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261018-rf35-delete';
+import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-rf35-delete';
+import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261018-rf35-delete';
+import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261018-rf35-delete';
+import { createPreparationUI } from './preparation-ui.mjs?v=20261018-rf35-delete';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -1130,6 +1130,13 @@ const preparationUI = createPreparationUI({
     if (registryUI.failures().includes(entry.moduleCode)) return 'Falta consultar el registro de tareas del módulo. Actualiza la preparación antes de añadir elementos.';
     const history = registryUI.records().find(record => record.entry.moduleCode === entry.moduleCode);
     return history?.document.tasks.some(task => task.unitCode === entry.unitCode) ? 'Esta UT tiene tareas en el registro histórico. Hay que conciliar su lista antes de añadir elementos oficiales.' : '';
+  },
+  removalIssue(entry, id) {
+    if (!moduleContextReady || moduleLoadFailures.some(item => item.moduleCode === entry.moduleCode) || registryUI.failures().includes(entry.moduleCode)) return 'Falta consultar parte del módulo. Actualiza Preparación antes de eliminar elementos para comprobar sus vínculos.';
+    const records = [...libraryRecords(), ...registryUI.records()].filter(record => record.entry.moduleCode === entry.moduleCode);
+    if (records.some(record => record.entry.path !== entry.path && record.document.tasks?.some(task => task.id === id))) return 'Este elemento aparece en otro documento. Revisa su conciliación antes de eliminarlo.';
+    if (records.some(record => record.document.sessions?.some(session => session.activities.some(activity => Array.isArray(activity.taskRefs) && activity.taskRefs.includes(id))))) return 'Este elemento está vinculado al trabajo de alguna porción. Revisa esos vínculos antes de eliminarlo; sus sesiones y notas se conservan.';
+    return '';
   },
   onSaved(entry, result, prepared) {
     if (entry.path === activeEntry?.path) {

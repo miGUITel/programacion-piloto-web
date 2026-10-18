@@ -225,7 +225,9 @@ El editor muestra las tareas y exámenes oficiales con código, título y una ca
 
 **Añadir tarea** y **Añadir examen** solicitan código oficial, título, tipo y sesión prevista opcional. **Añadir al borrador** todavía no escribe; **Guardar preparación** incorpora el elemento a la lista oficial como Planificado. Empieza con preparación pendiente, sin fechas reales ni confirmaciones, y se puede marcar preparado antes de guardar. Los códigos duplicados y las referencias inválidas se rechazan. Se mantiene el formato de cada UT, admitiendo tareas nuevas sin sesión prevista también en formatos anteriores.
 
-El guardado independiente utiliza la versión leída y una relectura de confirmación. Guarda marcas y altas sin enviar las notas pendientes de Unidad; conserva también el seguimiento y las aprobaciones existentes. Un conflicto o resultado incierto conserva ambos borradores y bloquea el reenvío. Las tareas históricas aún sin conciliar no se convierten automáticamente en lista oficial para permitir nuevas altas.
+**Eliminar** retira una tarea o examen de la lista al pulsar **Guardar preparación**. La selección se confirma y se puede **Deshacer** antes de guardar; un alta todavía sin guardar se puede retirar sin escribir. Se conserva la lista oficial vacía si se elimina su último elemento, sin reactivar marcas históricas. Se recalculan los contadores y la preparación de la UT, y desaparece su presentación prevista derivada; las sesiones, notas y selecciones manuales se conservan. La eliminación incluye el seguimiento del elemento elegido y queda recuperable en el historial privado. Si ese elemento tiene cambios pendientes en Unidad, referencias de trabajo desde porciones o duplicados sin conciliar, se pide revisarlos antes de eliminar. Los conflictos de versión y resultados inciertos conservan el borrador y bloquean reenvíos.
+
+El guardado independiente utiliza la versión leída y una relectura de confirmación. Guarda marcas, altas y eliminaciones explícitas sin enviar las notas pendientes de Unidad; conserva también el seguimiento y las aprobaciones de los elementos restantes. Un conflicto o resultado incierto conserva ambos borradores y bloquea el reenvío. Las tareas históricas aún sin conciliar no se convierten automáticamente en lista oficial para permitir nuevas altas.
 
 Las ventanas de preparación, seguimiento, tareas, información y mejoras aprovechan casi todo el ancho disponible. En escritorio, tareas y exámenes aparecen en columnas; en móvil se apilan y los controles de cierre y guardado permanecen accesibles.
 
@@ -242,6 +244,28 @@ Pruebas de usuario:
 ### Preparación de sesiones — ampliaciones pendientes
 
 RF 3 incorpora ya la marca individual de sesión lista y las acciones conjuntas en su editor. RF 4 mantiene pendientes la marca en cada cabecera y/o una vista anual específica de sesiones, y concretar qué cambios de planificación invalidan una revisión. Todas las vistas usarán `session.preparation`; no hay marcas por porción ni inferencias desde Impartida o recursos existentes.
+
+### Requisitos pendientes, parciales o pendientes de validación — 18/10/2026
+
+Los números RF son estables. Se conservan las prioridades acordadas (1 es la máxima); no se renumeran al completar un requisito. «Validación pendiente» significa que la función está implementada y probada técnicamente, pero falta la comprobación de uso del docente. La prueba 6 de conservación de observaciones al guardar preparación está confirmada.
+
+| RF | Prioridad | Requisito | Estado y trabajo restante |
+|---:|---:|---|---|
+| 3 | 1 | Preparación automática de las UT | Implementado; cierre de validación. Etiquetas, vista global, enlace a sesiones, cálculo automático y guardado independiente disponibles. Comprobar el recálculo tras eliminar tareas o exámenes. |
+| 5 | 2 | Preparación de PPT, web, tareas y examen | Implementado; cierre de validación. Edición de PPT/Web, preparación individual, altas y eliminación de tareas/exámenes disponibles. Comprobar Eliminar, Deshacer y persistencia tras guardar. |
+| 13 | 3 | Editar información general y configuración del módulo | Pendiente. La información validada se consulta; falta definir e implementar su edición. |
+| 1 | 4 | Completar incorporación de UT y bloques | Parcial. El catálogo se ha ampliado; falta cerrar las carencias y conciliaciones de las incorporaciones. Una entrada no acredita migración completa ni preparación. |
+| 2 | 5 | Validar edición independiente de tareas | Implementado; validación de uso pendiente del editor Guardar tarea. La prueba de Guardar preparación no sustituye esta comprobación. |
+| 4 | 6 | Preparación de sesiones | Parcial. Marcas individuales y acciones conjuntas disponibles en Preparación. Faltan el acceso desde cada cabecera y/o vista anual de sesiones y acordar cuándo revisar su preparación. |
+| 6 | 7 | Fecha prevista de exámenes en Tareas | Parcial. Existe en la referencia de sesión y la ayuda; falta mostrarla claramente en la fila, separada de las fechas reales. |
+| 7 | 8 | Reprogramar exámenes | Pendiente. Acción que conserve identidad y seguimiento, actualice marcas y requiera aviso para la nueva fecha. |
+| 8 | 9 | Totales de duración con reprogramaciones | Decisión pendiente. Distinguir carga inicial, planificación vigente e historial antes de cambiar el cálculo. |
+| 9 | 10 | Vista ampliada de sesión | Pendiente de definición e implementación. Las ventanas más anchas no completan esta vista. |
+| 10 | 11 | Avance por porción | Definido; pendiente de implementar. Pendiente/Parcial/Completada y nota opcional; marcar Impartida completa por defecto las porciones y permite retocarlas. |
+| 11 | 12 | Fechas por defecto al presentar | Implementado; validación pendiente con tarea sin fechas, comprobando propuesta de hoy y cancelación sin cambios. |
+| 12 | 13 | Acceso a recursos de cada UT | Pendiente. Definir selección de recursos, enlaces y presentación desde la app. |
+
+RF 3 y RF 5 no tienen funciones pendientes dentro del alcance aprobado después de esta ampliación. Queda la validación de uso del borrado y sus efectos. La vista de sesiones de RF 4, los enlaces a recursos de RF 12 y la reprogramación de RF 7 conservan sus propios alcances y prioridades.
 
 ### Fuera de la lista pendiente: funciones ya implantadas
 

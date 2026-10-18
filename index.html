@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261018-rf35">
-  <script type="module" src="./app.mjs?v=20261018-rf35"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261018-rf35-delete">
+  <script type="module" src="./app.mjs?v=20261018-rf35-delete"></script>
 </head>
 <body>
   <header class="topbar">
@@ -176,7 +176,7 @@
       <header class="suggestions-header"><h2 id="preparation-title"></h2></header>
       <div class="suggestions-content">
         <p><span id="preparation-result" role="status"></span></p><p id="preparation-detail" class="scope-note"></p>
-        <p class="field-help">Todo listo: Preparada. Algún material o sesión listo: En preparación. Ninguno listo: Pendiente. Los cambios se conservan al pulsar Guardar preparación.</p>
+        <p class="field-help">Todo listo: Preparada. Algún material, tarea, examen o sesión listo: En preparación. Ninguno listo: Pendiente. Las altas, eliminaciones y marcas se confirman al pulsar Guardar preparación. Puedes deshacer una eliminación antes de guardar.</p>
         <div id="preparation-fields"></div>
         <fieldset id="preparation-task-editor" class="preparation-task-editor" hidden>
           <legend>Añadir a la lista oficial</legend>
@@ -190,7 +190,7 @@
           <p id="preparation-new-message" class="message error" role="status"></p>
           <div class="preparation-session-actions"><button id="preparation-new-add" class="button" type="button">Añadir al borrador</button><button id="preparation-new-cancel" class="button" type="button">Cancelar nueva tarea o examen</button></div>
         </fieldset>
-        <p class="field-help">Este guardado conserva la preparación y los elementos añadidos. Mantiene tus notas pendientes y las tareas ya aprobadas.</p>
+        <p class="field-help">Este guardado confirma marcas, altas y eliminaciones. Mantiene tus notas pendientes y el seguimiento de los elementos que conservas.</p>
         <p id="preparation-message" class="message" role="status" hidden></p>
         <div class="suggestions-recovery"><button id="preparation-reload" class="button" type="button">Revisar GitHub</button><button id="preparation-download" class="button" type="button">Descargar borrador</button></div>
       </div>
