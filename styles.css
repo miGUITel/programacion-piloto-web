@@ -1061,3 +1061,61 @@ textarea{resize:vertical;line-height:1.6}
 .session-editor-status .field-help,.session-editor-status .message { margin:0; }
 .session-editor-status .message { margin-top:6px; }
 @media(max-width:600px) { .session-editor-dialog { width:calc(100vw - 16px); } .session-text-activity { padding:10px; } .session-editor-footer .button { min-height:44px; } }
+
+/* One toolbar on desktop; two touch-friendly rows on a phone. */
+.app-header { position:relative; z-index:5; padding:8px 22px; border-bottom:1px solid var(--line); background:var(--paper, #f7f6ef); }
+.app-toolbar { display:grid; grid-template-columns:minmax(220px,340px) max-content minmax(36px,1fr) max-content; grid-template-areas:"picker views suggestions actions"; align-items:center; gap:8px; }
+.app-toolbar:not(.has-library) { display:flex; justify-content:flex-end; }
+.app-header .toolbar-picker { grid-area:picker; display:grid; grid-template-columns:68px minmax(0,1fr); align-items:center; gap:6px; min-width:0; }
+.app-header select { min-width:0; width:100%; max-width:none; height:36px; min-height:36px; margin:0; padding:5px 4px 5px 8px; font-size:14px; border:1px solid #bdcfc2; border-radius:6px; background-color:var(--white); color:var(--ink); text-overflow:ellipsis; }
+.app-header .toolbar-views { grid-area:views; display:flex; align-items:center; flex-wrap:nowrap; width:auto; gap:4px; margin:0; }
+.app-header .toolbar-views .layout-button { min-width:36px; min-height:36px; height:36px; padding:5px 8px; font-size:13px; line-height:1; flex:0 0 auto; }
+.app-header .toolbar-icon,.app-header .global-session-toggle { display:grid; place-items:center; position:relative; flex:none; width:36px; min-width:36px; height:36px; min-height:36px; padding:0; margin:0; border:1px solid #bdcfc2; border-radius:6px; background:var(--white); color:var(--ink); cursor:pointer; }
+.app-header .global-session-toggle { font-size:24px; line-height:1; }
+.app-header svg { width:21px; height:21px; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; fill:none; }
+.app-header .toolbar-views .toolbar-icon[aria-pressed="true"] { background:var(--navy); border-color:var(--navy); color:#fff; }
+.toolbar-suggestions { grid-area:suggestions; display:flex; justify-content:flex-end; }
+.toolbar-actions { grid-area:actions; display:flex; gap:4px; align-items:center; }
+.app-header button:hover:not(:disabled),.app-header summary:hover { background:#e6eee7; }
+.app-header button:focus-visible,.app-header summary:focus-visible,.app-header select:focus-visible { outline:2px solid var(--teal); outline-offset:2px; }
+.app-header #open-suggestions.has-content::after { content:""; width:7px; height:7px; border-radius:50%; background:#b95720; position:absolute; top:3px; right:3px; }
+.connection-menu { position:static; }
+.connection-menu>summary { list-style:none; }
+.connection-menu>summary::-webkit-details-marker { display:none; }
+.app-header .connection-label { display:flex; align-items:center; justify-content:center; color:inherit; }
+.app-header .status-dot { width:10px; height:10px; margin:0; border-radius:50%; background:#bd352d; box-shadow:0 0 0 3px #bd352d12; }
+.app-header .connection-label.is-connected .status-dot { background:#228141; box-shadow:0 0 0 3px #22814114; }
+.toolbar-menu { position:absolute; top:calc(100% + 4px); right:8px; z-index:30; width:min(300px,calc(100vw - 16px)); padding:8px; border:1px solid var(--line); border-radius:8px; background:var(--white); box-shadow:0 8px 30px #10253329; }
+.app-header .toolbar-menu-action { display:flex; align-items:center; gap:10px; width:100%; min-width:0; min-height:42px; height:auto; margin:3px 0 0; padding:8px 10px!important; border:0; border-radius:5px; background:transparent; color:var(--ink); font-size:14px; text-align:left; white-space:normal; }
+.toolbar-menu-action svg { flex-shrink:0; }
+.menu-info-icon { display:grid; place-items:center; width:21px; height:21px; flex-shrink:0; border:1.5px solid currentColor; border-radius:50%; font-family:Georgia,serif; font-weight:700; }
+.app-header .toolbar-summary { display:flex; flex-wrap:wrap; gap:5px 12px; margin:0 0 5px; padding:6px 8px 10px; border:0; border-bottom:1px solid var(--line); border-radius:0; background:none; }
+.app-header .stat { display:flex; align-items:baseline; gap:4px; margin:0; padding:0; border:0; }
+.app-header .stat-value { font-size:13px; font-weight:700; }
+.app-header .stat-label { font-size:11px; color:var(--muted); }
+.app-header .save-disk { color:#66757b; background:var(--white); }
+.app-header .save-disk[data-state="clean"] { color:#17733a; border-color:#91bca0; background:#eff8f0; }
+.app-header .save-disk[data-state="pending"],.app-header .save-disk[data-state="error"] { color:#b32725; border-color:#d99b96; background:#fff1ed; }
+.app-header .save-disk[data-state="busy"] { color:var(--teal); animation:pulse 1s infinite; }
+.app-header .save-disk:disabled { opacity:1; cursor:default; }
+.save-attention { display:none; position:absolute; top:-4px; right:-4px; width:15px; height:15px; border-radius:50%; background:#a62322; color:white; font-size:11px; font-weight:800; line-height:15px; text-align:center; }
+.save-disk[data-state="error"] .save-attention { display:block; }
+.app-header .message,.app-header .selection-help { margin:6px 0 0; padding:6px 9px; font-size:12px; overflow-wrap:anywhere; }
+.app-header .visually-hidden { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
+.app-header [hidden] { display:none!important; }
+@media(max-width:760px) {
+  .app-header { padding:6px 8px; }
+  .app-toolbar { grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"picker actions" "views suggestions"; gap:4px; }
+  .app-header .toolbar-picker { grid-template-columns:72px minmax(0,1fr); gap:4px; }
+  .app-header select { height:44px; min-height:44px; font-size:16px; padding:7px 4px 7px 6px; }
+  .app-header .toolbar-icon,.app-header .toolbar-views .layout-button,.app-header .global-session-toggle { width:44px; min-width:44px; height:44px; min-height:44px; padding:0; font-size:14px; }
+  .app-header #view-tasks { width:auto; min-width:54px; padding:0 6px; }
+  .app-header .global-session-toggle { font-size:26px; }
+  .app-header .toolbar-views { gap:4px; }
+  .app-header .toolbar-menu-action { min-height:44px; font-size:15px; }
+}
+@media(max-width:360px) {
+  .app-header { padding-right:4px; padding-left:4px; }
+  .app-toolbar,.app-header .toolbar-views { gap:2px; }
+  .app-header #view-tasks { padding:0 4px; font-size:13px; }
+}
