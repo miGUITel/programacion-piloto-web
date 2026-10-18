@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261018-unit-order">
-  <script type="module" src="./app.mjs?v=20261018-unit-order"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261018-unit-info-icon">
+  <script type="module" src="./app.mjs?v=20261018-unit-info-icon"></script>
 </head>
 <body>
   <header class="app-header">
@@ -77,13 +77,12 @@
         <div id="workspace-message" class="message workspace-message" role="status" aria-live="polite" hidden></div>
         <div id="recovery-actions" class="recovery-actions" hidden><button id="download-draft" type="button" class="button button-small">Descargar borrador JSON</button><span>El borrador permanece aquí hasta que lo descartes o cierres la página.</span></div>
         <div id="unit-view">
-        <section id="unit-information" class="unit-information" aria-label="Información de la unidad" hidden></section>
         <section id="session-band-section" class="session-band-section" aria-label="Sesiones de la unidad">
           <div class="band-caption"><p><span class="band-key task-key"></span>Tarea <span class="band-key exam-key"></span>Examen <span class="band-key elapsed-key"></span>Tiempo transcurrido</p></div>
           <div class="session-band-scroll" tabindex="0" role="region" aria-label="Sesiones de la UT; desliza para ver todas"><ol id="session-band" class="session-band"></ol></div>
         </section>
         <div id="exam-reminders" class="exam-reminders" aria-live="polite" hidden></div>
-        <div class="list-heading session-list-heading"><h2>Sesiones</h2><div id="unit-preparation" class="unit-preparation"></div><p><span class="past-legend" aria-hidden="true"></span>Fecha anterior a hoy; no indica impartición ni retraso.</p></div>
+        <div class="list-heading session-list-heading"><h2>Sesiones</h2><div class="session-preparation-tools"><div id="unit-preparation" class="unit-preparation"></div><button id="unit-information-open" class="unit-information-open" type="button" aria-label="Información de la unidad: diseño, referencias y notas" title="Información de la unidad" aria-haspopup="dialog" aria-controls="unit-information" hidden><span aria-hidden="true">i</span></button></div><p><span class="past-legend" aria-hidden="true"></span>Fecha anterior a hoy; no indica impartición ni retraso.</p></div>
         <div class="column-guide" aria-hidden="true"><span></span><span>Fecha</span><span>Sesión / contenido</span><span>Descripción prevista</span><span>Seguimiento</span><span>Estado</span><span>Anotar</span></div>
         <div id="sessions" class="sessions"></div>
         </div>
@@ -117,6 +116,14 @@
     </section>
     <noscript><p class="noscript">Activa JavaScript para conectar con el repositorio privado. Esta página no contiene los datos del cuaderno.</p></noscript>
   </main>
+
+  <dialog id="unit-information" class="unit-information-dialog" aria-labelledby="unit-information-title" aria-describedby="unit-information-context" hidden>
+    <div class="unit-information-layout">
+      <header class="suggestions-header"><div><h2 id="unit-information-title">Información de la unidad</h2><p id="unit-information-context"></p></div><button id="unit-information-close" type="button" class="icon-button" aria-label="Cerrar información de la unidad">×</button></header>
+      <div class="unit-information-content"></div>
+      <footer class="suggestions-footer"><span class="scope-note">Solo lectura</span><button id="unit-information-hide" type="button" class="button">Cerrar</button></footer>
+    </div>
+  </dialog>
 
   <dialog id="session-editor-dialog" class="suggestions-dialog session-editor-dialog" aria-labelledby="session-editor-title" aria-describedby="session-editor-context">
     <form id="session-editor-form" class="suggestions-form">
