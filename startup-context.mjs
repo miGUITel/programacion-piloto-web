@@ -1,3 +1,4 @@
+import { validateMeetingDocument } from './meeting-records.mjs?v=20261019-meetings';
 // Navigation preferences contain references only. Academic data stays remote.
 const object = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 const string = v => typeof v === 'string' && v.length > 0 && v.length <= 300;
@@ -10,13 +11,15 @@ export function catalogEntries(catalog) {
 export function unitContext(entry, sessionId) {
   return { type:'unit', moduleCode:entry.moduleCode, unitId:entry.unitId, path:entry.path, ...(string(sessionId) ? { sessionId } : {}) };
 }
-export function meetingContext(meeting) { return { type:'meeting', meetingId:meeting.meetingId, date:meeting.date }; }
+export function meetingContext(meeting) { return { type:'meeting', ...(string(meeting.meetingId)?{meetingId:meeting.meetingId}:{}), date:meeting.date, ...(string(meeting.recordId)?{recordId:meeting.recordId}:{}), ...(string(meeting.groupId)?{groupId:meeting.groupId}:{}), ...(['meetings','project'].includes(meeting.space)?{space:meeting.space}:{}) }; }
+export function meetingGroupContext(space,groupId) { return {type:'meeting-group',space,groupId}; }
 function cleanContext(value) {
   if (!object(value)) return null;
   if (value.type === 'unit' && [value.moduleCode, value.unitId, value.path].every(string)) {
     return { type:'unit', moduleCode:value.moduleCode, unitId:value.unitId, path:value.path, ...(string(value.sessionId) ? { sessionId:value.sessionId } : {}) };
   }
-  if (value.type === 'meeting' && string(value.meetingId) && date(value.date)) return meetingContext(value);
+  if (value.type === 'meeting' && (string(value.meetingId)||string(value.recordId)) && date(value.date)) return meetingContext(value);
+  if (value.type === 'meeting-group' && ['meetings','project'].includes(value.space) && (value.groupId===null||string(value.groupId))) return meetingGroupContext(value.space,value.groupId);
   return null;
 }
 export function createContextMemory(getStorage = () => globalThis.localStorage) {
@@ -59,11 +62,16 @@ export function daySchedule(common, on) {
   return slots.map(x => ({ ...x, date:on, meetingId:x.id, from:minutes(x.start), through:minutes(x.end) }));
 }
 export function meetingsForDay(common, on) { return daySchedule(common, on).filter(x => x.type === 'meeting').sort((a,b) => a.from-b.from); }
-export function resolveRemembered(context, catalog, common) {
+export function resolveRemembered(context, catalog, common, meetingDocument = null) {
   const safe = cleanContext(context);
   if (safe?.type === 'unit') {
     const entry = catalogEntries(catalog).find(x => x.path === safe.path && x.unitId === safe.unitId && x.moduleCode === safe.moduleCode);
     return entry ? { ...unitContext(entry, safe.sessionId), entry } : null;
+  }
+  if(safe?.type==='meeting-group' && meetingDocument?.spaces?.some(s=>s.id===safe.space) && (safe.groupId===null||meetingDocument.groups?.some(g=>g.id===safe.groupId&&g.space===safe.space))) return safe;
+  if(safe?.type==='meeting'&&safe.recordId){
+    const record=meetingDocument?.meetings.find(r=>r.id===safe.recordId&&r.date===safe.date);
+    return record?{...safe,record}:null;
   }
   if (safe?.type === 'meeting') {
     const meeting = meetingsForDay(common, safe.date).find(x => x.meetingId === safe.meetingId);
@@ -84,8 +92,8 @@ function fitsTeaching(activity, pieces) {
   return false;
 }
 /** Read-only decision. Incomplete or inconsistent planning never causes guessed navigation. */
-export function chooseStartup({ catalog, common, records = [], failures = [], remembered = null, now = new Date() }) {
-  const fallback = warning => ({ target:resolveRemembered(remembered, catalog, common), automatic:false, warning });
+export function chooseStartup({ catalog, common, records = [], failures = [], remembered = null, meetingDocument = null, now = new Date() }) {
+  const fallback = warning => ({ target:resolveRemembered(remembered, catalog, common, meetingDocument), automatic:false, warning });
   if (!common) return fallback('No se ha podido confirmar el horario común. Se recupera el contexto disponible sin deducir la actividad actual.');
   const clock = madridClock(now), slots = daySchedule(common, clock.date), pieces = teachingPieces(common, slots);
   const activities = records.flatMap(({ entry, document }) => document.sessions.filter(s => s.date === clock.date).flatMap(session => session.activities.map(a => ({ entry, session, from:minutes(a.start), through:minutes(a.end) }))));
@@ -117,17 +125,4 @@ export function chooseStartup({ catalog, common, records = [], failures = [], re
 export function meetingNotesPath(catalog) {
   return catalog?.meetings?.schemaVersion === 1 && catalog.meetings.path === 'APP/reuniones.json' ? catalog.meetings.path : null;
 }
-export function validateMeetingNotes(doc) {
-  const errors = [];
-  if (!object(doc) || doc.schemaVersion !== 1 || doc.kind !== 'meeting-notes' || !Array.isArray(doc.meetings)) return ['Formato de reuniones no válido.'];
-  const seen = new Set();
-  for (const record of doc.meetings) {
-    if (!object(record) || !string(record.meetingId) || !date(record.date)) { errors.push('Referencia de reunión no válida.'); continue; }
-    const key = `${record.meetingId}:${record.date}`;
-    if (seen.has(key)) errors.push('Hay dos registros de la misma reunión.');
-    seen.add(key);
-    for (const field of ['topics', 'requests']) if (Object.hasOwn(record, field) && (!Array.isArray(record[field]) || record[field].some(x => typeof x !== 'string'))) errors.push('Los temas y ruegos deben ser listas de textos.');
-    if (Object.hasOwn(record, 'notes') && typeof record.notes !== 'string') errors.push('Las notas deben ser texto.');
-  }
-  return errors;
-}
+export function validateMeetingNotes(doc) { return validateMeetingDocument(doc); }

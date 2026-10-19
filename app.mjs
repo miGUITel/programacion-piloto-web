@@ -1,6 +1,6 @@
-import { createContextMemory, catalogEntries, chooseStartup, resolveRemembered, unitContext, meetingContext, meetingsForDay, madridClock } from './startup-context.mjs?v=20261019-context';
-import { MeetingReader } from './meeting-reader.mjs?v=20261019-context';
-import { renderMeetingDetails } from './meeting-view.mjs?v=20261019-context';
+import { createContextMemory, catalogEntries, chooseStartup, resolveRemembered, unitContext, meetingContext, meetingsForDay, madridClock } from './startup-context.mjs?v=20261019-meetings';
+import { MeetingReader } from './meeting-reader.mjs?v=20261019-meetings';
+import { createMeetingWorkspace } from './meeting-workspace-ui.mjs?v=20261019-meetings';
 import { createResourcesUI } from './resources-ui.mjs?v=20261018-rf12b';
 import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-rf12';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261018-rf12';
@@ -85,7 +85,7 @@ function editorDirty() {
     || (!$('task-fields').hidden && JSON.stringify(readTaskEditor()) !== JSON.stringify(taskDetails(target)));
 }
 
-function hasPendingChanges() { return dirty() || editorDirty() || presentationUI.isOpen() || registryUI.hasPending() || preparationUI.hasPending() || sessionEditorUI.hasPending() || resourcesUI.hasPending(); }
+function hasPendingChanges() { return meetingsUI.hasPending() || dirty() || editorDirty() || presentationUI.isOpen() || registryUI.hasPending() || preparationUI.hasPending() || sessionEditorUI.hasPending() || resourcesUI.hasPending(); }
 
 function checked(value, entry = activeEntry) {
   const errors = validateDocument(value, entry ?? undefined);
@@ -119,9 +119,9 @@ function updateConnectionState() {
 
 function updateSaveState() {
   const state = $('save-state'), disk = $('save');
-  const independentPending = registryUI.hasPending() || preparationUI.hasPending() || sessionEditorUI.hasPending() || resourcesUI.hasPending() || generalNotesUI.hasPending() || suggestionsUI.hasPending();
+  const independentPending = meetingsUI.hasPending() || registryUI.hasPending() || preparationUI.hasPending() || sessionEditorUI.hasPending() || resourcesUI.hasPending() || generalNotesUI.hasPending() || suggestionsUI.hasPending();
   const pending = hasPendingChanges() || independentPending;
-  const independentError = independentPending && ['registry-message', 'preparation-message', 'session-editor-message', 'resources-message', 'general-notes-message', 'suggestion-message']
+  const independentError = independentPending && ['meetings-message', 'registry-message', 'preparation-message', 'session-editor-message', 'resources-message', 'general-notes-message', 'suggestion-message']
     .some(id => !$(id).hidden && ($(id).classList.contains('error') || $(id).classList.contains('warning')));
   const error = blockedSave || failedSave || independentError;
   const status = busy ? 'busy' : error ? 'error' : pending ? 'pending' : draft ? 'clean' : 'empty';
@@ -157,6 +157,7 @@ function updateSaveState() {
   preparationUI.availability();
   sessionEditorUI.availability();
   resourcesUI.availability();
+  meetingsUI.availability();
 }
 
 function selectedEntry() {
@@ -172,6 +173,7 @@ function navigationBlocked() {
 
 function restoreUnitSelection() {
   const entry = openingEntry ?? activeEntry;
+  if (currentView === 'meeting' && meetingsUI.spaces().length) { syncMeetingSelection(meetingsUI.location()); return; }
   if (!entry) return;
   $('module-select').value = entry.moduleCode;
   fillUnits(entry.unitCode);
@@ -180,6 +182,16 @@ function restoreUnitSelection() {
 function updateNavigation() {
   const editing = hasPendingChanges() || $('editor').open || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen() || resourcesUI.isOpen()) || blockedSave || generalNotesUI.hasPending() || generalNotesUI.isOpen();
   const selectedModule = catalog?.modules.find(item => item.code === $('module-select').value);
+  const virtual = $('module-select').value.startsWith('@');
+  if (virtual) {
+    const locked = busy || meetingsUI.hasPending() || Boolean(document.querySelector('dialog[open]')) || registryUI.hasPending() || preparationUI.hasPending() || sessionEditorUI.hasPending() || resourcesUI.hasPending() || generalNotesUI.hasPending();
+    $('module-select').disabled = locked;
+    $('unit-select').disabled = locked || !$('unit-select').options.length;
+    $('selection-help').textContent = meetingsUI.hasPending() ? 'Guarda o descarta las notas de reunión antes de cambiar de grupo.' : '';
+    $('selection-help').hidden = !$('selection-help').textContent;
+    generalNotesUI.updateAvailability(); moduleProfileUI.updateAvailability();
+    return;
+  }
   const selected = selectedEntry();
   $('module-select').disabled = busy || editing || !catalog?.modules.length;
   $('unit-select').disabled = busy || editing || !selectedModule?.units.length;
@@ -199,6 +211,15 @@ function updateNavigation() {
 }
 
 function fillUnits(preferredCode = '') {
+  $('library-view').classList.toggle('has-meeting-space', $('module-select').value.startsWith('@'));
+  if ($('module-select').value.startsWith('@')) {
+    const space = $('module-select').value.slice(1), select = $('unit-select');
+    select.replaceChildren();
+    const all = node('option', '', 'Todas las reuniones'); all.value = '*'; select.append(all);
+    for (const group of meetingsUI.groups().filter(g => g.space === space)) { const option = node('option', '', group.title); option.value = group.id; select.append(option); }
+    select.value = [...select.options].some(o => o.value === preferredCode) ? preferredCode : select.options[1]?.value ?? '*';
+    updateNavigation(); return;
+  }
   const module = catalog?.modules.find(item => item.code === $('module-select').value);
   const select = $('unit-select');
   select.replaceChildren();
@@ -340,7 +361,10 @@ function selectWorkspaceView(view) {
   if (!['unit', 'module', 'tasks', 'preparation'].includes(view) || !draft || busy || document.querySelector('dialog[open]')) return;
   const leavingMeeting = currentView === 'meeting';
   setWorkspaceView(view);
-  if (leavingMeeting) rememberUnit();
+  if (leavingMeeting) {
+    if (activeEntry) { $('module-select').value = activeEntry.moduleCode; fillUnits(activeEntry.unitCode); }
+    rememberUnit();
+  }
 }
 function setWorkspaceView(view) {
   currentView = view;
@@ -858,48 +882,43 @@ function fillMeetingPicker(on, preferredId = '') {
   select.disabled = busy || !meetings.length;
   return meetings.find(m => m.meetingId === select.value) ?? null;
 }
+function appendMeetingSpaces() {
+  const select=$('module-select'),previous=select.value;
+  select.querySelectorAll('option[data-meeting-space]').forEach(o=>o.remove());
+  for(const space of meetingsUI.spaces()){const option=node('option','',space.title);option.value='@'+space.id;option.dataset.meetingSpace='true';select.append(option);}
+  if([...select.options].some(o=>o.value===previous))select.value=previous;
+}
+function syncMeetingSelection(location) {
+  appendMeetingSpaces();
+  $('module-select').value='@'+location.space;
+  fillUnits(location.groupId??'*');
+}
 async function showMeeting(meeting, initial = false) {
-  if (!connection || (!initial && (busy || document.querySelector('dialog[open]')))) return false;
-  if (!initial) setBusy(true);
-  try {
-    currentMeeting = meeting;
-    fillMeetingPicker(meeting.date, meeting.meetingId);
-    setWorkspaceView('meeting');
-    $('login-view').hidden = true; $('workspace').hidden = false;
-    let record = null, error = '';
-    try {
-      const result = await meetingReader.load(catalog);
-      record = result.document?.meetings.find(r => r.meetingId === meeting.meetingId && r.date === meeting.date) ?? null;
-    } catch { error = 'No se han podido leer los temas y notas previstos. El título procede del horario; no se da su contenido por vacío.'; }
-    renderMeetingDetails($('meeting-details'), meeting, record, error);
-    rememberContext(meetingContext(meeting));
-    $('meeting-details').querySelector('h2')?.focus({ preventScroll:true });
-    return true;
-  } finally { if (!initial) setBusy(false); }
+  currentMeeting=meeting;
+  fillMeetingPicker(meeting.date,meeting.meetingId);
+  return meetingsUI.openScheduled(meeting,initial);
 }
 async function openMeetings(preferred = null) {
-  if (!connection || busy || document.querySelector('dialog[open]')) return;
-  setBusy(true);
-  try {
-    try { startupCommon = (await connection.loadCommon(catalog)).document; }
-    catch { startupCommon = null; warnNavigation('No se puede consultar el horario vigente de reuniones. La unidad y sus notas pendientes se conservan.'); return; }
-    const on = preferred?.date ?? madridClock().date;
-    const meeting = fillMeetingPicker(on, preferred?.meetingId);
-    if (preferred && (!meeting || meeting.meetingId !== preferred.meetingId)) {
-      warnNavigation('La reunión recordada ya no corresponde al horario vigente. Elige otra fecha o reunión.');
-    }
-    if (meeting) await showMeeting(meeting, true);
-    else {
-      currentMeeting = null; setWorkspaceView('meeting');
-      $('workspace').hidden = false;
-      renderMeetingDetails($('meeting-details'), null, null);
-    }
-  } finally { setBusy(false); }
+  if(preferred?.recordId) return meetingsUI.openRecord(preferred.recordId);
+  if(preferred?.meetingId) {
+    if(busy||document.querySelector('dialog[open]'))return;
+    setBusy(true);
+    try {
+      startupCommon=(await connection.loadCommon(catalog)).document;
+      const meeting=fillMeetingPicker(preferred.date,preferred.meetingId);
+      if(meeting&&meeting.meetingId===preferred.meetingId)await showMeeting(meeting,true);
+      else warnNavigation('La convocatoria recordada no coincide con el horario vigente. Consulta su grupo de reuniones.');
+    }catch{warnNavigation('No se puede confirmar el horario de esa convocatoria. Puedes consultar las notas desde su grupo.');}
+    finally{setBusy(false);}
+    return;
+  }
+  const location=preferred?.type==='meeting-group'?preferred:meetingsUI.location();
+  return meetingsUI.openGroup(location.space??'meetings',location.groupId??null);
 }
 async function resumePreviousContext() {
   if (!catalog || busy || document.querySelector('dialog[open]')) return;
-  if (resumeContext?.type === 'meeting') return openMeetings(resumeContext);
-  const previous = resolveRemembered(resumeContext, catalog, startupCommon);
+  if (['meeting','meeting-group'].includes(resumeContext?.type)) return openMeetings(resumeContext);
+  const previous = resolveRemembered(resumeContext, catalog, startupCommon, meetingsUI.document());
   if (!previous) { warnNavigation('El contexto anterior ya no está disponible. Elige una unidad.'); return; }
   if (draft) {
     if (!await ensureSourceUnit(previous.path)) return;
@@ -917,7 +936,7 @@ async function initializeContext() {
   resumeContext = memory.context;
   if (memory.warning) warnNavigation(memory.warning);
   const entries = catalogEntries(catalog);
-  const [commonResult, records] = await Promise.all([
+  const [commonResult, records, meetingResult] = await Promise.all([
     connection.loadCommon(catalog).then(r => r.document).catch(() => null),
     Promise.allSettled(entries.map(async entry => {
       const candidate = documentStores.get(entry.path) ?? connection.forDocument(entry);
@@ -926,15 +945,18 @@ async function initializeContext() {
       if (!result.sha) throw new Error('MissingVersion');
       return { entry, document:result.document, sha:result.sha };
     })),
+    meetingReader.load(catalog).catch(() => null),
   ]);
   startupCommon = commonResult;
+  if (meetingResult) { meetingsUI.seed(meetingResult); appendMeetingSpaces(); }
+  else warnNavigation('No se ha podido leer el registro de reuniones. Puedes reintentarlo desde Reuniones.');
   const loaded = new Map(), failures = [];
   records.forEach((r,i) => { if (r.status === 'fulfilled') loaded.set(entries[i].path,r.value); else failures.push(entries[i]); });
-  const decision = chooseStartup({ catalog, common:startupCommon, records:[...loaded.values()], failures, remembered:resumeContext });
+  const decision = chooseStartup({ catalog, common:startupCommon, records:[...loaded.values()], failures, remembered:resumeContext, meetingDocument:meetingsUI.document() });
   const target = decision.target;
   if (decision.warning) warnNavigation(decision.warning);
   const preferred = target?.type === 'unit' ? loaded.get(target.path) : null;
-  const selected = resolveRemembered(resumeContext,catalog,startupCommon);
+  const selected = resolveRemembered(resumeContext,catalog,startupCommon,meetingsUI.document());
   const fallback = selected?.type === 'unit' ? loaded.get(selected.path) : null;
   const seed = preferred ?? fallback ?? loaded.get(selectedEntry()?.path) ?? loaded.values().next().value;
   if (seed) {
@@ -942,7 +964,11 @@ async function initializeContext() {
     await loadSelectedDocument(loaded);
   } else warnNavigation('No se ha podido abrir ninguna UT. Se conservan los selectores para reintentar.');
   startingNavigation = false;
-  if (target?.type === 'meeting') await showMeeting(target.meeting,true);
+  if(target?.type==='meeting-group'){
+    setBusy(false); await meetingsUI.openGroup(target.space,target.groupId);
+  } else if(target?.type==='meeting'&&target.recordId){
+    setBusy(false); await meetingsUI.openRecord(target.recordId);
+  } else if (target?.type === 'meeting') await showMeeting(target.meeting,true);
   else if (draft) {
     setWorkspaceView('unit');
     if (target?.path === activeEntry.path) focusContextSession(target.sessionId);
@@ -1050,7 +1076,7 @@ function disconnect() {
   currentView = 'unit';
   startupCommon = null; currentMeeting = null; resumeContext = null; selectedSessionId = null;
   navigationWarnings.clear(); message('navigation-message');
-  $('meeting-details').replaceChildren(); $('meeting-select').replaceChildren(); $('meeting-date').value = '';
+  meetingsUI.clear(); $('meeting-select').replaceChildren(); $('meeting-date').value = '';
   $('meeting-view').hidden = true; delete $('workspace').dataset.view;
   for (const name of ['unit', 'module', 'tasks', 'preparation']) {
     $(name + '-view').hidden = name !== 'unit'; $('view-' + name).setAttribute('aria-pressed', String(name === 'unit'));
@@ -1249,7 +1275,7 @@ $('meeting-date').addEventListener('change', async () => {
   if (busy) return;
   const meeting = fillMeetingPicker($('meeting-date').value);
   if (meeting) await showMeeting(meeting);
-  else { currentMeeting = null; renderMeetingDetails($('meeting-details'),null,null); updateSaveState(); }
+  else { currentMeeting = null; warnNavigation('No hay una reunión del horario en esta fecha. Las notas guardadas siguen disponibles en su grupo.'); updateSaveState(); }
 });
 $('meeting-select').addEventListener('change', async () => {
   const meeting = meetingsForDay(startupCommon,$('meeting-date').value).find(m => m.meetingId === $('meeting-select').value);
@@ -1280,10 +1306,20 @@ for (const id of ['general-notes-dialog', 'module-profile-dialog']) $(id).addEve
   if (catalog && !$('connection-menu').open) $('connection-status').focus({ preventScroll: true });
 });
 $('module-select').addEventListener('change', async () => {
-  if (navigationBlocked()) { restoreUnitSelection(); return; }
+  if (!$('module-select').value.startsWith('@') && navigationBlocked()) { restoreUnitSelection(); return; }
+  if($('module-select').value.startsWith('@')){
+    if(busy||meetingsUI.hasPending()||document.querySelector('dialog[open]')){restoreUnitSelection();return;}
+    fillUnits();
+    await meetingsUI.openGroup($('module-select').value.slice(1),$('unit-select').value==='*'?null:$('unit-select').value);
+    return;
+  }
   fillUnits(); message('library-message'); await openSelectedUnit();
 });
 $('unit-select').addEventListener('change', async () => {
+  if($('module-select').value.startsWith('@')){
+    if(busy||meetingsUI.hasPending()||document.querySelector('dialog[open]')){restoreUnitSelection();return;}
+    await meetingsUI.openGroup($('module-select').value.slice(1),$('unit-select').value==='*'?null:$('unit-select').value);return;
+  }
   if (navigationBlocked()) { restoreUnitSelection(); return; }
   message('library-message'); await openSelectedUnit();
 });
@@ -1467,5 +1503,12 @@ const moduleViews = createModuleViews({
   onPreparation: entry => preparationUI.open(entry),
 });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && draft) { renderSessionBand(); moduleViews.render(); } });
+const meetingsUI = createMeetingWorkspace({
+  getCatalog:()=>catalog,getReader:()=>meetingReader,getCommon:()=>startupCommon,
+  isBusy:()=>busy,setBusy,onStateChange:updateSaveState,
+  onLocation:syncMeetingSelection,onRemember:rememberContext,
+  onShow:()=>{setWorkspaceView('meeting');$('workspace').hidden=false;},
+  onWarning:warnNavigation,
+});
 setInterval(() => { if (draft && $('session-band').dataset.today !== madridToday()) { renderSessionBand(); moduleViews.render(); } }, 60000);
 updateSaveState();

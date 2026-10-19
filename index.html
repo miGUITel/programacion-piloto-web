@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261019-context">
-  <script type="module" src="./app.mjs?v=20261019-context"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261019-meetings">
+  <script type="module" src="./app.mjs?v=20261019-meetings"></script>
 </head>
 <body>
   <header class="app-header">
@@ -94,9 +94,18 @@
         </section>
         </div>
         <section id="meeting-view" class="meeting-view" aria-label="Reuniones" hidden>
-          <div class="meeting-toolbar"><label>Fecha<input id="meeting-date" type="date"></label><label>Reunión<select id="meeting-select"></select></label><button id="meeting-return" type="button" class="button">Volver a la UT</button></div>
+          <div class="meeting-hub-heading"><h2 id="meeting-space-title">Reuniones</h2><div class="meeting-hub-actions"><button id="meeting-new" type="button" class="button button-primary">Nueva reunión</button><button id="meeting-all" type="button" class="button">Ver todas</button><button id="meeting-update" type="button" class="button">Actualizar</button><button id="meeting-return" type="button" class="button">Volver a la UT</button></div></div>
           <p id="meeting-draft-note" class="message warning" hidden>Las notas pendientes de la UT se conservan. Vuelve a ella para guardarlas.</p>
-          <div id="meeting-details" class="meeting-details"></div>
+          <p id="meetings-message" class="message" role="status" aria-live="polite" hidden></p>
+          <div class="meeting-hub-layout"><nav id="meeting-history" class="meeting-history" aria-label="Reuniones guardadas"></nav>
+          <form id="meeting-form"><section id="meeting-editor" hidden>
+            <div class="meeting-form-meta"><label>Fecha<input id="meeting-record-date" type="date" required></label><label>Título<input id="meeting-record-title" type="text" required></label></div>
+            <label>Temas previstos<textarea id="meeting-topics" rows="3" placeholder="Un tema por línea"></textarea></label>
+            <label>Mis ruegos y propuestas<textarea id="meeting-requests" rows="3" placeholder="Un ruego o propuesta por línea"></textarea></label>
+            <label>Notas de la reunión<textarea id="meeting-notes" rows="8"></textarea></label>
+            <div class="meeting-hub-actions"><button id="meeting-download" type="button" class="button" hidden>Descargar borrador</button><button id="meeting-discard" type="button" class="button" hidden>Descartar borrador</button><button id="meeting-save" type="submit" class="button button-primary">Guardar reunión</button></div>
+          </section></form></div>
+          <details class="meeting-schedule-picker"><summary>Consultar una convocatoria del horario</summary><div class="meeting-toolbar"><label>Fecha del horario<input id="meeting-date" type="date"></label><label>Reunión del horario<select id="meeting-select"></select></label></div></details>
         </section>
         <section id="module-view" aria-label="Vista general del módulo" hidden>
           <nav class="module-sections" aria-label="Consultas del módulo"><button id="module-tab-sessions" class="layout-button" type="button" aria-pressed="true">Sesiones</button><button id="module-tab-timetable" class="layout-button" type="button" aria-pressed="false">Horario</button><button id="module-tab-calendar" class="layout-button" type="button" aria-pressed="false">Calendario escolar</button><button id="module-tab-evaluations" class="layout-button" type="button" aria-pressed="false">Evaluaciones</button></nav>
