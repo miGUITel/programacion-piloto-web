@@ -2,7 +2,7 @@
 
 ## Cabecera compacta
 
-Las franjas de sesiones y porciones son independientes, de 4 px cada una: gris temporal a la izquierda, azul de tarea inmediatamente a su derecha o naranja de examen; cuando coinciden ambos, gris → azul → naranja. El carril gris se reserva incluso antes de comenzar el horario. Solo el gris crece con el tiempo; las marcas académicas ocupan toda la altura. La cabecera refleja los tipos de la sesión y las porciones sus asignaciones propias, respetando la selección manual. Se conservan los fondos y el seguimiento; no se modifican los JSON.
+El gris temporal permanece en el extremo izquierdo de sesiones y porciones, con su carril de 4 px siempre reservado. Azul y naranja se sitúan en el borde izquierdo del bloque de título, después de la fecha/número de sesión o del horario. En móvil, si el horario está encima del título de la porción, la marca académica acompaña al título sin mover el gris. Si coinciden tarea y examen, se conservan ambas franjas, azul y naranja, de 4 px cada una. Solo el gris crece con el tiempo; se conservan los fondos, la selección manual, los borradores y el seguimiento. No se modifican los JSON.
 
 El indicador de tiempo previsto transcurrido usa gris grafito (`#59636b`) tanto en el borde izquierdo de sesiones y actividades como en las muestras de sus leyendas y la banda temporal. El naranja se reserva para exámenes y el azul para tareas. El cambio es solo de color: conserva posición, proporción, actualización temporal, accesos y seguimiento; no escribe datos.
 
