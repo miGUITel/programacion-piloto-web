@@ -1206,3 +1206,18 @@ textarea{resize:vertical;line-height:1.6}
   .login-card > p:not(#login-message) { margin-top:16px; }
   .login-card .repository-card { margin:16px 0 0; }
 }
+
+/* Local context and the initial meeting reader. */
+.meeting-view { padding:20px 0; }
+.meeting-toolbar { display:flex; gap:12px; align-items:end; flex-wrap:wrap; }
+.meeting-toolbar label { margin:0; min-width:160px; }
+.meeting-toolbar input,.meeting-toolbar select { display:block; width:100%; min-height:44px; margin-top:6px; }
+.meeting-toolbar select { max-width:min(600px,85vw); }
+.meeting-details { max-width:1000px; padding:20px 0; overflow-wrap:anywhere; }
+.meeting-details h2 { font-size:24px; margin-bottom:8px; }
+.meeting-details h3 { font-size:18px; margin:22px 0 8px; }
+.meeting-details li,.meeting-notes { white-space:pre-wrap; line-height:1.6; }
+.meeting-empty { margin:24px 0; color:var(--muted); }
+.meeting-footnote { margin-top:24px; }
+.workspace[data-view="meeting"] .workspace-footer { display:none; }
+@media(max-width:680px) { .meeting-toolbar label { flex:1 1 100%; min-width:0; } .meeting-toolbar select { max-width:100%; } .meeting-toolbar .button { min-height:44px; } }

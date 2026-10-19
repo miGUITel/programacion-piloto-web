@@ -1,3 +1,6 @@
+import { createContextMemory, catalogEntries, chooseStartup, resolveRemembered, unitContext, meetingContext, meetingsForDay, madridClock } from './startup-context.mjs?v=20261019-context';
+import { MeetingReader } from './meeting-reader.mjs?v=20261019-context';
+import { renderMeetingDetails } from './meeting-view.mjs?v=20261019-context';
 import { createResourcesUI } from './resources-ui.mjs?v=20261018-rf12b';
 import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-rf12';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261018-rf12';
@@ -42,6 +45,10 @@ let failedSave = false;
 let editorTarget = null;
 let lastConfirmedAt = null;
 let currentView = 'unit';
+const contextMemory = createContextMemory();
+let startupCommon = null, currentMeeting = null, resumeContext = null, selectedSessionId = null, meetingReader = null;
+let startingNavigation = false;
+const navigationWarnings = new Set();
 
 // Unit draft and independent task transactions share confirmed source snapshots.
 function libraryRecords() { return draft ? [...moduleDocuments.values(), { entry: activeEntry, document: draft }] : []; }
@@ -129,8 +136,14 @@ function updateSaveState() {
   disk.setAttribute('aria-label', dirty() ? `Guardar cambios de Unidad. ${description}` : description);
   disk.setAttribute('aria-busy', String(busy));
   $('workspace-nav').hidden = !draft;
-  $('refresh').hidden = !draft;
-  disk.hidden = !draft;
+  $('refresh').hidden = !draft || currentView === 'meeting';
+  disk.hidden = !draft || currentView === 'meeting';
+  $('open-meetings').disabled = busy || !catalog || Boolean(document.querySelector('dialog[open]'));
+  $('resume-context').hidden = !catalog || !resumeContext;
+  $('resume-context').disabled = busy || Boolean(document.querySelector('dialog[open]'));
+  $('meeting-return').hidden = !draft;
+  $('meeting-draft-note').hidden = !dirty();
+  $('meeting-select').disabled = busy || !$('meeting-select').options.length;
   $('open-suggestions').hidden = !catalog;
   updateConnectionState();
   $('save').disabled = busy || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen() || resourcesUI.isOpen());
@@ -228,7 +241,7 @@ function acceptCatalog(result) {
   updateConnectionState();
 }
 
-async function loadSelectedDocument() {
+async function loadSelectedDocument(preloaded = null) {
   const entry = selectedEntry();
   if (!entry || !connection || hasPendingChanges() || blockedSave || $('editor').open || generalNotesUI.hasPending() || generalNotesUI.isOpen()) return false;
   if (entry.path === activeEntry?.path) return true;
@@ -237,7 +250,7 @@ async function loadSelectedDocument() {
   try {
     const candidate = documentStores.get(entry.path) ?? connection.forDocument(entry);
     documentStores.set(entry.path, candidate);
-    const result = await candidate.load();
+    const result = preloaded?.get(entry.path) ?? await candidate.load();
     // Do not replace the current document, its SHA or its store until the new read is valid.
     checked(result.document, entry);
     if (typeof result.sha !== 'string' || !result.sha) throw new Error('MissingVersion');
@@ -246,9 +259,10 @@ async function loadSelectedDocument() {
     moduleContextReady = false;
     moduleLoadFailures = [];
     moduleDocuments.clear();
-    openSessions.clear();
+    openSessions.clear(); selectedSessionId = null;
     acceptLoaded(result);
-    await loadModuleContext();
+    await loadModuleContext(preloaded);
+    rememberUnit();
     message('library-message');
     $('unit-title').focus({ preventScroll: true });
     return true;
@@ -300,7 +314,7 @@ async function openModuleSource(path, sessionId) {
   const index = sessionId ? draft.sessions.findIndex(session => session.id === sessionId) : -1;
     selectWorkspaceView('unit');
     if (index >= 0) {
-      openSessions.add(sessionId); renderSessions();
+      openSessions.add(sessionId); renderSessions(); rememberUnit(sessionId);
       const section = $('sessions').querySelector(`[data-session-index="${index}"]`);
       section?.scrollIntoView({ block: 'start', behavior: 'instant' });
       section?.querySelector('.session-title')?.focus({ preventScroll: true });
@@ -323,24 +337,32 @@ async function correctTask(task, value) {
 }
 
 function selectWorkspaceView(view) {
-  if (!['unit', 'module', 'tasks', 'preparation'].includes(view) || busy || sessionEditorUI.isOpen() || resourcesUI.isOpen() || $('editor').open) return;
+  if (!['unit', 'module', 'tasks', 'preparation'].includes(view) || !draft || busy || document.querySelector('dialog[open]')) return;
+  const leavingMeeting = currentView === 'meeting';
+  setWorkspaceView(view);
+  if (leavingMeeting) rememberUnit();
+}
+function setWorkspaceView(view) {
   currentView = view;
-  for (const name of ['unit', 'module', 'tasks', 'preparation']) {
+  $('workspace').dataset.view = view;
+  for (const name of ['unit', 'module', 'tasks', 'preparation', 'meeting']) {
     $(name + '-view').hidden = name !== view;
-    $('view-' + name).setAttribute('aria-pressed', String(name === view));
+    $('view-' + name)?.setAttribute('aria-pressed', String(name === view));
   }
   updateGlobalExpansion();
   renderStats();
   if (draft) moduleViews.render();
   preparationUI.render();
+  updateSaveState();
 }
 
 
-async function loadModuleContext() {
+async function loadModuleContext(preloaded = null) {
   if (!connection || !activeEntry || !catalog) return;
   const entries = catalog.modules.flatMap(module => module.units.filter(unit => unit.path !== activeEntry.path).map(unit => ({ moduleCode: module.code, unitCode: unit.code, unitId: unit.id, path: unit.path })));
   moduleDocuments.clear(); moduleLoadFailures = []; moduleContextReady = false;
   const results = await Promise.allSettled(entries.map(async entry => {
+    if (preloaded) { const cached = preloaded.get(entry.path); if (!cached) throw new Error('StartupReadFailed'); return cached; }
     const candidate = documentStores.get(entry.path) ?? connection.forDocument(entry);
     documentStores.set(entry.path, candidate);
     const result = await candidate.load();
@@ -685,7 +707,7 @@ function makeSession(session, sessionIndex, heading) {
   session.activities.slice(1).forEach((activity, index) => body.append(makeActivity(activity, sessionIndex, index + 1)));
   toggle.addEventListener('click', () => {
     if (busy) return;
-    if (openSessions.has(session.id)) openSessions.delete(session.id); else openSessions.add(session.id);
+    if (openSessions.has(session.id)) openSessions.delete(session.id); else { openSessions.add(session.id); rememberUnit(session.id); }
     const next = openSessions.has(session.id);
     body.hidden = !next;
     toggle.textContent = next ? '−' : '+';
@@ -700,6 +722,7 @@ function makeSession(session, sessionIndex, heading) {
 }
 
 function renderStats() {
+  if (currentView === 'meeting') { $('stats').hidden = true; return; }
   if (!draft) return;
   const summary = summarize(draft);
   const stats = $('stats');
@@ -764,6 +787,7 @@ function renderSessionBand() {
     button.title = label; button.setAttribute('aria-label', label);
     button.addEventListener('click', () => {
       if (busy) return;
+      rememberUnit(draft.sessions[item.index]?.id);
       const section = $('sessions').querySelector(`[data-session-index="${item.index}"]`);
       section?.scrollIntoView({ block: 'start', behavior: 'instant' });
       section?.querySelector('.session-title')?.focus({ preventScroll: true });
@@ -797,6 +821,135 @@ function acceptLoaded(result) {
   render();
 }
 
+
+function warnNavigation(content) {
+  if (content) navigationWarnings.add(content);
+  message('navigation-message', [...navigationWarnings].join(' '), 'warning');
+}
+function rememberContext(context) {
+  if (!catalog || startingNavigation) return;
+  const result = contextMemory.write(catalog, context);
+  if (result.warning) warnNavigation(result.warning);
+}
+function rememberUnit(sessionId = selectedSessionId) {
+  if (!activeEntry || !draft) return;
+  selectedSessionId = draft.sessions.some(s => s.id === sessionId) ? sessionId : null;
+  rememberContext(unitContext(activeEntry, selectedSessionId));
+}
+function focusContextSession(sessionId) {
+  const index = draft?.sessions.findIndex(s => s.id === sessionId) ?? -1;
+  if (index < 0) return;
+  selectedSessionId = sessionId;
+  openSessions.add(sessionId); renderSessions();
+  const section = $('sessions').querySelector(`[data-session-index="${index}"]`);
+  section?.scrollIntoView({ block:'start', behavior:'instant' });
+  section?.querySelector('.session-title')?.focus({ preventScroll:true });
+  rememberUnit(sessionId);
+}
+function fillMeetingPicker(on, preferredId = '') {
+  $('meeting-date').value = on;
+  const meetings = meetingsForDay(startupCommon, on), select = $('meeting-select');
+  select.replaceChildren();
+  for (const meeting of meetings) {
+    const option = node('option', '', `${meeting.start} · ${meeting.title}`);
+    option.value = meeting.meetingId; select.append(option);
+  }
+  if (meetings.some(m => m.meetingId === preferredId)) select.value = preferredId;
+  select.disabled = busy || !meetings.length;
+  return meetings.find(m => m.meetingId === select.value) ?? null;
+}
+async function showMeeting(meeting, initial = false) {
+  if (!connection || (!initial && (busy || document.querySelector('dialog[open]')))) return false;
+  if (!initial) setBusy(true);
+  try {
+    currentMeeting = meeting;
+    fillMeetingPicker(meeting.date, meeting.meetingId);
+    setWorkspaceView('meeting');
+    $('login-view').hidden = true; $('workspace').hidden = false;
+    let record = null, error = '';
+    try {
+      const result = await meetingReader.load(catalog);
+      record = result.document?.meetings.find(r => r.meetingId === meeting.meetingId && r.date === meeting.date) ?? null;
+    } catch { error = 'No se han podido leer los temas y notas previstos. El título procede del horario; no se da su contenido por vacío.'; }
+    renderMeetingDetails($('meeting-details'), meeting, record, error);
+    rememberContext(meetingContext(meeting));
+    $('meeting-details').querySelector('h2')?.focus({ preventScroll:true });
+    return true;
+  } finally { if (!initial) setBusy(false); }
+}
+async function openMeetings(preferred = null) {
+  if (!connection || busy || document.querySelector('dialog[open]')) return;
+  setBusy(true);
+  try {
+    try { startupCommon = (await connection.loadCommon(catalog)).document; }
+    catch { startupCommon = null; warnNavigation('No se puede consultar el horario vigente de reuniones. La unidad y sus notas pendientes se conservan.'); return; }
+    const on = preferred?.date ?? madridClock().date;
+    const meeting = fillMeetingPicker(on, preferred?.meetingId);
+    if (preferred && (!meeting || meeting.meetingId !== preferred.meetingId)) {
+      warnNavigation('La reunión recordada ya no corresponde al horario vigente. Elige otra fecha o reunión.');
+    }
+    if (meeting) await showMeeting(meeting, true);
+    else {
+      currentMeeting = null; setWorkspaceView('meeting');
+      $('workspace').hidden = false;
+      renderMeetingDetails($('meeting-details'), null, null);
+    }
+  } finally { setBusy(false); }
+}
+async function resumePreviousContext() {
+  if (!catalog || busy || document.querySelector('dialog[open]')) return;
+  if (resumeContext?.type === 'meeting') return openMeetings(resumeContext);
+  const previous = resolveRemembered(resumeContext, catalog, startupCommon);
+  if (!previous) { warnNavigation('El contexto anterior ya no está disponible. Elige una unidad.'); return; }
+  if (draft) {
+    if (!await ensureSourceUnit(previous.path)) return;
+  } else {
+    if (navigationBlocked()) return;
+    $('module-select').value = previous.entry.moduleCode; fillUnits(previous.entry.unitCode);
+    await openSelectedUnit();
+    if (activeEntry?.path !== previous.path) return;
+  }
+  selectWorkspaceView('unit'); focusContextSession(previous.sessionId); rememberUnit();
+}
+async function initializeContext() {
+  startingNavigation = true;
+  const memory = contextMemory.read(catalog);
+  resumeContext = memory.context;
+  if (memory.warning) warnNavigation(memory.warning);
+  const entries = catalogEntries(catalog);
+  const [commonResult, records] = await Promise.all([
+    connection.loadCommon(catalog).then(r => r.document).catch(() => null),
+    Promise.allSettled(entries.map(async entry => {
+      const candidate = documentStores.get(entry.path) ?? connection.forDocument(entry);
+      documentStores.set(entry.path, candidate);
+      const result = await candidate.load(); checked(result.document, entry);
+      if (!result.sha) throw new Error('MissingVersion');
+      return { entry, document:result.document, sha:result.sha };
+    })),
+  ]);
+  startupCommon = commonResult;
+  const loaded = new Map(), failures = [];
+  records.forEach((r,i) => { if (r.status === 'fulfilled') loaded.set(entries[i].path,r.value); else failures.push(entries[i]); });
+  const decision = chooseStartup({ catalog, common:startupCommon, records:[...loaded.values()], failures, remembered:resumeContext });
+  const target = decision.target;
+  if (decision.warning) warnNavigation(decision.warning);
+  const preferred = target?.type === 'unit' ? loaded.get(target.path) : null;
+  const selected = resolveRemembered(resumeContext,catalog,startupCommon);
+  const fallback = selected?.type === 'unit' ? loaded.get(selected.path) : null;
+  const seed = preferred ?? fallback ?? loaded.get(selectedEntry()?.path) ?? loaded.values().next().value;
+  if (seed) {
+    $('module-select').value = seed.entry.moduleCode; fillUnits(seed.entry.unitCode);
+    await loadSelectedDocument(loaded);
+  } else warnNavigation('No se ha podido abrir ninguna UT. Se conservan los selectores para reintentar.');
+  startingNavigation = false;
+  if (target?.type === 'meeting') await showMeeting(target.meeting,true);
+  else if (draft) {
+    setWorkspaceView('unit');
+    if (target?.path === activeEntry.path) focusContextSession(target.sessionId);
+    rememberUnit();
+  }
+}
+
 async function connect(event) {
   event.preventDefault();
   if (busy) return;
@@ -805,6 +958,7 @@ async function connect(event) {
   if (!token) return;
   try {
     connection = new GithubStore({ token });
+    meetingReader = new MeetingReader({ token });
     suggestionsUI.connect(token);
     generalNotesUI.connect(token);
     registryUI.connect(token);
@@ -813,11 +967,12 @@ async function connect(event) {
     message('login-message', 'Comprobando acceso y leyendo el catálogo privado…');
     acceptCatalog(await connection.loadCatalog());
     message('login-message');
-    await loadSelectedDocument();
+    await initializeContext();
   } catch (error) {
     token = '';
     store = null;
     connection = null;
+    meetingReader?.clear(); meetingReader = null;
     suggestionsUI.disconnect();
     generalNotesUI.disconnect();
     registryUI.disconnect();
@@ -845,7 +1000,7 @@ async function connect(event) {
       ? `${explanation} [${error.code}]`
       : 'No se ha podido abrir el cuaderno por un error interno o una respuesta inesperada. No se ha modificado ningún dato. [CONNECTION_ERROR]', 'error');
   } finally {
-    token = '';
+    token = ''; startingNavigation = false;
     setBusy(false);
   }
 }
@@ -863,6 +1018,7 @@ function disconnect() {
   editorTarget = null;
   store = null;
   connection = null;
+  meetingReader?.clear(); meetingReader = null;
   documentStores.clear();
   moduleDocuments.clear(); moduleLoadFailures = []; moduleContextReady = false;
   teachingTimeline = { sessions: [], exams: [], errors: [] }; examReminders = [];
@@ -892,6 +1048,10 @@ function disconnect() {
   $('task-presented').checked = false; $('task-corrected').checked = false;
   $('task-target-help').textContent = ''; $('task-fields').hidden = true;
   currentView = 'unit';
+  startupCommon = null; currentMeeting = null; resumeContext = null; selectedSessionId = null;
+  navigationWarnings.clear(); message('navigation-message');
+  $('meeting-details').replaceChildren(); $('meeting-select').replaceChildren(); $('meeting-date').value = '';
+  $('meeting-view').hidden = true; delete $('workspace').dataset.view;
   for (const name of ['unit', 'module', 'tasks', 'preparation']) {
     $(name + '-view').hidden = name !== 'unit'; $('view-' + name).setAttribute('aria-pressed', String(name === 'unit'));
   }
@@ -1082,6 +1242,19 @@ function toggleAllSessions() {
   $('toggle-sessions').focus({ preventScroll: true });
 }
 
+$('open-meetings').addEventListener('click', () => openMeetings());
+$('resume-context').addEventListener('click', resumePreviousContext);
+$('meeting-return').addEventListener('click', () => selectWorkspaceView('unit'));
+$('meeting-date').addEventListener('change', async () => {
+  if (busy) return;
+  const meeting = fillMeetingPicker($('meeting-date').value);
+  if (meeting) await showMeeting(meeting);
+  else { currentMeeting = null; renderMeetingDetails($('meeting-details'),null,null); updateSaveState(); }
+});
+$('meeting-select').addEventListener('change', async () => {
+  const meeting = meetingsForDay(startupCommon,$('meeting-date').value).find(m => m.meetingId === $('meeting-select').value);
+  if (meeting) await showMeeting(meeting);
+});
 $('login-form').addEventListener('submit', connect);
 $('disconnect').addEventListener('click', disconnect);
 $('unit-information-open').addEventListener('click', () => {

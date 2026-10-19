@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261019-rf18">
-  <script type="module" src="./app.mjs?v=20261018-rf12b"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261019-context">
+  <script type="module" src="./app.mjs?v=20261019-context"></script>
 </head>
 <body>
   <header class="app-header">
@@ -30,6 +30,8 @@
         <details id="connection-menu" class="connection-menu">
           <summary id="connection-status" class="toolbar-icon" aria-label="Sin conectar. Opciones del cuaderno" title="Sin conectar. Opciones del cuaderno"><span id="connection-label" class="connection-label" role="img" aria-label="Sin conectar"><span class="status-dot" aria-hidden="true"></span></span></summary>
           <div class="toolbar-menu">
+            <button id="resume-context" class="button toolbar-menu-action" type="button" hidden>Continuar donde estaba</button>
+            <button id="open-meetings" class="button toolbar-menu-action" type="button" disabled>Reuniones</button>
             <div id="stats" class="stats toolbar-summary" aria-label="Resumen de la unidad" hidden></div>
             <button id="module-profile" class="button toolbar-menu-action" type="button" aria-haspopup="dialog" aria-controls="module-profile-dialog" disabled><span class="menu-info-icon" aria-hidden="true">i</span><span>Información del módulo</span></button>
             <button id="module-improvements" class="button general-improvements toolbar-menu-action" type="button" aria-label="Mejoras generales del módulo" aria-haspopup="dialog" aria-controls="general-notes-dialog" disabled>Mejoras del módulo</button>
@@ -42,6 +44,7 @@
         <span id="save-state" class="visually-hidden" role="status" aria-live="polite"></span>
       </div>
     </div>
+    <p id="navigation-message" class="message" role="status" aria-live="polite" hidden></p>
     <p id="selection-help" class="selection-help" role="status" hidden></p>
     <p id="library-message" class="message" role="status" aria-live="polite" hidden></p>
   </header>
@@ -90,6 +93,11 @@
           <p class="scope-note">Enunciados, fichas docentes, materiales y herramientas. Los enlaces no cambian la preparación de la UT.</p><div id="resources-list"></div>
         </section>
         </div>
+        <section id="meeting-view" class="meeting-view" aria-label="Reuniones" hidden>
+          <div class="meeting-toolbar"><label>Fecha<input id="meeting-date" type="date"></label><label>Reunión<select id="meeting-select"></select></label><button id="meeting-return" type="button" class="button">Volver a la UT</button></div>
+          <p id="meeting-draft-note" class="message warning" hidden>Las notas pendientes de la UT se conservan. Vuelve a ella para guardarlas.</p>
+          <div id="meeting-details" class="meeting-details"></div>
+        </section>
         <section id="module-view" aria-label="Vista general del módulo" hidden>
           <nav class="module-sections" aria-label="Consultas del módulo"><button id="module-tab-sessions" class="layout-button" type="button" aria-pressed="true">Sesiones</button><button id="module-tab-timetable" class="layout-button" type="button" aria-pressed="false">Horario</button><button id="module-tab-calendar" class="layout-button" type="button" aria-pressed="false">Calendario escolar</button><button id="module-tab-evaluations" class="layout-button" type="button" aria-pressed="false">Evaluaciones</button></nav>
           <div id="module-sessions-panel">
