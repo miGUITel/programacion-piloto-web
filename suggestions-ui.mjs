@@ -9,6 +9,8 @@ export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademic
   let entry = null;
   let uncertain = false;
   let saved = false;
+  let returnOrigin = null;
+  const launchers = [ $('open-suggestions') ];
 
   const hasPending = () => !saved && Boolean(entry || $('suggestion-title').value || $('suggestion-description').value);
   function message(content = '', kind = '') {
@@ -18,10 +20,13 @@ export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademic
   }
   function updateAvailability() {
     const busy = isBusy();
-    $('open-suggestions').disabled = busy || !store || isAcademicEditorOpen();
-    $('open-suggestions').title = store ? 'Sugerir mejoras de la aplicación, no de los cursos' : 'Conecta con GitHub para enviar una sugerencia';
-    $('open-suggestions').classList.toggle('has-content', hasPending());
-    $('open-suggestions').setAttribute('aria-label', `Sugerencias sobre la aplicación${hasPending() ? ' · Borrador pendiente' : ''}`);
+    for (const button of launchers) {
+      button.disabled = busy || !store || (button === $('open-suggestions') && isAcademicEditorOpen());
+      if (button !== $('open-suggestions')) button.hidden = !store;
+      button.title = store ? 'Sugerencias sobre la aplicación' : 'Conecta con GitHub para enviar una sugerencia';
+      button.classList.toggle('has-content', hasPending());
+      button.setAttribute('aria-label', `Sugerencias sobre la aplicación${hasPending() ? ' · Borrador pendiente' : ''}`);
+    }
     for (const id of inputs) $(id).disabled = busy || Boolean(entry) || saved;
     $('send-suggestion').disabled = busy || !store || uncertain || saved;
     $('send-suggestion').hidden = saved;
@@ -92,9 +97,21 @@ export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademic
   }
   function close() {
     if (isBusy()) return;
+    const origin = returnOrigin; returnOrigin = null;
     dialog.close();
     onStateChange();
-    $('open-suggestions').focus();
+    // Global busy controls may have toggled callers while the suggestion was saved.
+    for (const state of origin?.controls ?? []) {
+      if (state.element.isConnected && state.element.closest('dialog')?.open) state.element.disabled = state.disabled;
+    }
+    const target = origin?.button.isConnected && origin.host?.open ? origin.button : $('open-suggestions');
+    target.focus({ preventScroll: true });
+    for (const selection of origin?.selections ?? []) {
+      if (selection.element.isConnected) selection.element.setSelectionRange(selection.start, selection.end, selection.direction);
+    }
+    for (const position of origin?.scrolls ?? []) {
+      if (position.element.isConnected) { position.element.scrollLeft = position.left; position.element.scrollTop = position.top; }
+    }
   }
   function download() {
     if (isBusy() || !hasPending()) return;
@@ -108,14 +125,36 @@ export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademic
     anchor.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  $('open-suggestions').addEventListener('click', () => {
-    if (isBusy() || !store || isAcademicEditorOpen()) return;
+  function openFrom(button) {
+    const host = button.closest('dialog');
+    if (isBusy() || !store || dialog.open || (host ? !host.open : isAcademicEditorOpen())) return;
+    const scrollElements = [document.scrollingElement, host, ...(host?.querySelectorAll('*') ?? [])]
+      .filter(element => element && (element === host || element === document.scrollingElement || element.scrollHeight > element.clientHeight || element.scrollWidth > element.clientWidth));
+    const callers = [...document.querySelectorAll('dialog[open]')].filter(caller => caller !== dialog);
+    const controls = callers.flatMap(caller => [...caller.querySelectorAll('button,input,textarea,select')]).map(element => ({ element, disabled: element.disabled }));
+    const selections = controls.filter(({ element }) => typeof element.selectionStart === 'number').map(({ element }) => ({ element, start: element.selectionStart, end: element.selectionEnd, direction: element.selectionDirection }));
+    returnOrigin = { button, host, controls, selections, scrolls: scrollElements.map(element => ({ element, left: element.scrollLeft, top: element.scrollTop })) };
     if (saved) reset();
+    $('suggestions-return-info').hidden = !host;
+    // The caller stays open in the modal stack: no close, apply or save is sent to it.
     dialog.showModal();
     updateAvailability();
     if (!entry && !saved) $('suggestion-title').focus();
     else $('hide-suggestions').focus();
-  });
+  }
+  for (const host of document.querySelectorAll('dialog')) {
+    if (host === dialog) continue;
+    const header = host.querySelector('header'); if (!header) continue;
+    const button = $('open-suggestions').cloneNode(true);
+    button.id = 'suggestions-from-' + host.id; button.className = 'button dialog-suggestions'; button.hidden = true;
+    button.dataset.suggestionsLauncher = host.id;
+    const actions = document.createElement('div'); actions.className = 'dialog-header-actions';
+    const closeButton = [...header.children].find(element => element.tagName === 'BUTTON');
+    header.append(actions); actions.append(button);
+    if (closeButton) actions.append(closeButton);
+    launchers.push(button);
+  }
+  for (const button of launchers) button.addEventListener('click', () => openFrom(button));
   $('suggestions-form').addEventListener('submit', send);
   $('suggestions-form').addEventListener('input', () => { updateAvailability(); onStateChange(); });
   $('close-suggestions').addEventListener('click', close);
@@ -126,7 +165,7 @@ export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademic
   $('new-suggestion').addEventListener('click', () => { if (!isBusy() && saved) { reset(); $('suggestion-title').focus(); } });
   return {
     connect(token) { store = new SuggestionsStore({ token }); },
-    disconnect() { dialog.close(); store = null; reset(); },
+    disconnect() { returnOrigin = null; dialog.close(); store = null; reset(); },
     hasPending,
     updateAvailability,
   };

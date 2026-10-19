@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
-  <link rel="stylesheet" href="./styles.css?v=20261019-meeting-calendar">
-  <script type="module" src="./app.mjs?v=20261019-meeting-calendar"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261019-rf16">
+  <script type="module" src="./app.mjs?v=20261019-rf16"></script>
 </head>
 <body>
   <header class="app-header">
@@ -229,6 +229,7 @@
       <header class="suggestions-header"><div><p class="eyebrow">MEJORAR LA APLICACIÓN</p><h2 id="suggestions-title">Tu idea para la app</h2></div><button id="close-suggestions" type="button" class="icon-button" aria-label="Cerrar sugerencias">×</button></header>
       <div class="suggestions-content">
         <p id="suggestions-scope">Para mejoras, errores o ideas sobre esta web. Para el planteamiento de tus cursos usa las Mejoras junto al módulo o la UT; para una sesión, sus propios botones.</p>
+        <p id="suggestions-return-info" class="field-help" hidden>Al cerrar volverás a la ventana anterior con sus cambios pendientes.</p>
         <p class="field-help">Registro privado en GitHub, separado de las UT. Solo se envían los campos de este formulario, su identificador, fecha y estado. No incluyas contraseñas ni datos personales del alumnado.</p>
         <label for="suggestion-type">Tipo</label><select id="suggestion-type"><option value="mejora">Mejora</option><option value="error">Error</option><option value="idea">Idea</option></select>
         <label for="suggestion-title">Título breve</label><input id="suggestion-title" type="text" required maxlength="120" placeholder="¿Qué te gustaría mejorar?">
