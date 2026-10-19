@@ -2,6 +2,10 @@
 
 ## Cabecera compacta
 
+La barra superior permanece visible al desplazarse, con una fila en escritorio y dos en móvil, sin aumentar su altura. Los saltos a sesiones dejan espacio para su altura real, también tras redimensionar o mostrar un aviso. El menú de conexión se desplaza internamente cuando no cabe en la pantalla; las ventanas de edición siguen por encima de la barra.
+
+Las cabeceras de las sesiones cuya fecha coincide con hoy en Europe/Madrid muestran un contorno discreto alrededor de la fecha y la indicación accesible «Hoy». Se actualiza al volver a la pestaña y periódicamente, sin añadir una fila ni cambiar los colores de tarea/examen, estado, preparación, notas o JSON. Es una referencia de fecha, no confirma impartición ni identifica una sesión como activa por horario.
+
 Las listas de UT se muestran por código en orden natural, incluidos los bloques y sufijos, independientemente del orden de incorporación al catálogo. La ordenación se aplica a la copia de consulta de la app y no cambia los JSON, identificadores ni sesiones. El indicador de preparación permanece editable junto al título **Sesiones**, antes de la leyenda de fecha pasada, sin una fila propia. A su lado, **ⓘ** abre la información de la unidad en una ventana de solo lectura: diseño, referencias, notas y materiales existentes. Solo aparece cuando hay contenido; no añade una fila ni modifica datos. Cerrar o Escape devuelve el foco al icono y conserva los borradores pendientes.
 
 Una fila en escritorio y dos hasta 760 px de ancho. Los selectores de módulo y UT quedan a la izquierda, junto a **UT**, **Mo**, **Ta · n** (tareas por corregir), una caja de herramientas para Preparación y **+ / −** para las sesiones. En móvil, las vistas ocupan la segunda fila y los controles mantienen al menos 44 px de pulsación. No se muestran la marca, el distintivo Piloto, textos de conexión ni hora de guardado.
