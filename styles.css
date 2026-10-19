@@ -690,27 +690,13 @@ textarea{resize:vertical;line-height:1.6}
 .workspace .teaching-check{display:inline-flex;align-items:center;gap:3px;margin:0;min-height:16px;font-size:10px;font-weight:500;color:#4d665f;line-height:1.3;cursor:pointer;white-space:nowrap}
 .workspace .teaching-check input{width:13px;height:13px;min-height:0;padding:0;margin:0;accent-color:#087b73;flex-shrink:0}
 .workspace .teaching-reset{border:1px solid #b7c9bf;border-radius:3px;padding:0 4px;min-height:18px;color:var(--teal);background:#fffefa;font-size:11px;line-height:1.2}
-.workspace .session.session-task{border-left:4px solid #216cba}
-.workspace .session.session-exam{border-left:4px solid #ce650a}
-.workspace .session.session-task.session-exam{border-left:4px solid #216cba;border-right:4px solid #ce650a}
-.workspace .activity.activity-task .activity-top{background:#dcecff;box-shadow:inset 4px 0 #216cba}
-.workspace .activity.activity-exam .activity-top{background:#ffe1c2;box-shadow:inset 4px 0 #ce650a}
+.workspace .activity.activity-task .activity-top{background:#dcecff}
+.workspace .activity.activity-exam .activity-top{background:#ffe1c2}
 .workspace .session-task .teaching-check:has(input[id^="teaching-task-"]:checked){color:#14518c;font-weight:650}
 .workspace .session-exam .teaching-check:has(input[id^="teaching-exam-"]:checked){color:#9b4600;font-weight:650}
 .workspace .session-top[data-event-type="task"]{background:#dcecff}
 .workspace .session-top[data-event-type="exam"]{background:#ffe1c2}
 
-/* Elapsed time uses the left edge beside the task/exam stripe. */
-.workspace :is(.session-top,.activity-top)[data-time-session]{position:relative}
-.workspace :is(.session-top,.activity-top)[data-time-session]::after{
-  content:"";position:absolute;left:0;top:0;width:4px;height:var(--time-elapsed,0%);
-  background:var(--time-graphite);pointer-events:none;
-}
-.workspace [data-time-state="active"]::after{min-height:3px}
-.workspace .session-top[data-event-type="task"]{box-shadow:inset 4px 0 #216cba}
-.workspace .session-top[data-event-type="exam"]{box-shadow:inset 4px 0 #ce650a}
-.workspace :is(.session-top[data-event-type="task"],.session-top[data-event-type="exam"])::after,
-.workspace .activity:is(.activity-task,.activity-exam) .activity-top::after{left:4px}
 .exam-reminders{display:flex;flex-direction:column;gap:6px;margin:6px 0}
 .workspace .exam-reminder{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff1df;border:1px solid #e6c197;color:#7e470c;padding:6px 10px;font-size:11px;line-height:1.4}
 .exam-reminder-text{display:flex;align-items:baseline;gap:5px 12px;flex-wrap:wrap;min-width:0}
@@ -1282,3 +1268,22 @@ html { scroll-padding-top:calc(var(--app-header-height, 0px) + 8px); }
 .dialog-suggestions svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
 .dialog-suggestions.has-content::after { content:""; width:7px; height:7px; border-radius:50%; background:#b95720; position:absolute; top:3px; right:3px; }
 dialog :is(.suggestions-header,.editor-header) > :first-child { min-width:0; overflow-wrap:anywhere; }
+
+/* Independent 4px lanes: elapsed time, then task, then exam. The grey lane is always reserved. */
+.workspace[data-layout] .session { border-left:0; border-right:0; }
+.workspace :is(.session-top,.activity-top)[data-time-session] { position:relative; padding-left:16px; }
+.workspace :is(.session-top,.activity-top)[data-time-session]::after {
+  content:""; position:absolute; left:0; top:0; width:4px; height:var(--time-elapsed,0%);
+  background:var(--time-graphite); pointer-events:none;
+}
+.workspace [data-time-state="active"]::after { min-height:3px; }
+.workspace [data-marker-types~="task"] { --academic-marker-width:4px; --academic-marker:#216cba; }
+.workspace [data-marker-types~="exam"] { --academic-marker-width:4px; --academic-marker:#ce650a; }
+.workspace [data-marker-types~="task"][data-marker-types~="exam"] {
+  --academic-marker-width:8px;
+  --academic-marker:linear-gradient(to right,#216cba 0 4px,#ce650a 4px 8px);
+}
+.workspace :is(.session-top,.activity-top)[data-time-session]::before {
+  content:""; position:absolute; left:4px; top:0; bottom:0; width:var(--academic-marker-width,0px);
+  background:var(--academic-marker,transparent); pointer-events:none;
+}
