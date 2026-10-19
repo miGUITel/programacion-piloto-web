@@ -1191,3 +1191,18 @@ textarea{resize:vertical;line-height:1.6}
 .private-markdown p { white-space:pre-wrap; }
 .private-markdown pre { overflow:auto; padding:12px; border:1px solid var(--line); border-radius:6px; }
 @media(max-width:600px) { .resources-dialog { width:calc(100vw - 16px); } .resource-form-grid { grid-template-columns:1fr; gap:0; } .resource-editor-row { display:flex; flex-direction:column; } .resource-link,.resource-private-link { min-height:44px; display:inline-flex; align-items:center; } }
+
+/* RF 18: keep mobile sign-in controls above introductory information. */
+@media(max-width:680px), (max-width:1000px) and (max-height:500px) {
+  .login-layout { display:flex; flex-direction:column; align-items:stretch; padding:12px 16px 24px; gap:24px; }
+  .login-card { order:-1; display:flex; flex-direction:column; padding:16px; }
+  .login-card > .card-kicker { display:none; }
+  .login-card > h2 { order:-3; margin:0 0 12px; font-size:22px; }
+  .login-card > #login-form { order:-2; display:flex; flex-direction:column; }
+  .login-card > #login-message { order:-1; }
+  #login-form #token { font-size:16px; min-height:44px; }
+  #login-form .connect-button { order:1; margin-top:12px; min-height:44px; }
+  #login-form .field-help { order:2; margin:12px 0 0; }
+  .login-card > p:not(#login-message) { margin-top:16px; }
+  .login-card .repository-card { margin:16px 0 0; }
+}
