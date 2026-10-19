@@ -1,4 +1,4 @@
-import { validateMeetingDocument } from './meeting-records.mjs?v=20261019-meetings';
+import { validateMeetingDocument, recordGroup } from './meeting-records.mjs?v=20261019-meeting-calendar';
 // Navigation preferences contain references only. Academic data stays remote.
 const object = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 const string = v => typeof v === 'string' && v.length > 0 && v.length <= 300;
@@ -68,10 +68,14 @@ export function resolveRemembered(context, catalog, common, meetingDocument = nu
     const entry = catalogEntries(catalog).find(x => x.path === safe.path && x.unitId === safe.unitId && x.moduleCode === safe.moduleCode);
     return entry ? { ...unitContext(entry, safe.sessionId), entry } : null;
   }
-  if(safe?.type==='meeting-group' && meetingDocument?.spaces?.some(s=>s.id===safe.space) && (safe.groupId===null||meetingDocument.groups?.some(g=>g.id===safe.groupId&&g.space===safe.space))) return safe;
+  if(safe?.type==='meeting-group' && meetingDocument?.spaces?.some(s=>['meetings','project'].includes(s.id))){
+    const group = safe.groupId ? meetingDocument.groups?.find(g=>g.id===safe.groupId) : safe.space==='project' ? meetingDocument.groups?.find(g=>g.space==='project'||g.id==='proyecto') : null;
+    if(safe.groupId&&(!group||(safe.space==='project'&&group.space!=='project'&&group.id!=='proyecto')))return null;
+    return meetingGroupContext('meetings',group?.id??null);
+  }
   if(safe?.type==='meeting'&&safe.recordId){
     const record=meetingDocument?.meetings.find(r=>r.id===safe.recordId&&r.date===safe.date);
-    return record?{...safe,record}:null;
+    return record?{...safe,space:'meetings',groupId:recordGroup(meetingDocument,record)?.id??safe.groupId,record}:null;
   }
   if (safe?.type === 'meeting') {
     const meeting = meetingsForDay(common, safe.date).find(x => x.meetingId === safe.meetingId);

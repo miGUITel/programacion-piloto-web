@@ -30,7 +30,7 @@ export const recordKey=r=>r.id??`schedule:${r.meetingId}:${r.date}`;
 export function recordGroup(doc,record){return doc?.groups?.find(g=>g.id===record.groupId)??doc?.groups?.find(g=>g.scheduleRefs.includes(record.meetingId))??null;}
 export function groupForSchedule(doc,meetingId){return doc?.groups?.find(g=>g.scheduleRefs.includes(meetingId))??null;}
 export function meetingHistory(doc,space,groupId=null){return (doc?.meetings??[]).filter(r=>{
-  const g=recordGroup(doc,r);return groupId?g?.id===groupId:(g?.space??'meetings')===space;
+  const g=recordGroup(doc,r);return groupId?g?.id===groupId:((g?.space??'meetings')===space||(space==='meetings'&&g?.space==='project'));
 }).slice().sort((a,b)=>b.date.localeCompare(a.date)||recordKey(a).localeCompare(recordKey(b)));}
 export function meetingTitle(doc,record,common){return record.title?.trim()||common?.timetable.weekly.find(s=>s.type==='meeting'&&s.id===record.meetingId)?.title||recordGroup(doc,record)?.title||'Reunión';}
 export function withMeetingRecord(doc,originalKey,draft){

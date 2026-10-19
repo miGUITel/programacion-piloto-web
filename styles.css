@@ -700,13 +700,17 @@ textarea{resize:vertical;line-height:1.6}
 .workspace .session-top[data-event-type="task"]{background:#dcecff}
 .workspace .session-top[data-event-type="exam"]{background:#ffe1c2}
 
-/* Right edge avoids the task/exam markers on the left; no layout shift or hit target. */
+/* Elapsed time uses the left edge beside the task/exam stripe. */
 .workspace :is(.session-top,.activity-top)[data-time-session]{position:relative}
 .workspace :is(.session-top,.activity-top)[data-time-session]::after{
-  content:"";position:absolute;right:0;top:0;width:4px;height:var(--time-elapsed,0%);
+  content:"";position:absolute;left:0;top:0;width:4px;height:var(--time-elapsed,0%);
   background:#ce650a;pointer-events:none;
 }
 .workspace [data-time-state="active"]::after{min-height:3px}
+.workspace .session-top[data-event-type="task"]{box-shadow:inset 4px 0 #216cba}
+.workspace .session-top[data-event-type="exam"]{box-shadow:inset 4px 0 #ce650a}
+.workspace :is(.session-top[data-event-type="task"],.session-top[data-event-type="exam"])::after,
+.workspace .activity:is(.activity-task,.activity-exam) .activity-top::after{left:4px}
 .exam-reminders{display:flex;flex-direction:column;gap:6px;margin:6px 0}
 .workspace .exam-reminder{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff1df;border:1px solid #e6c197;color:#7e470c;padding:6px 10px;font-size:11px;line-height:1.4}
 .exam-reminder-text{display:flex;align-items:baseline;gap:5px 12px;flex-wrap:wrap;min-width:0}
@@ -1234,8 +1238,26 @@ textarea{resize:vertical;line-height:1.6}
 .meeting-hub-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
 .meeting-hub-heading h2 { font-size:24px; margin:0; }
 .meeting-hub-actions { display:flex; gap:8px; flex-wrap:wrap; }
-.meeting-hub-layout { display:grid; grid-template-columns:minmax(210px,300px) minmax(0,1fr); gap:24px; align-items:start; }
-.meeting-history { display:flex; flex-direction:column; gap:8px; }
+.meeting-hub-layout { display:block; }
+.meeting-history { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.meeting-month { padding:12px; border:1px solid var(--line); border-radius:7px; min-width:0; background:var(--white); }
+.meeting-month h3 { font-size:16px; margin:0 0 10px; text-transform:capitalize; }
+.meeting-calendar-row + .meeting-calendar-row { margin-top:12px; }
+.meeting-calendar-row h4 { margin:0 0 4px; font-size:12px; font-weight:600; }
+.meeting-calendar-dates { display:flex; flex-wrap:wrap; gap:5px; }
+.meeting-date-button { display:inline-flex; align-items:center; justify-content:center; position:relative; min-width:44px; min-height:44px; padding:8px 12px; border:1px solid var(--line); border-radius:5px; background:#fffefa; color:var(--ink); font:inherit; cursor:pointer; }
+.meeting-date-button:hover,.meeting-date-button[aria-pressed="true"] { background:#e7f1eb; border-color:var(--teal); }
+.meeting-date-button[aria-pressed="true"] { outline:2px solid var(--teal); outline-offset:1px; }
+.meeting-date-button:disabled { cursor:default; opacity:.65; }
+.meeting-content-dot { position:absolute; bottom:0; left:50%; transform:translateX(-50%); font-size:26px; font-weight:800; line-height:.65; }
+.meeting-calendar-legend { color:var(--muted); font-size:12px; margin:0 0 14px; }
+.meeting-calendar-legend > span { font-size:24px; font-weight:800; vertical-align:middle; }
+.meeting-editor-heading { display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin:0 0 18px; }
+.meeting-editor-heading h3 { margin:0; font-size:20px; }
+#meeting-editor { margin-top:28px; padding-top:20px; border-top:1px solid var(--line); scroll-margin-top:90px; }
+#meeting-day-choices { margin-bottom:16px; }
+@media(max-width:1050px) { .meeting-history { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:680px) { .meeting-history { grid-template-columns:minmax(0,1fr); } .meeting-month { padding:10px; } .meeting-editor-heading .button { min-height:44px; } }
 .meeting-history-item { text-align:left; white-space:normal; overflow-wrap:anywhere; min-height:44px; }
 .meeting-history-item[aria-pressed="true"] { border-color:var(--teal); background:#e7f1eb; }
 #meeting-form { min-width:0; max-width:1100px; }

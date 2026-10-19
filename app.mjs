@@ -1,7 +1,7 @@
-import { createContextMemory, catalogEntries, chooseStartup, resolveRemembered, unitContext, meetingContext, meetingsForDay, madridClock } from './startup-context.mjs?v=20261019-meetings';
+import { createContextMemory, catalogEntries, chooseStartup, resolveRemembered, unitContext, meetingContext, meetingsForDay, madridClock } from './startup-context.mjs?v=20261019-meeting-calendar';
 import { elapsedTiming, timingDescription } from './row-time.mjs?v=20261019-rf22';
-import { MeetingReader } from './meeting-reader.mjs?v=20261019-meetings';
-import { createMeetingWorkspace } from './meeting-workspace-ui.mjs?v=20261019-meetings';
+import { MeetingReader } from './meeting-reader.mjs?v=20261019-meeting-calendar';
+import { createMeetingWorkspace } from './meeting-workspace-ui.mjs?v=20261019-meeting-calendar';
 import { createResourcesUI } from './resources-ui.mjs?v=20261018-rf12b';
 import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-rf12';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261018-rf12';
@@ -1540,6 +1540,7 @@ const moduleViews = createModuleViews({
 document.addEventListener('visibilitychange', () => { if (!document.hidden && draft) { refreshTemporalIndicators(); renderSessionBand(); moduleViews.render(); } });
 const meetingsUI = createMeetingWorkspace({
   getCatalog:()=>catalog,getReader:()=>meetingReader,getCommon:()=>startupCommon,
+  loadCommon:async()=>{startupCommon=(await connection.loadCommon(catalog)).document;return startupCommon;},
   isBusy:()=>busy,setBusy,onStateChange:updateSaveState,
   onLocation:syncMeetingSelection,onRemember:rememberContext,
   onShow:()=>{setWorkspaceView('meeting');$('workspace').hidden=false;},

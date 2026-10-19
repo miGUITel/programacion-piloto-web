@@ -9,9 +9,9 @@ const manual=(id='m1',groupId='a',date='2026-10-19')=>({id,groupId,date,title:'R
 test('Administrative groups and manual records need no fictitious academic UT or schedule',()=>{
  const d=book();d.meetings=[manual()];assert.deepEqual(validateMeetingDocument(d),[]);assert.equal(recordGroup(d,d.meetings[0]).id,'a');assert.equal(d.modules,undefined);
 });
-test('History is ordered, separates project from other groups and does not mutate data',()=>{
+test('History is ordered, filters each group and includes old Project notes within Reuniones',()=>{
  const d=book();d.meetings=[manual('one','a','2026-10-12'),manual('two','a','2026-10-19'),manual('three','p','2026-10-20'),{meetingId:'unmapped',date:'2026-10-21',notes:'Legado'}];const before=structuredClone(d);
- assert.deepEqual(meetingHistory(d,'meetings','a').map(recordKey),['two','one']);assert.deepEqual(meetingHistory(d,'project').map(recordKey),['three']);assert.equal(meetingHistory(d,'meetings').length,3);assert.deepEqual(d,before);
+ assert.deepEqual(meetingHistory(d,'meetings','a').map(recordKey),['two','one']);assert.deepEqual(meetingHistory(d,'project').map(recordKey),['three']);assert.equal(meetingHistory(d,'meetings').length,4);assert.deepEqual(d,before);
 });
 test('Explicit editing preserves record identity, other records, unknown fields and source snapshot',()=>{
  const d=book();d.meetings=[manual(),manual('other','p')];const before=structuredClone(d);const next=withMeetingRecord(d,'m1',{notes:'Nota ampliada'});
@@ -30,7 +30,7 @@ test('Legacy scheduled notes remain valid and unchanged',()=>{
 test('Remembering groups or saved manual meetings stores only references and works outside the timetable',()=>{
  const d=book();d.meetings=[manual('id','p')];const raw=meetingContext({...d.meetings[0],recordId:'id',space:'project'});
  let saved;const memory=createContextMemory(()=>({getItem:()=>saved??null,setItem:(k,v)=>{saved=v;}}));memory.write(catalog,{...raw,notes:'Must not persist'});assert.equal(saved.includes('Must not persist'),false);
- const r=resolveRemembered(memory.read(catalog).context,catalog,null,d);assert.equal(r.record.id,'id');assert.deepEqual(resolveRemembered(meetingGroupContext('project','p'),catalog,null,d),meetingGroupContext('project','p'));
+ const r=resolveRemembered(memory.read(catalog).context,catalog,null,d);assert.equal(r.record.id,'id');assert.deepEqual(resolveRemembered(meetingGroupContext('project','p'),catalog,null,d),meetingGroupContext('meetings','p'));
  assert.equal(resolveRemembered(meetingGroupContext('project','a'),catalog,null,d),null);
 });
 function transport(initial=book()){
