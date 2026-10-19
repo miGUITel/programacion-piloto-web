@@ -29,6 +29,20 @@ export function activityEventType(session, activity, document) {
   return activity.eventType === 'task' && hasTaskPlan(document) ? '' : selected.includes(activity.eventType) ? activity.eventType : '';
 }
 
+/** Read-only row markers: all explicit types assigned to this portion, in task/exam order.
+ * Keep activityEventType unchanged: its legacy callers also control editing and tracking.
+ */
+export function activityEventTypes(session, activity, document) {
+  if (!activity) return [];
+  const selected = eventTypes(session, document);
+  const planned = hasTaskPlan(document)
+    ? plannedSessionTasks(session, document).filter(task => task.presentation.activityId === activity.id || (!task.presentation.activityId && session.activities[0]?.id === activity.id))
+    : [];
+  const intended = new Set(planned.map(task => task.type || 'task'));
+  if (activity.eventType === 'exam' || (!hasTaskPlan(document) && activity.eventType === 'task')) intended.add(activity.eventType);
+  return types.filter(type => selected.includes(type) && intended.has(type));
+}
+
 export function sessionTaskTargets(session, document) {
   if (hasTaskPlan(document)) return visibleSessionTasks(session, document);
   if (!eventTypes(session).includes('task')) return [];
