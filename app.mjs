@@ -1,4 +1,5 @@
 import { createContextMemory, catalogEntries, chooseStartup, resolveRemembered, unitContext, meetingContext, meetingsForDay, madridClock } from './startup-context.mjs?v=20261019-meetings';
+import { elapsedTiming, timingDescription } from './row-time.mjs?v=20261019-rf22';
 import { MeetingReader } from './meeting-reader.mjs?v=20261019-meetings';
 import { createMeetingWorkspace } from './meeting-workspace-ui.mjs?v=20261019-meetings';
 import { createResourcesUI } from './resources-ui.mjs?v=20261018-rf12b';
@@ -539,12 +540,37 @@ function sessionTextButton(sessionIndex, activityIndex, title) {
   button.addEventListener('click', () => openSessionText(sessionIndex, activityIndex)); return button;
 }
 
+function markTemporalRow(row, label, sessionIndex, activityIndex) {
+  row.dataset.timeSession = String(sessionIndex);
+  if (activityIndex !== undefined) row.dataset.timeActivity = String(activityIndex);
+  label.dataset.timeLabel = label.getAttribute('aria-label') || label.textContent;
+  label.append(node('span', 'temporal-status visually-hidden'));
+}
+
+function refreshTemporalIndicators() {
+  if (!draft) return;
+  const clock = madridClock();
+  for (const row of $('sessions').querySelectorAll('[data-time-session]')) {
+    const session = draft.sessions[Number(row.dataset.timeSession)];
+    const activities = row.dataset.timeActivity === undefined ? session?.activities : [session?.activities[Number(row.dataset.timeActivity)]];
+    const timing = elapsedTiming(session?.date, activities, clock);
+    row.dataset.timeState = timing?.state || 'unknown';
+    row.style.setProperty('--time-elapsed', `${((timing?.fraction || 0) * 100).toFixed(2)}%`);
+    const label = row.querySelector('[data-time-label]');
+    const description = timingDescription(timing);
+    label.querySelector('.temporal-status').textContent = ' · ' + description;
+    label.title = label.dataset.timeLabel + ' · ' + description;
+    if (label.hasAttribute('aria-label')) label.setAttribute('aria-label', label.title);
+  }
+}
+
 function makeActivity(activity, sessionIndex, activityIndex) {
   const container = node('section', 'activity');
   const type = activityEventType(draft.sessions[sessionIndex], activity, draft);
   if (type) container.classList.add('activity-' + type);
   const top = node('div', 'activity-top');
   const time = node('div', 'activity-time', `${activity.start}–${activity.end}`);
+  markTemporalRow(top, time, sessionIndex, activityIndex);
   const description = node('div', 'activity-description');
   const title = node('h4', 'activity-title');
   title.append(sessionTextButton(sessionIndex, activityIndex, activity.title || 'Actividad'));
@@ -703,14 +729,15 @@ function makeSession(session, sessionIndex, heading) {
   toggle.setAttribute('aria-expanded', String(isOpen));
   toggle.setAttribute('aria-controls', `session-content-${sessionIndex}`);
   const date = dateInfo(session.date);
-  const dateTile = node('time', `date-tile${date.past ? ' past' : ''}`);
+  const dateTile = node('time', 'date-tile');
   dateTile.dateTime = session.date;
-  dateTile.title = date.full + (date.past ? ' · Fecha anterior a hoy; no indica impartición.' : '');
+  dateTile.title = date.full;
   dateTile.setAttribute('aria-label', `Sesión ${session.number}${heading.periods.length ? ' · Periodos ' + heading.periods.join(', ') : ''} · ${date.full}`);
   const dateLine = node('span', 'session-date-line');
   dateLine.append(node('span', 'date-day', heading.day));
   if (heading.monthLabel) dateLine.append(node('span', 'date-month', heading.monthLabel));
   dateTile.append(node('span', 'session-number-line', heading.sessionLabel), dateLine);
+  markTemporalRow(top, dateTile, sessionIndex);
   const description = node('div', 'session-description');
   const title = node('h3', 'session-title');
   title.append(sessionTextButton(sessionIndex, 0, first?.title || 'Sesión'));
@@ -785,6 +812,7 @@ function renderSessions() {
   if (!draft.sessions.length) container.append(node('p', 'empty-sessions', 'Este documento no contiene sesiones.'));
   const headings = compactSessionHeaders(draft.sessions, presentationPeriods(catalog));
   draft.sessions.forEach((session, index) => container.append(makeSession(session, index, headings[index])));
+  refreshTemporalIndicators();
   renderSessionBand();
   moduleViews.render(); renderStats(); preparationUI.render(); resourcesUI.render();
   if (busy) $('workspace').querySelectorAll('button, input, textarea, select').forEach(element => { element.disabled = true; });
@@ -1502,7 +1530,7 @@ const moduleViews = createModuleViews({
   onCorrected: correctTask, onPresented: presentTask, onRetry: retryExamContext,
   onPreparation: entry => preparationUI.open(entry),
 });
-document.addEventListener('visibilitychange', () => { if (!document.hidden && draft) { renderSessionBand(); moduleViews.render(); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && draft) { refreshTemporalIndicators(); renderSessionBand(); moduleViews.render(); } });
 const meetingsUI = createMeetingWorkspace({
   getCatalog:()=>catalog,getReader:()=>meetingReader,getCommon:()=>startupCommon,
   isBusy:()=>busy,setBusy,onStateChange:updateSaveState,
@@ -1510,5 +1538,9 @@ const meetingsUI = createMeetingWorkspace({
   onShow:()=>{setWorkspaceView('meeting');$('workspace').hidden=false;},
   onWarning:warnNavigation,
 });
-setInterval(() => { if (draft && $('session-band').dataset.today !== madridToday()) { renderSessionBand(); moduleViews.render(); } }, 60000);
+setInterval(() => {
+  if (!draft) return;
+  refreshTemporalIndicators();
+  if ($('session-band').dataset.today !== madridToday()) { renderSessionBand(); moduleViews.render(); }
+}, 60000);
 updateSaveState();

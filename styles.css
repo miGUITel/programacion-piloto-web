@@ -190,15 +190,15 @@ textarea{resize:vertical;line-height:1.6}
 .list-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:22px 0 12px}
 .list-heading h2{font-size:14px;font-weight:700}
 .list-heading p{font-size:9px;color:var(--muted);display:flex;align-items:center;gap:6px}
-.past-legend{width:12px;border-bottom:2px solid #bb7161;display:inline-block}
+.temporal-legend{width:3px;height:12px;background:#ce650a;display:inline-block;vertical-align:middle;margin-right:4px}
 .sessions{display:flex;flex-direction:column;gap:15px}
 .session{background:var(--white);border:1px solid #cfd9ce;border-radius:8px;box-shadow:0 2px 0 #e2e7dd;overflow:hidden}
 .session-top{display:grid;grid-template-columns:24px 49px minmax(0,1fr) 130px;gap:13px;padding:17px 18px 15px;align-items:start}
 .session-toggle{border:0;background:#eef2e8;border-radius:4px;color:#517469;width:23px;height:25px;display:grid;place-items:center;font-size:17px;line-height:1;padding:0}
 .session-toggle:hover{background:#dce8d9}
 .session-toggle[aria-expanded="true"]{background:#deeee4;color:var(--teal)}
-.date-tile{display:flex;flex-direction:column;align-items:center;padding:0 3px 6px;color:#536e62;border-bottom:2px solid transparent}
-.date-tile.past{border-bottom-color:#bd7969}
+.date-tile{display:flex;flex-direction:column;align-items:center;padding:0 3px 6px;color:#536e62}
+/* Row timing is shown on the vertical edge, independently of the date label. */
 .date-day{font-size:21px;font-weight:650;line-height:1.2;letter-spacing:-.8px}
 .date-month{font-size:9px;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
 .session-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:9px;color:#6d7d71;margin:1px 0 7px}
@@ -399,7 +399,7 @@ textarea{resize:vertical;line-height:1.6}
 .workspace .session-top{display:grid;grid-template-columns:var(--row-columns);column-gap:var(--row-gap);row-gap:5px;padding:9px 12px;align-items:center;background:var(--session-tint);min-height:62px}
 .workspace .session-toggle{width:28px;height:28px;min-width:28px;border:1px solid #b9ccc2;background:#fffefab3;font-size:18px;color:#315f55;border-radius:4px}
 .workspace .session-toggle:hover{background:#d2e6dc}
-.workspace .date-tile{padding:0 0 3px;gap:2px;border-bottom-width:3px;line-height:1.1}
+.workspace .date-tile{padding:0 0 3px;gap:2px;line-height:1.1}
 .workspace .date-day{font-size:16px;letter-spacing:-.3px;white-space:nowrap}
 .workspace .date-month{font-size:9px;margin:0;line-height:1}
 .workspace .session-description,.workspace .activity-description,.workspace .session-notes,.workspace .activity-notes-preview{min-width:0}
@@ -699,6 +699,14 @@ textarea{resize:vertical;line-height:1.6}
 .workspace .session-exam .teaching-check:has(input[id^="teaching-exam-"]:checked){color:#9b4600;font-weight:650}
 .workspace .session-top[data-event-type="task"]{background:#dcecff}
 .workspace .session-top[data-event-type="exam"]{background:#ffe1c2}
+
+/* Right edge avoids the task/exam markers on the left; no layout shift or hit target. */
+.workspace :is(.session-top,.activity-top)[data-time-session]{position:relative}
+.workspace :is(.session-top,.activity-top)[data-time-session]::after{
+  content:"";position:absolute;right:0;top:0;width:4px;height:var(--time-elapsed,0%);
+  background:#ce650a;pointer-events:none;
+}
+.workspace [data-time-state="active"]::after{min-height:3px}
 .exam-reminders{display:flex;flex-direction:column;gap:6px;margin:6px 0}
 .workspace .exam-reminder{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff1df;border:1px solid #e6c197;color:#7e470c;padding:6px 10px;font-size:11px;line-height:1.4}
 .exam-reminder-text{display:flex;align-items:baseline;gap:5px 12px;flex-wrap:wrap;min-width:0}
