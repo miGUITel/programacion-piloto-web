@@ -7,7 +7,7 @@ import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore,
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261019-rf16';
 import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-rf12';
 import { orderedUnits, compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261018-rf12';
-import { eventTypes, setSessionEventType, activityEventType, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261018-rf12';
+import { eventTypes, setSessionEventType, activityEventType, activityEventTypes, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261019-parallel-lanes';
 import { libraryIntegrity } from './model-v3.mjs?v=20261018-rf12';
 import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-rf12';
 import { createModuleViews } from './module-views-ui.mjs?v=20261018-rf12';
@@ -575,7 +575,9 @@ function makeActivity(activity, sessionIndex, activityIndex) {
   const container = node('section', 'activity');
   const type = activityEventType(draft.sessions[sessionIndex], activity, draft);
   if (type) container.classList.add('activity-' + type);
+  const markerTypes = activityEventTypes(draft.sessions[sessionIndex], activity, draft);
   const top = node('div', 'activity-top');
+  top.dataset.markerTypes = markerTypes.join(' ');
   const time = node('div', 'activity-time', `${activity.start}–${activity.end}`);
   markTemporalRow(top, time, sessionIndex, activityIndex);
   const description = node('div', 'activity-description');
@@ -729,6 +731,7 @@ function makeSession(session, sessionIndex, heading) {
   types.forEach(type => section.classList.add('session-' + type));
   section.dataset.sessionIndex = String(sessionIndex);
   const top = node('div', 'session-top');
+  top.dataset.markerTypes = types.join(' ');
   top.dataset.eventType = activityEventType(session, first, draft);
   const toggle = node('button', 'session-toggle', isOpen ? '−' : '+');
   toggle.type = 'button';
