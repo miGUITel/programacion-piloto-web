@@ -1269,7 +1269,7 @@ html { scroll-padding-top:calc(var(--app-header-height, 0px) + 8px); }
 .dialog-suggestions.has-content::after { content:""; width:7px; height:7px; border-radius:50%; background:#b95720; position:absolute; top:3px; right:3px; }
 dialog :is(.suggestions-header,.editor-header) > :first-child { min-width:0; overflow-wrap:anywhere; }
 
-/* Independent 4px lanes: elapsed time, then task, then exam. The grey lane is always reserved. */
+/* Independent indicators: fixed left time rail and academic markers next to titles. */
 .workspace[data-layout] .session { border-left:0; border-right:0; }
 .workspace :is(.session-top,.activity-top)[data-time-session] { position:relative; padding-left:16px; }
 .workspace :is(.session-top,.activity-top)[data-time-session]::after {
@@ -1283,7 +1283,11 @@ dialog :is(.suggestions-header,.editor-header) > :first-child { min-width:0; ove
   --academic-marker-width:8px;
   --academic-marker:linear-gradient(to right,#216cba 0 4px,#ce650a 4px 8px);
 }
-.workspace :is(.session-top,.activity-top)[data-time-session]::before {
-  content:""; position:absolute; left:4px; top:0; bottom:0; width:var(--academic-marker-width,0px);
+/* Academic markers belong to the title block, separate from the time rail. */
+.workspace :is(.session-top,.activity-top)[data-time-session] > :is(.session-description,.activity-description) {
+  position:relative; padding-left:12px;
+}
+.workspace :is(.session-top,.activity-top)[data-time-session] > :is(.session-description,.activity-description)::before {
+  content:""; position:absolute; left:0; top:0; bottom:0; width:var(--academic-marker-width,0px);
   background:var(--academic-marker,transparent); pointer-events:none;
 }
