@@ -558,8 +558,15 @@ function refreshTemporalIndicators() {
     row.style.setProperty('--time-elapsed', `${((timing?.fraction || 0) * 100).toFixed(2)}%`);
     const label = row.querySelector('[data-time-label]');
     const description = timingDescription(timing);
-    label.querySelector('.temporal-status').textContent = ' · ' + description;
-    label.title = label.dataset.timeLabel + ' · ' + description;
+    const isSession = row.classList.contains('session-top');
+    const isToday = isSession && session?.date === clock.date;
+    if (isSession) {
+      row.classList.toggle('is-today', isToday);
+      if (isToday) label.setAttribute('aria-current', 'date');
+      else label.removeAttribute('aria-current');
+    }
+    label.querySelector('.temporal-status').textContent = ` · ${isToday ? 'Hoy · ' : ''}${description}`;
+    label.title = `${isToday ? 'Hoy · ' : ''}${label.dataset.timeLabel} · ${description}`;
     if (label.hasAttribute('aria-label')) label.setAttribute('aria-label', label.title);
   }
 }
@@ -1544,3 +1551,10 @@ setInterval(() => {
   if ($('session-band').dataset.today !== madridToday()) { renderSessionBand(); moduleViews.render(); }
 }, 60000);
 updateSaveState();
+
+// Keep scroll targets below the real toolbar height, including its mobile rows.
+const appHeader = document.querySelector('.app-header');
+const updateHeaderHeight = () => document.documentElement.style.setProperty('--app-header-height', `${Math.ceil(appHeader.getBoundingClientRect().height)}px`);
+if (globalThis.ResizeObserver) new ResizeObserver(updateHeaderHeight).observe(appHeader);
+window.addEventListener('resize', updateHeaderHeight);
+updateHeaderHeight();
