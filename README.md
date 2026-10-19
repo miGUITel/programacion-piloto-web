@@ -2,6 +2,8 @@
 
 ## Cabecera compacta
 
+El indicador de tiempo previsto transcurrido usa gris grafito (`#59636b`) tanto en el borde izquierdo de sesiones y actividades como en las muestras de sus leyendas y la banda temporal. El naranja se reserva para exámenes y el azul para tareas. El cambio es solo de color: conserva posición, proporción, actualización temporal, accesos y seguimiento; no escribe datos.
+
 La barra superior permanece visible al desplazarse, con una fila en escritorio y dos en móvil, sin aumentar su altura. Los saltos a sesiones dejan espacio para su altura real, también tras redimensionar o mostrar un aviso. El menú de conexión se desplaza internamente cuando no cabe en la pantalla; las ventanas de edición siguen por encima de la barra.
 
 Las cabeceras de las sesiones cuya fecha coincide con hoy en Europe/Madrid muestran un contorno discreto alrededor de la fecha y la indicación accesible «Hoy». Se actualiza al volver a la pestaña y periódicamente, sin añadir una fila ni cambiar los colores de tarea/examen, estado, preparación, notas o JSON. Es una referencia de fecha, no confirma impartición ni identifica una sesión como activa por horario.
