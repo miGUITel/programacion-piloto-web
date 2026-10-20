@@ -2,15 +2,16 @@ import { createContextMemory, catalogEntries, chooseStartup, resolveRemembered, 
 import { elapsedTiming, timingDescription } from './row-time.mjs?v=20261019-rf22';
 import { MeetingReader } from './meeting-reader.mjs?v=20261019-meeting-calendar';
 import { createMeetingWorkspace } from './meeting-workspace-ui.mjs?v=20261019-meeting-calendar';
-import { createResourcesUI } from './resources-ui.mjs?v=20261018-rf12b';
+import { createResourcesUI } from './resources-ui.mjs?v=20261020-workflow';
 import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-rf12';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261019-rf16';
 import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-rf12';
-import { orderedUnits, compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion } from './unit-tools.mjs?v=20261018-rf12';
+import { orderedUnits, compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion, calendarCurrentUnits } from './unit-tools.mjs?v=20261020-workflow';
+import { rowResources } from './resources.mjs?v=20261020-workflow';
 import { eventTypes, setSessionEventType, activityEventType, activityEventTypes, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261019-parallel-lanes';
 import { libraryIntegrity } from './model-v3.mjs?v=20261018-rf12';
 import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-rf12';
-import { createModuleViews } from './module-views-ui.mjs?v=20261018-rf12';
+import { createModuleViews } from './module-views-ui.mjs?v=20261020-workflow';
 import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261018-rf12';
 import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261018-rf12';
 import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-rf12';
@@ -313,6 +314,34 @@ async function openSelectedUnit() {
   if (opened) selectWorkspaceView('unit');
 }
 
+async function openCalendarCurrentUnit() {
+  if (navigationBlocked()) { restoreUnitSelection(); return; }
+  const moduleCode = $('module-select').value;
+  const module = catalog.modules.find(item => item.code === moduleCode);
+  if (!module) return;
+  fillUnits(); message('library-message', 'Consultando la UT vigente por calendario…');
+  setBusy(true);
+  let selected = null, warning = '';
+  try {
+    startupCommon = (await connection.loadCommon(catalog)).document;
+    const records = await Promise.all(module.units.map(async unit => {
+      const entry = { moduleCode, unitCode: unit.code, unitId: unit.id, path: unit.path };
+      const candidate = connection.forDocument(entry);
+      const result = await candidate.load(); checked(result.document, entry);
+      return { entry, document: result.document };
+    }));
+    const matches = calendarCurrentUnits(records, madridClock().date);
+    if (matches.length === 1) selected = matches[0].entry;
+    else warning = matches.length ? `Coinciden varias UT vigentes: ${matches.map(record => record.entry.unitCode).join(', ')}. Elige una UT.` : 'No hay una UT vigente por calendario. Elige una UT.';
+  } catch { warning = 'No se ha podido comprobar la UT vigente con todos los documentos actuales. Elige una UT para abrirla.'; }
+  finally { setBusy(false); }
+  if (selected) { $('unit-select').value = selected.unitCode; await openSelectedUnit(); return; }
+  const placeholder = node('option', '', 'Elige UT'); placeholder.value = ''; placeholder.disabled = true;
+  $('unit-select').prepend(placeholder); $('unit-select').value = '';
+  message('library-message', `${warning}${activeEntry ? ` Sigue abierta ${activeEntry.moduleCode} · ${activeEntry.unitCode}.` : ''}`, 'warning');
+  updateNavigation();
+}
+
 /** Never edit a cached snapshot: load the target UT and its SHA first. */
 async function ensureSourceUnit(path) {
   if (busy || !draft || $('editor').open || presentationUI.isOpen() || generalNotesUI.isOpen()) return false;
@@ -361,6 +390,7 @@ async function correctTask(task, value) {
 function selectWorkspaceView(view) {
   if (!['unit', 'module', 'tasks', 'preparation'].includes(view) || !draft || busy || document.querySelector('dialog[open]')) return;
   const leavingMeeting = currentView === 'meeting';
+  if (view === 'tasks' && currentView !== 'tasks') moduleViews.enterTasks(activeEntry.moduleCode, currentView === 'unit' ? activeEntry.unitCode : '');
   setWorkspaceView(view);
   if (leavingMeeting) {
     if (activeEntry) { $('module-select').value = activeEntry.moduleCode; fillUnits(activeEntry.unitCode); }
@@ -600,9 +630,19 @@ function makeActivity(activity, sessionIndex, activityIndex) {
   }
   const planned = node('p', 'activity-preview', activity.planned || '');
   planned.title = activity.planned || '';
-  top.append(time, description, planned, notePreviews(activity, 'activity-notes-preview'), rowActions(sessionIndex, activityIndex));
+  top.append(time, description, makeRowResources(draft.sessions[sessionIndex], activity), planned, notePreviews(activity, 'activity-notes-preview'), rowActions(sessionIndex, activityIndex));
   container.append(top);
   return container;
+}
+
+function makeRowResources(session, activity) {
+  const cell = node('div', 'row-resources');
+  cell.setAttribute('aria-label', 'Recursos');
+  const linked = rowResources(draft, session, activity, libraryRecords());
+  for (const resource of linked.resources) resourcesUI.appendLink(cell, resource);
+  if (linked.unresolved.length) cell.append(node('span', 'resource-unresolved', 'Referencia pendiente de resolver'));
+  if (!cell.childNodes.length) cell.classList.add('is-empty');
+  return cell;
 }
 
 function changeTeaching(update, focusId) {
@@ -727,6 +767,7 @@ function makeSession(session, sessionIndex, heading) {
   const first = session.activities[0];
   const isOpen = openSessions.has(session.id);
   const section = node('article', 'session');
+  section.classList.toggle('is-expanded', isOpen);
   const types = eventTypes(session, draft);
   types.forEach(type => section.classList.add('session-' + type));
   section.dataset.sessionIndex = String(sessionIndex);
@@ -757,7 +798,7 @@ function makeSession(session, sessionIndex, heading) {
   description.append(title, makeTeachingControls(session, sessionIndex));
   const planned = node('p', 'planned-preview', first?.planned || '');
   planned.title = first?.planned || '';
-  top.append(toggle, dateTile, description, planned, notePreviews(first || {}, 'session-notes'), makeStateSelect(session, sessionIndex), rowActions(sessionIndex, 0));
+  top.append(toggle, dateTile, description, makeRowResources(session, first), planned, notePreviews(first || {}, 'session-notes'), makeStateSelect(session, sessionIndex), rowActions(sessionIndex, 0));
   const body = node('div', 'session-body');
   body.id = `session-content-${sessionIndex}`;
   body.hidden = !isOpen;
@@ -770,6 +811,7 @@ function makeSession(session, sessionIndex, heading) {
     if (busy) return;
     if (openSessions.has(session.id)) openSessions.delete(session.id); else { openSessions.add(session.id); rememberUnit(session.id); }
     const next = openSessions.has(session.id);
+    section.classList.toggle('is-expanded', next);
     body.hidden = !next;
     toggle.textContent = next ? '−' : '+';
     toggle.setAttribute('aria-expanded', String(next));
@@ -1351,7 +1393,7 @@ $('module-select').addEventListener('change', async () => {
     await meetingsUI.openGroup($('module-select').value.slice(1),$('unit-select').value==='*'?null:$('unit-select').value);
     return;
   }
-  fillUnits(); message('library-message'); await openSelectedUnit();
+  await openCalendarCurrentUnit();
 });
 $('unit-select').addEventListener('change', async () => {
   if($('module-select').value.startsWith('@')){
@@ -1363,6 +1405,19 @@ $('unit-select').addEventListener('change', async () => {
 });
 $('refresh').addEventListener('click', refresh);
 $('save').addEventListener('click', save);
+// A forward Tab from editable prose prioritises the action, never saves by itself.
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Tab' || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey || event.isComposing) return;
+  const input = event.target;
+  if (!(input instanceof HTMLTextAreaElement) || input.readOnly || input.disabled) return;
+  const dialog = input.closest('dialog');
+  if (dialog && (!dialog.open || !dialog.matches(':modal'))) return;
+  let action;
+  if (input.closest('#resource-form')) action = $('resource-apply');
+  else action = input.closest('form')?.querySelector('button[type="submit"].button-primary');
+  if (!action || action.disabled || !action.getClientRects().length) return;
+  event.preventDefault(); action.focus();
+});
 $('download-draft').addEventListener('click', downloadDraft);
 $('toggle-sessions').addEventListener('click', toggleAllSessions);
 for (const name of ['unit', 'module', 'tasks', 'preparation']) $('view-' + name).addEventListener('click', () => selectWorkspaceView(name));
