@@ -92,3 +92,24 @@ export function prepareResourceSave(loaded, entry, values, active) {
   }
   return { document, unitDraft };
 }
+// Resolve explicit associations only. Never infer a resource from a row title.
+export function rowResources(document, session, activity, records = []) {
+  const sources = new Map(), unresolved = new Set();
+  const add = (owner, refs) => {
+    for (const id of refs ?? []) {
+      const resource = (owner.resources ?? []).find(item => item.id === id);
+      const key = `${owner.unit?.id ?? ''}:${id}`;
+      if (resource) sources.set(key, resource); else unresolved.add(key);
+    }
+  };
+  add(document, activity?.resourceRefs);
+  if (session.activities?.[0]?.id === activity?.id) add(document, session.resourceRefs);
+  for (const { document: owner } of [{ document }, ...records.filter(record => record.document !== document && record.document.module?.code === document.module?.code)]) {
+    for (const task of owner.tasks ?? []) {
+      const presents = owner.unit?.id === document.unit?.id && task.presentation?.sessionId === session.id
+        && (task.presentation.activityId ? task.presentation.activityId === activity?.id : session.activities?.[0]?.id === activity?.id);
+      if (presents || activity?.taskRefs?.includes(task.id)) add(owner, task.resourceRefs);
+    }
+  }
+  return { resources: [...sources.values()], unresolved: [...unresolved] };
+}
