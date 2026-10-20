@@ -767,7 +767,6 @@ function makeSession(session, sessionIndex, heading) {
   const first = session.activities[0];
   const isOpen = openSessions.has(session.id);
   const section = node('article', 'session');
-  section.classList.toggle('is-expanded', isOpen);
   const types = eventTypes(session, draft);
   types.forEach(type => section.classList.add('session-' + type));
   section.dataset.sessionIndex = String(sessionIndex);
@@ -811,7 +810,6 @@ function makeSession(session, sessionIndex, heading) {
     if (busy) return;
     if (openSessions.has(session.id)) openSessions.delete(session.id); else { openSessions.add(session.id); rememberUnit(session.id); }
     const next = openSessions.has(session.id);
-    section.classList.toggle('is-expanded', next);
     body.hidden = !next;
     toggle.textContent = next ? '−' : '+';
     toggle.setAttribute('aria-expanded', String(next));
@@ -864,6 +862,7 @@ function renderSessions() {
   if (!draft.sessions.length) container.append(node('p', 'empty-sessions', 'Este documento no contiene sesiones.'));
   const headings = compactSessionHeaders(draft.sessions, presentationPeriods(catalog));
   draft.sessions.forEach((session, index) => container.append(makeSession(session, index, headings[index])));
+  $('workspace').classList.toggle('has-row-resources', Boolean(container.querySelector('.row-resources:not(.is-empty)')));
   refreshTemporalIndicators();
   renderSessionBand();
   moduleViews.render(); renderStats(); preparationUI.render(); resourcesUI.render();
