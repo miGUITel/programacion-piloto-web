@@ -200,5 +200,5 @@ export function createResourcesUI({ getState, getActive, getConnection, unitStor
   $('resources-save-form').addEventListener('submit',save); for (const id of ['resources-close','resources-cancel']) $(id).addEventListener('click',close);
   $('resources-dialog').addEventListener('cancel',event => { event.preventDefault(); close(); }); $('resource-private-close').addEventListener('click',closePrivate); $('resource-private-dialog').addEventListener('cancel',event => {event.preventDefault();closePrivate();});
   $('resources-download').addEventListener('click',() => { if (!loaded || isBusy()) return; const data = { scope,path:scope === 'unit' ? target.path : `${target.moduleCode}/resources.json`,baseSha:loaded.sha,values,unfinished:unfinished() ? formValues() : null }; const url = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)+'\n'],{type:'application/json;charset=utf-8'})); const link = el('a'); link.href = url; link.download = `${target.moduleCode}-${scope === 'unit' ? target.unitCode : 'modulo'}-borrador-recursos.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url),1000); });
-  return { render,loadModule,availability,clear,isOpen,hasPending:pending,open,openPrivate };
+  return { render,loadModule,availability,clear,isOpen,hasPending:pending,open,openPrivate,appendLink };
 }
