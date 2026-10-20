@@ -77,6 +77,15 @@ export function globalSessionExpansion(sessions, openSessions) {
   return { allOpen, symbol: allOpen ? '−' : '+', label: allOpen ? 'Plegar todas las sesiones' : 'Desplegar todas las sesiones', disabled: sessions.length === 0 };
 }
 
+// Only operative session dates define currency; provisional annual windows do not.
+export function calendarCurrentUnits(records, today) {
+  return records.filter(({ document }) => {
+    const dates = (document.sessions ?? []).filter(session => !['Cancelada', 'Reprogramada'].includes(session.state))
+      .map(session => session.date).filter(date => /^\d{4}-\d{2}-\d{2}$/.test(date)).sort();
+    return dates.length > 0 && dates[0] <= today && today <= dates.at(-1);
+  });
+}
+
 export function sessionBand(sessions, today = madridToday(), document) {
   let previousMonth = '';
   return sessions.map((session, index) => ({ session, index }))
