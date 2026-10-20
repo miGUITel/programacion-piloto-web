@@ -234,7 +234,14 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
   for (const name of ['sessions', 'timetable', 'calendar', 'evaluations']) $('module-tab-' + name).addEventListener('click', () => { section = name; render(); });
   $('common-refresh').addEventListener('click', readCommon);
   $('retry-tasks').addEventListener('click', onRetry);
-  return { render, capturePosition, restorePosition, clear() {
+  return { render, capturePosition, restorePosition, enterTasks(moduleCode, unitCode = '') {
+    render();
+    $('tasks-module').value = moduleCode;
+    $('tasks-unit').value = '';
+    render();
+    $('tasks-unit').value = unitCode ? `${moduleCode}:${unitCode}` : '';
+    render();
+  }, clear() {
     generation++; common = null; commonError = ''; commonLoading = false; commonAttempted = false; commonConnection = null; commonKey = ''; section = 'sessions';
     $('common-content').replaceChildren(); $('common-message').textContent = ''; $('common-message').hidden = true;
     $('common-scope').value = 'module';
