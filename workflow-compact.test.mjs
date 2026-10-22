@@ -27,7 +27,7 @@ test('row resources use only explicit activity/session/presentation/work referen
   const before=structuredClone(doc);
   assert.deepEqual(rowResources(doc,session,session.activities[0],[{document:other}]).resources.map(r=>r.title),['Session','Work']);
   const result=rowResources(doc,session,session.activities[1]);
-  assert.deepEqual(result.resources.map(r=>r.title),['Portion','Task']);assert.equal(result.unresolved.length,1);
+  assert.deepEqual(result.resources.map(r=>r.title),['Portion']);assert.equal(result.unresolved.length,1);
   assert.deepEqual(doc,before);
 });
 test('title similarity never links a resource and a session-only presentation uses the header',()=>{
@@ -37,4 +37,17 @@ test('title similarity never links a resource and a session-only presentation us
   doc.tasks=[{id:'t',presentation:{sessionId:'s'},resourceRefs:['r']}];
   assert.equal(rowResources(doc,session,session.activities[0]).resources.length,1);
   assert.equal(rowResources(doc,session,session.activities[1]).resources.length,0);
+});
+
+test('an explicit interval selection replaces its task bundle, including an empty selection',()=>{
+  const activity={id:'a',taskRefs:['t'],resourceRefs:['phase1']};
+  const session={id:'s',activities:[activity]};
+  const doc={module:{code:'SR'},unit:{id:'u'},resources:[{id:'phase1'},{id:'phase2'},{id:'guide'}],tasks:[{id:'t',presentation:{sessionId:'s',activityId:'a'},resourceRefs:['phase1','phase2','guide']}]};
+  const before=structuredClone(doc);
+  assert.deepEqual(rowResources(doc,session,activity).resources.map(r=>r.id),['phase1']);
+  assert.deepEqual(doc,before);
+  activity.resourceRefs=[];
+  assert.deepEqual(rowResources(doc,session,activity).resources,[]);
+  delete activity.resourceRefs;
+  assert.deepEqual(rowResources(doc,session,activity).resources.map(r=>r.id),['phase1','phase2','guide']);
 });
