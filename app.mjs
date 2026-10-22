@@ -8,6 +8,7 @@ import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261019-rf16';
 import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-rf12';
 import { orderedUnits, compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion, calendarCurrentUnits } from './unit-tools.mjs?v=20261020-workflow';
 import { rowResources } from './resources.mjs?v=20261022-interval-resources';
+import { createRowResourcesUI } from './row-resources-ui.mjs?v=20261022-resource-icons';
 import { eventTypes, setSessionEventType, activityEventType, activityEventTypes, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261019-parallel-lanes';
 import { libraryIntegrity } from './model-v3.mjs?v=20261018-rf12';
 import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-rf12';
@@ -639,9 +640,7 @@ function makeRowResources(session, activity) {
   const cell = node('div', 'row-resources');
   cell.setAttribute('aria-label', 'Recursos');
   const linked = rowResources(draft, session, activity, libraryRecords());
-  for (const resource of linked.resources) resourcesUI.appendLink(cell, resource);
-  if (linked.unresolved.length) cell.append(node('span', 'resource-unresolved', 'Referencia pendiente de resolver'));
-  if (!cell.childNodes.length) cell.classList.add('is-empty');
+  rowResourcesUI.render(cell, linked.resources, draft.module.code, linked.unresolved);
   return cell;
 }
 
@@ -863,6 +862,8 @@ function renderSessions() {
   const headings = compactSessionHeaders(draft.sessions, presentationPeriods(catalog));
   draft.sessions.forEach((session, index) => container.append(makeSession(session, index, headings[index])));
   $('workspace').classList.toggle('has-row-resources', Boolean(container.querySelector('.row-resources:not(.is-empty)')));
+  const resourceIcons = Math.max(1, ...[...container.querySelectorAll('.row-resources')].map(cell => cell.querySelectorAll('.resource-icon').length));
+  $('workspace').style.setProperty('--row-resource-width', `${resourceIcons * 28 + (resourceIcons - 1) * 3}px`);
   refreshTemporalIndicators();
   renderSessionBand();
   moduleViews.render(); renderStats(); preparationUI.render(); resourcesUI.render();
@@ -1082,7 +1083,7 @@ async function connect(event) {
     generalNotesUI.disconnect();
     registryUI.disconnect();
     moduleProfileUI.disconnect();
-    preparationUI.clear(); sessionEditorUI.clear(); resourcesUI.clear();
+    preparationUI.clear(); sessionEditorUI.clear(); resourcesUI.clear(); rowResourcesUI.clear();
     documentStores.clear();
     catalog = null;
     activeEntry = null;
@@ -1117,7 +1118,7 @@ function disconnect() {
   generalNotesUI.disconnect();
   registryUI.disconnect();
   moduleProfileUI.disconnect();
-  preparationUI.clear(); sessionEditorUI.clear(); resourcesUI.clear();
+  preparationUI.clear(); sessionEditorUI.clear(); resourcesUI.clear(); rowResourcesUI.clear();
   presentationUI.clear();
   $('editor').close();
   editorTarget = null;
@@ -1586,6 +1587,11 @@ const resourcesUI = createResourcesUI({
     renderSessions();
   },
   onBlocked(entry) { if (entry.path === activeEntry?.path) { blockedSave = true; message('workspace-message','Conserva los recursos y las notas pendientes. Revisa la versión antes de guardar otra vez.','warning'); } },
+});
+const rowResourcesUI = createRowResourcesUI({
+  isBusy: () => busy,
+  canOpen: () => Boolean(connection && draft) && !document.querySelector('dialog[open]:not(.row-resource-picker)'),
+  openPrivate: resource => resourcesUI.openPrivate(resource),
 });
 const moduleViews = createModuleViews({
   getState: () => ({ module: catalog?.modules.find(item => item.code === activeEntry?.moduleCode), records: moduleRecords(), allRecords: libraryRecords(), taskRecords: [...libraryRecords(), ...registryUI.records()], integrityIssues: libraryIntegrity([...libraryRecords(), ...registryUI.records()]), registryFailures: registryUI.failures(), catalog, failures: moduleFailures(), allFailures: moduleLoadFailures, errors: teachingTimeline.errors, ready: moduleContextReady, today: madridToday(), activePath: activeEntry?.path, busy, connection, view: currentView }),
