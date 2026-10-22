@@ -92,7 +92,8 @@ export function prepareResourceSave(loaded, entry, values, active) {
   }
   return { document, unitDraft };
 }
-// Resolve explicit associations only. Never infer a resource from a row title.
+// Explicit interval references select its resources; task bundles remain a legacy fallback.
+// Never infer associations from titles or copy the whole bundle over an explicit selection.
 export function rowResources(document, session, activity, records = []) {
   const sources = new Map(), unresolved = new Set();
   const add = (owner, refs) => {
@@ -104,6 +105,7 @@ export function rowResources(document, session, activity, records = []) {
   };
   add(document, activity?.resourceRefs);
   if (session.activities?.[0]?.id === activity?.id) add(document, session.resourceRefs);
+  if (own(activity ?? {}, 'resourceRefs')) return { resources: [...sources.values()], unresolved: [...unresolved] };
   for (const { document: owner } of [{ document }, ...records.filter(record => record.document !== document && record.document.module?.code === document.module?.code)]) {
     for (const task of owner.tasks ?? []) {
       const presents = owner.unit?.id === document.unit?.id && task.presentation?.sessionId === session.id
