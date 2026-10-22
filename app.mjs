@@ -7,7 +7,7 @@ import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore,
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261019-rf16';
 import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-rf12';
 import { orderedUnits, compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion, calendarCurrentUnits } from './unit-tools.mjs?v=20261020-workflow';
-import { rowResources } from './resources.mjs?v=20261020-workflow';
+import { rowResources } from './resources.mjs?v=20261022-interval-resources';
 import { eventTypes, setSessionEventType, activityEventType, activityEventTypes, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261019-parallel-lanes';
 import { libraryIntegrity } from './model-v3.mjs?v=20261018-rf12';
 import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-rf12';
