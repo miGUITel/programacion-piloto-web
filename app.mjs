@@ -6,13 +6,13 @@ import { createResourcesUI } from './resources-ui.mjs?v=20261020-workflow';
 import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-rf12';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261019-rf16';
 import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-rf12';
-import { orderedUnits, compactUnitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion, calendarCurrentUnits } from './unit-tools.mjs?v=20261020-workflow';
+import { orderedUnits, unitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion, calendarCurrentUnits } from './unit-tools.mjs?v=20261023-unit-labels';
 import { rowResources } from './resources.mjs?v=20261022-interval-resources';
 import { createRowResourcesUI } from './row-resources-ui.mjs?v=20261022-resource-icons';
 import { eventTypes, setSessionEventType, activityEventType, activityEventTypes, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261019-parallel-lanes';
 import { libraryIntegrity } from './model-v3.mjs?v=20261018-rf12';
 import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-rf12';
-import { createModuleViews } from './module-views-ui.mjs?v=20261020-workflow';
+import { createModuleViews } from './module-views-ui.mjs?v=20261023-unit-labels';
 import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261018-rf12';
 import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261018-rf12';
 import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-rf12';
@@ -231,8 +231,8 @@ function fillUnits(preferredCode = '') {
     option.value = '';
     select.append(option);
   } else for (const unit of module.units) {
-    const option = node('option', '', compactUnitLabel(unit));
-    option.title = `${unit.code} · ${unit.title}`;
+    const option = node('option', '', unitLabel(unit));
+    option.title = unitLabel(unit);
     option.value = unit.code;
     select.append(option);
   }

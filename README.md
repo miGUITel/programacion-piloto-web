@@ -1,5 +1,9 @@
 # Interfaz del piloto
 
+## Nombres de unidades y bloques
+
+El selector de UT y el listado de unidades de la vista Mo muestran el mismo nombre: código y título completos del catálogo privado, mediante una única función de presentación. No se abrevian a tres palabras ni se utilizan títulos alternativos de los documentos cargados. Si el espacio visible recorta el texto, la ayuda conserva el nombre completo. Este ajuste no modifica identidades ni datos de seguimiento.
+
 ## Cabecera compacta
 
 El gris temporal permanece en el extremo izquierdo de sesiones y porciones, con su carril de 4 px siempre reservado. Azul y naranja se sitúan en el borde izquierdo del bloque de título, después de la fecha/número de sesión o del horario. En móvil, si el horario está encima del título de la porción, la marca académica acompaña al título sin mover el gris. Si coinciden tarea y examen, se conservan ambas franjas, azul y naranja, de 4 px cada una. Solo el gris crece con el tiempo; se conservan los fondos, la selección manual, los borradores y el seguimiento. No se modifican los JSON.

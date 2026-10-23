@@ -1,3 +1,4 @@
+import { unitLabel } from './unit-tools.mjs?v=20261023-unit-labels';
 import { moduleOverview, weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261018-rf12';
 import { dayLetters, dayNames, commonCoursePath } from './common-course.mjs?v=20261018-rf12';
 import { renderCommonCourse } from './common-course-ui.mjs?v=20261018-rf12';
@@ -90,7 +91,7 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
     grid.append(header);
     for (const row of model.rows) {
       const tr = el('div', 'overview-row'), label = el('div', 'overview-label');
-      const title = el('button', 'unit-link', `${row.unit.code} · ${row.record?.document.unit.title ?? row.unit.title}`);
+      const title = el('button', 'unit-link', unitLabel(row.unit));
       title.type = 'button'; title.title = title.textContent;
       title.addEventListener('click', () => onOpen(row.unit.path)); label.append(title);
       if (row.record) label.append(preparationBadge(row.record.document, () => onPreparation(row.record.entry)));

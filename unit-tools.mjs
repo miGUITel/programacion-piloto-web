@@ -6,12 +6,8 @@ export function orderedUnits(units) {
   return [...units].sort((left, right) => left.code.localeCompare(right.code, 'es', { numeric: true }));
 }
 
-export function compactUnitLabel(unit) {
-  const [, digits, suffix] = unit.code.match(/^(?:UT|RA|B)(\d+)([A-Z]?)$/);
-  const number = digits.padStart(2, '0') + suffix;
-  const title = typeof unit.shortTitle === 'string' && unit.shortTitle.trim() ? unit.shortTitle : unit.title;
-  const words = title.split(/\s*[·—|]\s*/)[0].trim().split(/\s+/).slice(0, 3);
-  return `${number} ${words.join(' ')}`;
+export function unitLabel(unit) {
+  return `${unit.code} · ${unit.title}`;
 }
 
 export function madridToday(now = new Date()) {
