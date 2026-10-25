@@ -268,7 +268,7 @@ export function validateDocument(doc, expectedEntry) {
         if (task.type !== undefined && !['task', 'exam'].includes(task.type)) errors.push(`${path}.type: debe ser task o exam.`);
         if (Object.hasOwn(task, 'preparation') && !['draft', 'ready'].includes(task.preparation)) errors.push(`${path}.preparation: debe ser draft o ready.`);
         if (isV3) validateExtendedTask(task, path, errors, isValidDate);
-        else if (!isText(task.code) || !(task.type === 'exam' ? /^\d{2}(?:\d{2})?$/ : /^\d{4}$/).test(task.code)) errors.push(`${path}.code: código oficial no válido.`);
+        else if (!isText(task.code) || !(task.type === 'exam' ? /^\d{2}(?:\d{2}|te|ex|ia)?$/ : /^\d{4}$/).test(task.code)) errors.push(`${path}.code: código oficial no válido.`);
         const codeKey = isV3 ? JSON.stringify([task.type, task.code]) : task.code;
         if (codes.has(codeKey)) errors.push(`${path}.code: código de tarea duplicado.`);
         codes.add(codeKey);
@@ -297,7 +297,7 @@ export function validateTaskRegistry(doc, moduleCode) {
     if (!isObject(task)) { errors.push(`${path}: debe ser un objeto.`); return; }
     if (!nonemptyText(task.id) || ids.has(task.id)) errors.push(`${path}.id: identificador no válido o duplicado.`);
     ids.add(task.id);
-    if (!isUnitCode(task.unitCode) || !['task', 'exam'].includes(task.type) || !nonemptyText(task.title) || !(doc.schemaVersion === 2 ? officialCode(task.code) : isText(task.code) && (task.type === 'exam' ? /^\d{2}(?:\d{2})?$/ : /^\d{4}$/).test(task.code))) errors.push(`${path}: identidad de tarea no válida.`);
+    if (!isUnitCode(task.unitCode) || !['task', 'exam'].includes(task.type) || !nonemptyText(task.title) || !(doc.schemaVersion === 2 ? officialCode(task.code) : isText(task.code) && (task.type === 'exam' ? /^\d{2}(?:\d{2}|te|ex|ia)?$/ : /^\d{4}$/).test(task.code))) errors.push(`${path}: identidad de tarea no válida.`);
     if (doc.schemaVersion === 2) validateExtendedTask(task, path, errors, isValidDate);
     const identity = `${task.unitCode}/${task.type}/${task.code}`;
     if (identities.has(identity)) errors.push(`${path}: código duplicado.`);

@@ -25,7 +25,7 @@ export function createPreparationTask(document, input, id) {
   const issue = taskAdditionIssue(document); if (issue) throw new Error(issue);
   const code = input.code?.trim(), title = input.title?.trim(), type = input.type;
   if (!['task', 'exam'].includes(type) || !code || /[\r\n]/.test(code) || !title) throw new Error('Indica tipo, código oficial y título.');
-  if (document.schemaVersion !== 3 && !(type === 'exam' ? /^\d{2}(?:\d{2})?$/ : /^\d{4}$/).test(code)) throw new Error(type === 'exam' ? 'El código de examen debe tener dos o cuatro cifras en esta UT.' : 'El código de tarea debe tener cuatro cifras en esta UT.');
+  if (document.schemaVersion !== 3 && !(type === 'exam' ? /^\d{2}(?:\d{2}|te|ex|ia)?$/ : /^\d{4}$/).test(code)) throw new Error(type === 'exam' ? 'El código de examen debe tener dos o cuatro cifras, o dos cifras seguidas de te, ex o ia.' : 'El código de tarea debe tener cuatro cifras en esta UT.');
   if ((document.tasks ?? []).some(task => task.code === code && (document.schemaVersion !== 3 || taskType(task) === type))) throw new Error('Ya existe un elemento con ese código. Revisa la lista antes de añadirlo.');
   const ids = [document.unit.id, ...document.sessions.flatMap(session => [session.id, ...session.activities.map(activity => activity.id)]), ...(document.tasks ?? []).map(task => task.id)];
   if (typeof id !== 'string' || !id.trim() || ids.includes(id)) throw new Error('No se ha podido crear una identidad nueva. Vuelve a añadir el elemento.');
