@@ -1,7 +1,7 @@
-import { saveErrorFeedback } from './core.mjs?v=20261018-rf12';
-import { recordKey, recordGroup, groupForSchedule, meetingTitle, withMeetingRecord } from './meeting-records.mjs?v=20261019-meeting-calendar';
-import { madridClock, meetingContext, meetingGroupContext } from './startup-context.mjs?v=20261019-meeting-calendar';
-import { meetingCalendar, calendarGroups, dayChoices } from './meeting-calendar.mjs?v=20261019-meeting-calendar';
+import { saveErrorFeedback } from './core.mjs?v=20261027-rf32';
+import { recordKey, recordGroup, groupForSchedule, meetingTitle, withMeetingRecord } from './meeting-records.mjs?v=20261027-rf32';
+import { madridClock, meetingContext, meetingGroupContext } from './startup-context.mjs?v=20261027-rf32';
+import { meetingCalendar, calendarGroups, dayChoices } from './meeting-calendar.mjs?v=20261027-rf32';
 const $ = id => document.getElementById(id);
 const node = (tag, text, className = '') => { const e = document.createElement(tag); e.className = className; if (text !== undefined) e.textContent = text; return e; };
 const listText = value => (value ?? []).join('\n');

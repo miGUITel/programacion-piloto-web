@@ -1,7 +1,7 @@
-import { preparationMaterials, materialLabels, preparationValues, preparationSummary, preparationSnapshot, assertPreparationRead, preparePreparationSave, PreparationError } from './preparation.mjs?v=20261018-rf12';
-import { taskPreparationGroups, taskAdditionIssue, createPreparationTask, taskRemovalIssue, taskType } from './preparation-tasks.mjs?v=20261018-rf12';
-import { saveTaskDocument } from './task-edit.mjs?v=20261018-rf12';
-import { saveErrorFeedback } from './core.mjs?v=20261018-rf12';
+import { preparationMaterials, materialLabels, preparationValues, preparationSummary, preparationSnapshot, assertPreparationRead, preparePreparationSave, PreparationError } from './preparation.mjs?v=20261027-rf32';
+import { taskPreparationGroups, taskAdditionIssue, createPreparationTask, taskRemovalIssue, taskType } from './preparation-tasks.mjs?v=20261027-rf32';
+import { saveTaskDocument } from './task-edit.mjs?v=20261027-rf32';
+import { saveErrorFeedback } from './core.mjs?v=20261027-rf32';
 const $ = id => document.getElementById(id);
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const el = (tag, css = '', text) => { const item = document.createElement(tag); item.className = css; if (text !== undefined) item.textContent = text; return item; };

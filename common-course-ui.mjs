@@ -1,4 +1,4 @@
-import { dayLetters, dayNames, evaluationsFor } from './common-course.mjs?v=20261018-rf12';
+import { dayLetters, dayNames, evaluationsFor } from './common-course.mjs?v=20261027-rf32';
 
 const node = (tag, text, className = '') => {
   const e = document.createElement(tag); e.className = className;

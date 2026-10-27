@@ -1,11 +1,12 @@
-import { unitLabel } from './unit-tools.mjs?v=20261023-unit-labels';
-import { moduleOverview, weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261018-rf12';
-import { dayLetters, dayNames, commonCoursePath } from './common-course.mjs?v=20261018-rf12';
-import { renderCommonCourse } from './common-course-ui.mjs?v=20261018-rf12';
-import { eventTypes } from './teaching.mjs?v=20261018-rf12';
-import { taskStates } from './task-cycle.mjs?v=20261018-rf12';
-import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261018-rf12';
-import { preparationBadge } from './preparation-ui.mjs?v=20261018-rf12';
+import { addedSession, sessionPlanningLabel } from './replanning.mjs?v=20261027-rf32';
+import { unitLabel } from './unit-tools.mjs?v=20261027-rf32';
+import { moduleOverview, weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261027-rf32';
+import { dayLetters, dayNames, commonCoursePath } from './common-course.mjs?v=20261027-rf32';
+import { renderCommonCourse } from './common-course-ui.mjs?v=20261027-rf32';
+import { eventTypes } from './teaching.mjs?v=20261027-rf32';
+import { taskStates } from './task-cycle.mjs?v=20261027-rf32';
+import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261027-rf32';
+import { preparationBadge } from './preparation-ui.mjs?v=20261027-rf32';
 
 const $ = id => document.getElementById(id);
 function el(tag, className, text) {
@@ -24,7 +25,7 @@ function monthName(month) {
   return new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(month + '-15T12:00:00Z'));
 }
 
-export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPresented, onRetry, onPreparation }) {
+export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPresented, onRetry, onPreparation, planStatus }) {
   let filterModule = '';
   let section = 'sessions', common = null, commonError = '', commonLoading = false, commonAttempted = false;
   let commonConnection = null, commonKey = '', generation = 0;
@@ -94,7 +95,7 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
       const title = el('button', 'unit-link', unitLabel(row.unit));
       title.type = 'button'; title.title = title.textContent;
       title.addEventListener('click', () => onOpen(row.unit.path)); label.append(title);
-      if (row.record) label.append(preparationBadge(row.record.document, () => onPreparation(row.record.entry)));
+      if (row.record) { label.append(preparationBadge(row.record.document, () => onPreparation(row.record.entry))); if (planStatus) label.append(planStatus(row.record.document)); }
       if (row.unit.path === activePath) label.append(el('span', 'overview-active', 'Abierta'));
       if (!row.record) label.append(el('span', 'overview-unavailable', 'Sin datos · reintenta Actualizar'));
       tr.append(label);
@@ -111,9 +112,9 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
           const types = eventTypes(session, row.record.document);
           const button = el('button', `overview-session band-day${types.includes('task') ? ' has-task' : ''}${types.includes('exam') ? ' has-exam' : ''}${['Cancelada', 'Reprogramada'].includes(session.state) ? ' excluded-session' : ''}${session.date < today ? ' elapsed-session' : ''}`);
           button.type = 'button'; button.dataset.sessionId = session.id; button.dataset.weekday = String(cell.weekday);
-          button.append(el('strong', 'overview-number', `S${session.number}`));
+          button.append(el('strong', 'overview-number', `${addedSession(row.record.document, session.id) ? '+' : ''}S${session.number}`));
           button.append(el('span', 'overview-cell-date', dateText));
-          const description = `${row.unit.code} · Sesión ${session.number} · ${shortDate(session.date)} · ${session.activities[0].start} · ${session.activities[0].title}${types.length ? ' · ' + types.map(type => type === 'task' ? 'Tarea' : 'Examen').join(' y ') : ''}${session.state ? ' · ' + session.state : ''}`;
+          const description = `${row.unit.code} · Sesión ${session.number} · ${shortDate(session.date)} · ${session.activities[0].start} · ${session.activities[0].title}${types.length ? ' · ' + types.map(type => type === 'task' ? 'Tarea' : 'Examen').join(' y ') : ''}${session.state ? ' · ' + sessionPlanningLabel(row.record.document, session, records) : ''}`;
           button.title = description; button.setAttribute('aria-label', description);
           button.addEventListener('click', () => onOpen(row.unit.path, session.id)); td.append(button);
         }

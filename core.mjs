@@ -1,7 +1,9 @@
-import { validateResources, validateModuleResources, moduleResourcePath, validGithubLocation } from './resources.mjs?v=20261018-rf12';
-import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261018-rf12';
-import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261018-rf12';
-import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261018-rf12';
+import { validateResources, validateModuleResources, moduleResourcePath, validGithubLocation } from './resources.mjs?v=20261027-rf32';
+import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261027-rf32';
+import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261027-rf32';
+import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261027-rf32';
+
+import { validatePlanningChanges } from './replanning.mjs?v=20261027-rf32';
 
 const OWNER = 'miGUITel';
 const REPOSITORY = 'programacion-piloto-datos';
@@ -282,6 +284,7 @@ export function validateDocument(doc, expectedEntry) {
       });
     }
   }
+  validatePlanningChanges(doc, errors);
   if (isV3) validateV3Document(doc, errors);
   return errors;
 }
@@ -567,3 +570,4 @@ export class GithubStore {
     });
   }
 }
+

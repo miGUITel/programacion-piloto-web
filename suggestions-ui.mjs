@@ -1,4 +1,4 @@
-import { SuggestionsStore, createSuggestion, suggestionErrorFeedback } from './suggestions.mjs?v=20261018-rf12';
+import { SuggestionsStore, createSuggestion, suggestionErrorFeedback } from './suggestions.mjs?v=20261027-rf32';
 
 /** Separate UI and persistence: never reads or writes the academic document. */
 export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademicEditorOpen, onSaved = () => {} }) {

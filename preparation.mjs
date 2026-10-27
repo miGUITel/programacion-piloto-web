@@ -1,5 +1,5 @@
 /** RF 3: preparation is derived from confirmed materials and session marks. */
-import { taskPreparationGroups, createPreparationTask, taskRemovalIssue } from './preparation-tasks.mjs?v=20261018-rf12';
+import { taskPreparationGroups, createPreparationTask, taskRemovalIssue } from './preparation-tasks.mjs?v=20261027-rf32';
 export const preparationMaterials = ['ppt', 'web', 'tasks', 'exam'];
 export const preparationLabels = { pending: 'Pendiente', draft: 'En preparación', ready: 'Preparada' };
 export const materialLabels = { ppt: 'PPT', web: 'Web', tasks: 'Tareas', exam: 'Examen' };

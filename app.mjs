@@ -1,26 +1,28 @@
-import { createContextMemory, catalogEntries, chooseStartup, resolveRemembered, unitContext, meetingContext, meetingsForDay, madridClock } from './startup-context.mjs?v=20261019-meeting-calendar';
-import { elapsedTiming, timingDescription } from './row-time.mjs?v=20261019-rf22';
-import { MeetingReader } from './meeting-reader.mjs?v=20261019-meeting-calendar';
-import { createMeetingWorkspace } from './meeting-workspace-ui.mjs?v=20261019-meeting-calendar';
-import { createResourcesUI } from './resources-ui.mjs?v=20261020-workflow';
-import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261018-rf12';
-import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261019-rf16';
-import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261018-rf12';
-import { orderedUnits, unitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion, calendarCurrentUnits } from './unit-tools.mjs?v=20261023-unit-labels';
-import { rowResources } from './resources.mjs?v=20261022-interval-resources';
-import { createRowResourcesUI } from './row-resources-ui.mjs?v=20261022-resource-icons';
-import { eventTypes, setSessionEventType, activityEventType, activityEventTypes, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261019-parallel-lanes';
-import { libraryIntegrity } from './model-v3.mjs?v=20261018-rf12';
-import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261018-rf12';
-import { createModuleViews } from './module-views-ui.mjs?v=20261023-unit-labels';
-import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261018-rf12';
-import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261018-rf12';
-import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261018-rf12';
-import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261018-rf12';
-import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261018-rf12';
-import { renderUnitInformation, sessionInformationLines } from './unit-information.mjs?v=20261018-rf12';
-import { createPreparationUI } from './preparation-ui.mjs?v=20261018-rf12';
-import { createSessionEditorUI, bindSessionEditRow } from './session-editor-ui.mjs?v=20261018-rf12';
+import { createReplanningUI } from './replanning-ui.mjs?v=20261027-rf32';
+import { addedSession, excludedSession } from './replanning.mjs?v=20261027-rf32';
+import { createContextMemory, catalogEntries, chooseStartup, resolveRemembered, unitContext, meetingContext, meetingsForDay, madridClock } from './startup-context.mjs?v=20261027-rf32';
+import { elapsedTiming, timingDescription } from './row-time.mjs?v=20261027-rf32';
+import { MeetingReader } from './meeting-reader.mjs?v=20261027-rf32';
+import { createMeetingWorkspace } from './meeting-workspace-ui.mjs?v=20261027-rf32';
+import { createResourcesUI } from './resources-ui.mjs?v=20261027-rf32';
+import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261027-rf32';
+import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261027-rf32';
+import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261027-rf32';
+import { orderedUnits, unitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion, calendarCurrentUnits } from './unit-tools.mjs?v=20261027-rf32';
+import { rowResources } from './resources.mjs?v=20261027-rf32';
+import { createRowResourcesUI } from './row-resources-ui.mjs?v=20261027-rf32';
+import { eventTypes, setSessionEventType, activityEventType, activityEventTypes, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261027-rf32';
+import { libraryIntegrity } from './model-v3.mjs?v=20261027-rf32';
+import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261027-rf32';
+import { createModuleViews } from './module-views-ui.mjs?v=20261027-rf32';
+import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261027-rf32';
+import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261027-rf32';
+import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261027-rf32';
+import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261027-rf32';
+import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261027-rf32';
+import { renderUnitInformation, sessionInformationLines } from './unit-information.mjs?v=20261027-rf32';
+import { createPreparationUI } from './preparation-ui.mjs?v=20261027-rf32';
+import { createSessionEditorUI, bindSessionEditRow } from './session-editor-ui.mjs?v=20261027-rf32';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -778,14 +780,14 @@ function makeSession(session, sessionIndex, heading) {
   toggle.setAttribute('aria-expanded', String(isOpen));
   toggle.setAttribute('aria-controls', `session-content-${sessionIndex}`);
   const date = dateInfo(session.date);
-  const dateTile = node('time', 'date-tile');
+  const dateTile = node('time', `date-tile${excludedSession(session) ? ' plan-excluded-date' : ''}`);
   dateTile.dateTime = session.date;
   dateTile.title = date.full;
   dateTile.setAttribute('aria-label', `Sesión ${session.number}${heading.periods.length ? ' · Periodos ' + heading.periods.join(', ') : ''} · ${date.full}`);
   const dateLine = node('span', 'session-date-line');
   dateLine.append(node('span', 'date-day', heading.day));
   if (heading.monthLabel) dateLine.append(node('span', 'date-month', heading.monthLabel));
-  dateTile.append(node('span', 'session-number-line', heading.sessionLabel), dateLine);
+  dateTile.append(node('span', 'session-number-line', `${addedSession(draft, session.id) ? '+' : ''}${heading.sessionLabel}`), dateLine);
   markTemporalRow(top, dateTile, sessionIndex);
   const description = node('div', 'session-description');
   const title = node('h3', 'session-title');
@@ -794,6 +796,7 @@ function makeSession(session, sessionIndex, heading) {
   title.title = first?.title || 'Sesión';
   title.tabIndex = -1;
   description.append(title, makeTeachingControls(session, sessionIndex));
+  const planSignal = replanningUI.sessionSignal(draft, session); if (planSignal) description.append(planSignal);
   const planned = node('p', 'planned-preview', first?.planned || '');
   planned.title = first?.planned || '';
   top.append(toggle, dateTile, description, makeRowResources(session, first), planned, notePreviews(first || {}, 'session-notes'), makeStateSelect(session, sessionIndex), rowActions(sessionIndex, 0));
@@ -843,6 +846,7 @@ function renderStats() {
 
 function renderSessions() {
   renderUnitInformation($('unit-information'), draft, $('unit-information-open'));
+  replanningUI.render();
   const records = moduleRecords();
   const failures = moduleFailures();
   teachingTimeline = moduleTimeline(records, draft.module.code);
@@ -1083,7 +1087,7 @@ async function connect(event) {
     generalNotesUI.disconnect();
     registryUI.disconnect();
     moduleProfileUI.disconnect();
-    preparationUI.clear(); sessionEditorUI.clear(); resourcesUI.clear(); rowResourcesUI.clear();
+    preparationUI.clear(); sessionEditorUI.clear(); resourcesUI.clear(); rowResourcesUI.clear(); replanningUI.clear();
     documentStores.clear();
     catalog = null;
     activeEntry = null;
@@ -1118,7 +1122,7 @@ function disconnect() {
   generalNotesUI.disconnect();
   registryUI.disconnect();
   moduleProfileUI.disconnect();
-  preparationUI.clear(); sessionEditorUI.clear(); resourcesUI.clear(); rowResourcesUI.clear();
+  preparationUI.clear(); sessionEditorUI.clear(); resourcesUI.clear(); rowResourcesUI.clear(); replanningUI.clear();
   presentationUI.clear();
   $('editor').close();
   editorTarget = null;
@@ -1593,7 +1597,12 @@ const rowResourcesUI = createRowResourcesUI({
   canOpen: () => Boolean(connection && draft) && !document.querySelector('dialog[open]:not(.row-resource-picker)'),
   openPrivate: resource => resourcesUI.openPrivate(resource),
 });
+const replanningUI = createReplanningUI({
+  isBusy: () => busy,
+  getState: () => ({ document: draft, records: moduleRecords(), connection, catalog, complete: moduleContextReady && !moduleFailures().length && !teachingTimeline.errors.length }),
+});
 const moduleViews = createModuleViews({
+  planStatus: doc => replanningUI.statusNodes(doc),
   getState: () => ({ module: catalog?.modules.find(item => item.code === activeEntry?.moduleCode), records: moduleRecords(), allRecords: libraryRecords(), taskRecords: [...libraryRecords(), ...registryUI.records()], integrityIssues: libraryIntegrity([...libraryRecords(), ...registryUI.records()]), registryFailures: registryUI.failures(), catalog, failures: moduleFailures(), allFailures: moduleLoadFailures, errors: teachingTimeline.errors, ready: moduleContextReady, today: madridToday(), activePath: activeEntry?.path, busy, connection, view: currentView }),
   onOpen: (path, sessionId) => openModuleSource(path, sessionId),
   onEdit: task => registryUI.open(task),
