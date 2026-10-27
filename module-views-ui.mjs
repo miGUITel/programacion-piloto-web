@@ -1,6 +1,6 @@
 import { sessionDisplayLabel, sessionPlanningLabel } from './replanning.mjs?v=20261027-rf32-labels';
 import { unitLabel } from './unit-tools.mjs?v=20261027-rf32';
-import { moduleOverview, weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261027-rf32';
+import { moduleOverview, weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261027-rf32-gaps';
 import { dayLetters, dayNames, commonCoursePath } from './common-course.mjs?v=20261027-rf32';
 import { renderCommonCourse } from './common-course-ui.mjs?v=20261027-rf32';
 import { eventTypes } from './teaching.mjs?v=20261027-rf32';
@@ -25,7 +25,7 @@ function monthName(month) {
   return new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(month + '-15T12:00:00Z'));
 }
 
-export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPresented, onRetry, onPreparation, planStatus }) {
+export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPresented, onRetry, onPreparation, planStatus, onShift }) {
   let filterModule = '';
   let section = 'sessions', common = null, commonError = '', commonLoading = false, commonAttempted = false;
   let commonConnection = null, commonKey = '', generation = 0;
@@ -82,9 +82,10 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
   }
 
   function renderOverview(module, records, today, activePath) {
-    const overview = moduleOverview(module, records, $('overview-month').value);
-    fillSelect($('overview-month'), [['', 'Todas las fechas'], ...overview.months.map(month => [month, monthName(month)])], $('overview-month').value);
-    const model = weekdayOverview(module, records, common, $('overview-month').value);
+    const state = getState(), previous = $('overview-month').value;
+    const model = weekdayOverview(module, records, common, previous, { complete: state.ready && !state.failures?.length && !state.errors?.length });
+    const months = [...new Set([...model.months, ...(previous ? [previous] : [])])].sort();
+    fillSelect($('overview-month'), [['', 'Todas las fechas'], ...months.map(month => [month, monthName(month)])], previous);
     const grid = $('module-grid'); grid.replaceChildren();
     grid.dataset.days = String(model.days.length || 1); overviewDays = model.days;
     const header = el('div', 'overview-row overview-head');
@@ -92,15 +93,29 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
     grid.append(header);
     for (const row of model.rows) {
       const tr = el('div', 'overview-row'), label = el('div', 'overview-label');
+      tr.dataset.unitId = row.unit.id;
       const title = el('button', 'unit-link', unitLabel(row.unit));
       title.type = 'button'; title.title = title.textContent;
       title.addEventListener('click', () => onOpen(row.unit.path)); label.append(title);
       if (row.record) { label.append(preparationBadge(row.record.document, () => onPreparation(row.record.entry))); if (planStatus) label.append(planStatus(row.record.document)); }
       if (row.unit.path === activePath) label.append(el('span', 'overview-active', 'Abierta'));
       if (!row.record) label.append(el('span', 'overview-unavailable', 'Sin datos · reintenta Actualizar'));
+      if (row.shiftIssue) label.append(el('span', 'overview-shift-note', row.shiftIssue));
       tr.append(label);
       const content = el('div', 'overview-content'), strip = el('div', 'overview-strip');
       let previousMonth = '', previousYear = '';
+      function ghostCell(cell) {
+        const grouped = cell.kind === 'trace-group', td = el('div', grouped ? 'overview-shift-group' : 'overview-slot');
+        const button = el('button', 'overview-shift-gap'); button.type = 'button'; button.dataset.originalDate = cell.date;
+        const names = cell.shifts.map(m => sessionDisplayLabel(row.record.document, m.before, records));
+        button.append(el('span', 'overview-ghost-label', grouped ? `${cell.dates.length} posiciones anteriores · ver traza` : names.length ? `Antes ${names.join(', ')}` : 'Hueco'));
+        button.append(el('span', 'overview-cell-date', grouped ? `${shortDate(cell.date)}–${shortDate(cell.through)}` : `${dayLetters[cell.weekday]} ${Number(cell.date.slice(8))}/${cell.date.slice(5, 7)}`));
+        const moves = cell.shifts.map(m => `${sessionDisplayLabel(row.record.document, m.before, records)}: ${shortDate(m.before.date)} → ${shortDate(m.after.date)}`).join('; ');
+        button.title = `${grouped ? 'Tramo histórico agrupado' : 'Posición anterior al último ajuste aprobado'} · ${moves || 'Separación de calendario por el desplazamiento'} · ${cell.change.reason} · No indica margen disponible`;
+        button.setAttribute('aria-label', button.title); button.setAttribute('aria-haspopup', 'dialog');
+        button.addEventListener('click', () => onShift?.(row.record, { sourceDate: cell.date, changeId: cell.change.id }));
+        td.append(button); return td;
+      }
       function sessionCell(cell) {
         const td = el('div', `overview-slot${cell.date === today ? ' is-today' : ''}`);
         const month = cell.date.slice(0, 7), year = cell.date.slice(0, 4);
@@ -115,24 +130,26 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
           const displayLabel = sessionDisplayLabel(row.record.document, session, records);
           button.append(el('strong', 'overview-number', displayLabel));
           button.append(el('span', 'overview-cell-date', dateText));
-          const description = `${row.unit.code} · ${displayLabel} · ${shortDate(session.date)} · ${session.activities[0].start} · ${session.activities[0].title}${types.length ? ' · ' + types.map(type => type === 'task' ? 'Tarea' : 'Examen').join(' y ') : ''}${session.state ? ' · ' + sessionPlanningLabel(row.record.document, session, records) : ''}`;
+          const shift = cell.shifts?.find(m => m.after.id === session.id);
+          const description = `${row.unit.code} · ${displayLabel} · ${shortDate(session.date)} · ${session.activities[0].start} · ${session.activities[0].title}${types.length ? ' · ' + types.map(type => type === 'task' ? 'Tarea' : 'Examen').join(' y ') : ''}${session.state ? ' · ' + sessionPlanningLabel(row.record.document, session, records) : ''}${shift ? ' · Antes: ' + shortDate(shift.before.date) : ''}`;
           button.title = description; button.setAttribute('aria-label', description);
           button.addEventListener('click', () => onOpen(row.unit.path, session.id)); td.append(button);
         }
         return td;
       }
       row.slots.forEach(cell => {
-        if (cell) strip.append(sessionCell(cell));
+        if (cell) strip.append(cell.kind === 'trace-gap' || cell.kind === 'trace-group' ? ghostCell(cell) : sessionCell(cell));
         else { const empty = el('span', 'overview-gap'); empty.setAttribute('aria-hidden', 'true'); strip.append(empty); }
       });
       content.append(strip);
       if (row.exceptions.length) {
         const exceptions = el('div', 'overview-exceptions'); exceptions.append(el('span', 'scope-note', 'Otros días registrados'));
-        row.exceptions.forEach(cell => exceptions.append(sessionCell(cell))); content.append(exceptions);
+        row.exceptions.forEach(cell => exceptions.append(cell.kind === 'trace-gap' ? ghostCell(cell) : sessionCell(cell))); content.append(exceptions);
       }
       tr.append(content); grid.append(tr);
     }
     $('overview-empty').hidden = model.dates.length > 0;
+    if (grid.querySelector('.overview-shift-gap')) $('module-scope').textContent += ' Punteado gris: posiciones anteriores al último ajuste; no es margen disponible.';
     resizeOverview();
   }
 

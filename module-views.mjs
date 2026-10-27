@@ -2,6 +2,7 @@ import { eventTypes } from './teaching.mjs?v=20261027-rf32';
 import { taskState } from './task-cycle.mjs?v=20261027-rf32';
 import { hasTaskPlan, visiblePlanTasks } from './task-plan.mjs?v=20261027-rf32';
 import { moduleWeekdays } from './common-course.mjs?v=20261027-rf32';
+import { shiftCalendarCells, groupShiftGaps } from './planning-shifts.mjs?v=20261027-rf32-gaps';
 
 export const taskDateFields = ['presentedOn', 'dueOn', 'correctBy'];
 
@@ -45,7 +46,7 @@ export function moduleOverview(module, records, month = '') {
 }
 
 /** Compact each UT independently; columns mean weekdays, never shared dates. */
-export function weekdayOverview(module, records, common, month = '') {
+export function weekdayOverview(module, records, common, month = '', { complete = true } = {}) {
   const base = moduleOverview(module, records, month);
   const confirmedDays = moduleWeekdays(common, module.code);
   const dayOf = date => new Date(date + 'T12:00:00Z').getUTCDay() || 7;
@@ -53,18 +54,30 @@ export function weekdayOverview(module, records, common, month = '') {
   const rows = base.rows.map(row => {
     const slots = [], exceptions = [];
     let position = -1;
+    const trace = row.record ? shiftCalendarCells(row.record.document, records, common, { complete }) : { cells: [], dates: [], moves: [], issue: '' };
+    // Merge dates so exceptions and cancelled records can never disappear.
+    const byDate = new Map(trace.cells.map(c => [c.date, { ...c, sessions: c.sessions.filter(s => !month || s.date.startsWith(month + '-')) }]));
     row.cells.forEach((sessions, i) => {
-      if (!sessions.length) return;
-      const date = base.dates[i], weekday = dayOf(date), dayIndex = days.indexOf(weekday);
-      const cell = { date, weekday, sessions };
+      if (sessions.length) byDate.set(base.dates[i], { date: base.dates[i], sessions, kind: 'session', shifts: trace.moves.filter(m => m.after.date === base.dates[i]) });
+    });
+    const cells = [...byDate.values()].filter(c => !month || c.date.startsWith(month + '-')).sort((a, b) => a.date.localeCompare(b.date));
+    groupShiftGaps(cells).forEach(cell => {
+      if (cell.kind === 'trace-group') { slots.push(cell); position = -1; return; }
+      const { sessions } = cell;
+      if (!sessions.length && cell.kind !== 'trace-gap') return;
+      const weekday = dayOf(cell.date), dayIndex = days.indexOf(weekday);
+      cell.weekday = weekday;
       if (dayIndex < 0) { exceptions.push(cell); return; }
       position++;
       while (position % days.length !== dayIndex) { slots.push(null); position++; }
       slots.push(cell);
     });
-    return { unit: row.unit, record: row.record, slots, exceptions };
+    return { unit: row.unit, record: row.record, slots, exceptions, shiftIssue: trace.issue, traceDates: trace.dates };
   });
-  return { days, rows, months: base.months, dates: base.dates, confirmedDays: confirmedDays.length > 0 };
+  const traceDates = rows.flatMap(r => r.traceDates);
+  const dates = [...new Set([...base.dates, ...traceDates.filter(d => !month || d.startsWith(month + '-'))])].sort();
+  const months = [...new Set([...base.months, ...traceDates.map(d => d.slice(0, 7))])].sort();
+  return { days, rows, months, dates, confirmedDays: confirmedDays.length > 0 };
 }
 
 /** Derived index only: source references always point back to the unit JSON. */

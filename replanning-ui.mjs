@@ -1,5 +1,6 @@
 import { approvedChanges, planningSnapshot, excludedSession, planningStatus, sessionDisplayLabel, sessionPlanningLabel, resolutionLabels, planningLimit, planningMargin, teachingDates, formatPlanningComparison, operationComplete, PlanningError } from './replanning.mjs?v=20261027-rf32-labels';
 const $ = id => document.getElementById(id);
+import { movesInChange } from './planning-shifts.mjs?v=20261027-rf32-gaps';
 const node = (tag, className = '', value) => { const el = document.createElement(tag); el.className = className; if (value !== undefined) el.textContent = value; return el; };
 const shortDate = d => d.split('-').reverse().join('/');
 
@@ -29,7 +30,7 @@ export function createReplanningUI({ getState, isBusy }) {
     const b = node('button', 'plan-session-signal', sessionPlanningLabel(doc, session, getState().records));
     b.type = 'button'; b.setAttribute('aria-haspopup', 'dialog'); b.addEventListener('click', () => open(doc)); return b;
   }
-  async function open(doc) {
+  async function open(doc, focus = null) {
     if (isBusy() || dialog.open || document.querySelector('dialog[open]')) return;
     returnFocus = document.activeElement;
     const request = ++generation, state = getState(), records = state.records.filter(r => r.entry.moduleCode === doc.module.code);
@@ -39,14 +40,20 @@ export function createReplanningUI({ getState, isBusy }) {
     for (const s of doc.sessions.filter(s => ['Cancelada', 'Reprogramada'].includes(s.state))) {
       root.append(node('p', '', `S${s.number} · ${shortDate(s.date)} · ${sessionPlanningLabel(doc, s, records)}`));
     }
-    const changes = approvedChanges(doc);
+    const changes = approvedChanges(doc); let focusedDetail = null;
     if (!changes.length) root.append(node('p', '', 'No hay una traza aprobada de RF 32. Se conservan los estados anteriores; no se deducen recuperaciones por fechas o títulos.'));
     for (const change of changes) {
       const section = node('section', 'plan-change');
       section.append(node('h3', '', `${shortDate(change.approvedOn)} · ${change.reason}`));
+      if (focus?.changeId === change.id) focusedDetail = section;
       section.append(node('p', 'scope-note', `Unidades afectadas: ${change.affectedUnitIds.join(', ')}${operationComplete(change, records) ? '' : ' · Lectura incompleta de esta operación'}`));
       const dates = change.beforeSessions.map(s => s.date).sort();
       if (dates.length) section.append(node('p', '', `Intervalo anterior: ${shortDate(dates[0])}–${shortDate(dates.at(-1))}`));
+      for (const move of movesInChange(change)) {
+        const detail = node('p', 'plan-shift-detail', `${sessionDisplayLabel(doc, move.before, records)} · Antes: ${shortDate(move.before.date)} ${move.before.intervals[0].start} → Ahora: ${shortDate(move.after.date)} ${move.after.intervals[0].start}`);
+        section.append(detail);
+        if (focus?.changeId === change.id && focus.sourceDate === move.before.date) focusedDetail = detail;
+      }
       for (const r of change.resolutions) {
         const source = change.beforeSessions.find(s => s.id === r.sessionId);
         const destinations = r.targets.map(t => {
@@ -69,6 +76,7 @@ export function createReplanningUI({ getState, isBusy }) {
       root.append(section);
     }
     const margin = node('p', 'plan-margin', 'Consultando el tope de programación…'); root.append(margin); dialog.showModal();
+    if (focusedDetail) { focusedDetail.tabIndex = -1; focusedDetail.focus({ preventScroll: true }); focusedDetail.scrollIntoView({ block: 'nearest' }); }
     try {
       const result = await state.connection.loadCommon(state.catalog);
       if (request !== generation || !dialog.open || getState().connection !== state.connection) return;

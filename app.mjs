@@ -1,4 +1,4 @@
-import { createReplanningUI } from './replanning-ui.mjs?v=20261027-rf32-labels';
+import { createReplanningUI } from './replanning-ui.mjs?v=20261027-rf32-gaps';
 import { sessionDisplayLabel, chronologicalSessionRows, excludedSession } from './replanning.mjs?v=20261027-rf32-labels';
 import { createContextMemory, catalogEntries, chooseStartup, resolveRemembered, unitContext, meetingContext, meetingsForDay, madridClock } from './startup-context.mjs?v=20261027-rf32';
 import { elapsedTiming, timingDescription } from './row-time.mjs?v=20261027-rf32';
@@ -14,7 +14,7 @@ import { createRowResourcesUI } from './row-resources-ui.mjs?v=20261027-rf32';
 import { eventTypes, setSessionEventType, activityEventType, activityEventTypes, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261027-rf32';
 import { libraryIntegrity } from './model-v3.mjs?v=20261027-rf32';
 import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261027-rf32';
-import { createModuleViews } from './module-views-ui.mjs?v=20261027-rf32-labels';
+import { createModuleViews } from './module-views-ui.mjs?v=20261027-rf32-gaps';
 import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261027-rf32';
 import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261027-rf32';
 import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261027-rf32';
@@ -1605,6 +1605,7 @@ const replanningUI = createReplanningUI({
   getState: () => ({ document: draft, records: moduleRecords(), connection, catalog, complete: moduleContextReady && !moduleFailures().length && !teachingTimeline.errors.length }),
 });
 const moduleViews = createModuleViews({
+  onShift: (record, focus) => replanningUI.open(record.document, focus),
   planStatus: doc => replanningUI.statusNodes(doc),
   getState: () => ({ module: catalog?.modules.find(item => item.code === activeEntry?.moduleCode), records: moduleRecords(), allRecords: libraryRecords(), taskRecords: [...libraryRecords(), ...registryUI.records()], integrityIssues: libraryIntegrity([...libraryRecords(), ...registryUI.records()]), registryFailures: registryUI.failures(), catalog, failures: moduleFailures(), allFailures: moduleLoadFailures, errors: teachingTimeline.errors, ready: moduleContextReady, today: madridToday(), activePath: activeEntry?.path, busy, connection, view: currentView }),
   onOpen: (path, sessionId) => openModuleSource(path, sessionId),
