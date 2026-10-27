@@ -81,7 +81,7 @@ export function createReplanningUI({ getState, isBusy }) {
       const result = await state.connection.loadCommon(state.catalog);
       if (request !== generation || !dialog.open || getState().connection !== state.connection) return;
       const common = result.document, limit = planningLimit(common, doc.module.code);
-      if (!state.complete) throw new PlanningError('Lectura incompleta del módulo: margen sin confirmar.');
+      if (!state.complete || changes.some(change => !operationComplete(change, records))) throw new PlanningError('Lectura incompleta del módulo o de la operación aprobada: margen sin confirmar.');
       const capacity = planningMargin(common, doc.module.code, records, { complete: state.complete });
       margin.textContent = `Tope de programación: ${shortDate(limit)} · Final previsto del módulo: ${shortDate(capacity.end)} · ${capacity.overrun ? `Sobrepasa el tope en ${capacity.overrun} sesiones` : `Margen: ${capacity.remaining} sesiones`} · ${capacity.periods} periodos (${capacity.minutes} minutos).`;
       // Margin belongs to the whole module, even if only an earlier UT changed.
