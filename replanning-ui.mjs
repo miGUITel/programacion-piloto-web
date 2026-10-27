@@ -1,4 +1,4 @@
-import { approvedChanges, planningSnapshot, excludedSession, planningStatus, sessionPlanningLabel, resolutionLabels, planningLimit, planningMargin, teachingDates, formatPlanningComparison, operationComplete, PlanningError } from './replanning.mjs?v=20261027-rf32';
+import { approvedChanges, planningSnapshot, excludedSession, planningStatus, sessionDisplayLabel, sessionPlanningLabel, resolutionLabels, planningLimit, planningMargin, teachingDates, formatPlanningComparison, operationComplete, PlanningError } from './replanning.mjs?v=20261027-rf32-labels';
 const $ = id => document.getElementById(id);
 const node = (tag, className = '', value) => { const el = document.createElement(tag); el.className = className; if (value !== undefined) el.textContent = value; return el; };
 const shortDate = d => d.split('-').reverse().join('/');
@@ -52,7 +52,7 @@ export function createReplanningUI({ getState, isBusy }) {
         const destinations = r.targets.map(t => {
           const target = records.find(record => record.document.unit.id === t.unitId);
           const s = target?.document.sessions.find(s => s.id === t.sessionId);
-          return s ? `${target.document.unit.code} · S${s.number} · ${shortDate(s.date)}` : `${t.unitId} · destino pendiente de comprobar`;
+          return s ? `${target.document.unit.code} · ${sessionDisplayLabel(target.document, s, records)} · ${shortDate(s.date)}` : `${t.unitId} · destino pendiente de comprobar`;
         });
         section.append(node('p', '', `S${source.number} · ${resolutionLabels[r.outcome]}${destinations.length ? ' → ' + destinations.join('; ') : ''}${r.note ? ' · ' + r.note : ''}`));
       }
@@ -62,7 +62,7 @@ export function createReplanningUI({ getState, isBusy }) {
       for (const item of affected) {
         const group = node('div', 'plan-comparison'); group.append(node('h4', '', `${item.doc.unit.code} · ${item.doc.unit.title}`));
         const pre = node('pre', 'plan-comparison-text');
-        try { pre.textContent = formatPlanningComparison(item.change.beforeSessions, item.change.afterSessions); }
+        try { pre.textContent = formatPlanningComparison(item.change.beforeSessions, item.change.afterSessions, { afterLabels: Object.fromEntries(item.change.afterSessions.map(s => [s.id, sessionDisplayLabel(item.doc, s, records, { padded: true })])) }); }
         catch (e) { pre.textContent = e.message; }
         group.append(pre); section.append(group);
       }
@@ -83,7 +83,7 @@ export function createReplanningUI({ getState, isBusy }) {
         const after = planningSnapshot(last), before = change?.beforeSessions ?? after;
         const all = [...before, ...after].map(s => s.date).sort(), from = all[0], through = all.at(-1) > limit ? all.at(-1) : limit;
         const pre = node('pre', 'plan-comparison-text');
-        pre.textContent = formatPlanningComparison(before, after, { dates: teachingDates(common, doc.module.code, from, through).map(s => s.date), limit });
+        pre.textContent = formatPlanningComparison(before, after, { dates: teachingDates(common, doc.module.code, from, through).map(s => s.date), limit, afterLabels: Object.fromEntries(after.map(s => [s.id, sessionDisplayLabel(last, s, records, { padded: true })])) });
         root.append(node('h4', '', `${last.unit.code} · Tramo final vigente hasta el tope${change ? '' : ' · Sin cambios en esta operación'}`), pre);
       }
     } catch (error) {

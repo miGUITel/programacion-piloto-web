@@ -1,4 +1,5 @@
 import { assertSessionRead, sessionTextValues, prepareSessionSave, SessionEditError } from './session-edit.mjs?v=20261027-rf32';
+import { sessionDisplayLabel } from './replanning.mjs?v=20261027-rf32-labels';
 import { saveTaskDocument } from './task-edit.mjs?v=20261027-rf32';
 import { saveErrorFeedback } from './core.mjs?v=20261027-rf32';
 const $ = id => document.getElementById(id);
@@ -15,7 +16,7 @@ export function bindSessionEditRow(row, open) {
   });
 }
 
-export function createSessionEditorUI({ isBusy, setBusy, canOpen, getActive, unitStore, onSaved, onBlocked, onStateChange, onMessage, onReturn }) {
+export function createSessionEditorUI({ isBusy, setBusy, canOpen, getActive, getRecords = () => [], unitStore, onSaved, onBlocked, onStateChange, onMessage, onReturn }) {
   let loaded = null, entry = null, sessionId = null, sourceStore = null, blocked = false, position = null, inputs = [];
   const read = () => inputs.map(({ id, title, planned }) => ({ id, title: title.value, planned: planned.value }));
   const changed = () => Boolean(loaded && !equal(read(), sessionTextValues(loaded.document, sessionId)));
@@ -29,7 +30,7 @@ export function createSessionEditorUI({ isBusy, setBusy, canOpen, getActive, uni
   }
   function fill() {
     const session = loaded.document.sessions.find(s => s.id === sessionId), root = $('session-editor-fields'); root.replaceChildren(); inputs = [];
-    $('session-editor-title').textContent = `${entry.moduleCode} · ${entry.unitCode} · Sesión ${session.number}`;
+    $('session-editor-title').textContent = `${entry.moduleCode} · ${entry.unitCode} · ${sessionDisplayLabel(loaded.document, session, [loaded.document, ...getRecords()])}`;
     $('session-editor-context').textContent = `${session.date.split('-').reverse().join('/')} · ${session.activities.length} ${session.activities.length === 1 ? 'actividad' : 'actividades'}`;
     for (const [index, activity] of session.activities.entries()) {
       const group = node('fieldset', 'session-text-activity'); group.append(node('legend', '', `${index === 0 ? 'Primera actividad · cabecera' : `Actividad ${index + 1}`} · ${activity.start}–${activity.end}`));

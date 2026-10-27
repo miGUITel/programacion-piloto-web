@@ -83,6 +83,27 @@ export function operationComplete(change, records) {
 export function addedSession(document, sessionId) {
   return approvedChanges(document).some(change => change.addedSessionIds.includes(sessionId));
 }
+/** A visible recovery label is not an identity. Never infer its origin from dates. */
+export function sessionDisplayLabel(document, session, records = [document], { padded = false } = {}) {
+  if (!addedSession(document, session.id)) return `S${padded ? String(session.number).padStart(2, '0') : session.number}`;
+  const origins = new Map();
+  for (const record of records) {
+    const sourceDoc = docOf(record);
+    for (const change of approvedChanges(sourceDoc)) for (const r of change.resolutions) {
+      if (r.outcome !== 'added' || !r.targets.some(t => t.unitId === document.unit.id && t.sessionId === session.id)) continue;
+      const source = change.beforeSessions.find(s => s.id === r.sessionId);
+      if (source) origins.set(`${sourceDoc.unit.id}/${source.id}`, source.number);
+    }
+  }
+  return origins.size === 1 ? `S${[...origins.values()][0]}+` : 'S+';
+}
+/** Preserve original array indices so every editor continues to address the same ID. */
+export function chronologicalSessionRows(sessions) {
+  return sessions.map((session, index) => ({ session, index })).sort((a, b) =>
+    a.session.date.localeCompare(b.session.date)
+    || (a.session.activities?.[0]?.start ?? a.session.intervals?.[0]?.start ?? '').localeCompare(b.session.activities?.[0]?.start ?? b.session.intervals?.[0]?.start ?? '')
+    || a.session.id.localeCompare(b.session.id));
+}
 export function resolutionFor(document, session, records = [document]) {
   if (!excludedSession(session)) return null;
   for (const change of [...approvedChanges(document)].reverse()) {
@@ -161,12 +182,13 @@ export function planningMargin(common, moduleCode, records, { complete = true } 
 }
 
 /** Dates determine columns. Empty cells are spaces, never collapsed HTML. */
-export function formatPlanningComparison(before, after, { dates = [], limit = null } = {}) {
+export function formatPlanningComparison(before, after, { dates = [], limit = null, afterLabels = {} } = {}) {
   for (const list of [before, after]) if (!unique(list.map(s => s.date))) throw new PlanningError('Varias sesiones el mismo día: revisar intervalos antes de comparar.');
   const columns = [...new Set([...dates, ...before.map(s => s.date), ...after.map(s => s.date), ...(limit ? [limit] : [])])].sort();
   if (columns.some(d => !date(d))) throw new PlanningError('Fecha de comparación no válida.');
-  const width = Math.max(7, ...[...before, ...after].map(s => String(s.label ?? `S${String(s.number).padStart(2, '0')}`).length + 4));
-  const cell = s => s ? `${s.label ?? `S${String(s.number).padStart(2, '0')}`}·${['D', 'L', 'M', 'X', 'J', 'V', 'S'][day(s.date).getUTCDay()]}${s.date.slice(8)}`.padEnd(width) : ' '.repeat(width);
-  const row = (label, sessions) => `${label} |${columns.map(d => cell(sessions.find(s => s.date === d))).join('|')}|`;
-  return [row('ANTES', before), row('NUEVA', after), ...(limit ? [`TOPE  |${columns.map(d => d === limit ? `FIN·${['D', 'L', 'M', 'X', 'J', 'V', 'S'][day(d).getUTCDay()]}${d.slice(8)}`.padEnd(width) : ' '.repeat(width)).join('|')}|`] : [])].join('\n');
+  const labelFor = (s, newer) => newer && s.state === 'Cancelada' ? 'S**' : (newer ? afterLabels[s.id] : undefined) ?? s.label ?? `S${String(s.number).padStart(2, '0')}`;
+  const width = Math.max(7, ...before.map(s => labelFor(s, false).length + 4), ...after.map(s => labelFor(s, true).length + 4));
+  const cell = (s, newer) => s ? `${labelFor(s, newer)}·${['D', 'L', 'M', 'X', 'J', 'V', 'S'][day(s.date).getUTCDay()]}${s.date.slice(8)}`.padEnd(width) : ' '.repeat(width);
+  const row = (label, sessions, newer = false) => `${label} |${columns.map(d => cell(sessions.find(s => s.date === d), newer)).join('|')}|`;
+  return [row('ANTES', before), row('NUEVA', after, true), ...(limit ? [`TOPE  |${columns.map(d => d === limit ? `FIN·${['D', 'L', 'M', 'X', 'J', 'V', 'S'][day(d).getUTCDay()]}${d.slice(8)}`.padEnd(width) : ' '.repeat(width)).join('|')}|`] : [])].join('\n');
 }

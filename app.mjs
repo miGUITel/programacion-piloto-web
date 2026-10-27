@@ -1,5 +1,5 @@
-import { createReplanningUI } from './replanning-ui.mjs?v=20261027-rf32';
-import { addedSession, excludedSession } from './replanning.mjs?v=20261027-rf32';
+import { createReplanningUI } from './replanning-ui.mjs?v=20261027-rf32-labels';
+import { sessionDisplayLabel, chronologicalSessionRows, excludedSession } from './replanning.mjs?v=20261027-rf32-labels';
 import { createContextMemory, catalogEntries, chooseStartup, resolveRemembered, unitContext, meetingContext, meetingsForDay, madridClock } from './startup-context.mjs?v=20261027-rf32';
 import { elapsedTiming, timingDescription } from './row-time.mjs?v=20261027-rf32';
 import { MeetingReader } from './meeting-reader.mjs?v=20261027-rf32';
@@ -14,7 +14,7 @@ import { createRowResourcesUI } from './row-resources-ui.mjs?v=20261027-rf32';
 import { eventTypes, setSessionEventType, activityEventType, activityEventTypes, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261027-rf32';
 import { libraryIntegrity } from './model-v3.mjs?v=20261027-rf32';
 import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261027-rf32';
-import { createModuleViews } from './module-views-ui.mjs?v=20261027-rf32';
+import { createModuleViews } from './module-views-ui.mjs?v=20261027-rf32-labels';
 import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261027-rf32';
 import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261027-rf32';
 import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261027-rf32';
@@ -22,7 +22,7 @@ import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261027-rf32';
 import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261027-rf32';
 import { renderUnitInformation, sessionInformationLines } from './unit-information.mjs?v=20261027-rf32';
 import { createPreparationUI } from './preparation-ui.mjs?v=20261027-rf32';
-import { createSessionEditorUI, bindSessionEditRow } from './session-editor-ui.mjs?v=20261027-rf32';
+import { createSessionEditorUI, bindSessionEditRow } from './session-editor-ui.mjs?v=20261027-rf32-labels';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -503,7 +503,7 @@ function editButton(sessionIndex, activityIndex, field) {
   const button = node('button', `edit-button edit-${field}${text(activity[field]).trim() ? ' has-content' : ''}`);
   button.append(noteIcon(field));
   button.type = 'button';
-  button.setAttribute('aria-label', `${label} de la sesión ${session.number}, ${activityIndex === 0 ? 'primera porción' : `actividad ${activityIndex + 1}`}: ${activity.title || 'Sin título'}`);
+  button.setAttribute('aria-label', `${label} de la sesión ${sessionDisplayLabel(draft, session, moduleRecords())}, ${activityIndex === 0 ? 'primera porción' : `actividad ${activityIndex + 1}`}: ${activity.title || 'Sin título'}`);
   button.title = field === 'improvements' ? 'Mejoras · Abrir directamente' : 'Observaciones · Anotar y concretar en mejoras, realizado o pendiente';
   button.addEventListener('click', () => openEditor(sessionIndex, activityIndex, field));
   return button;
@@ -538,7 +538,7 @@ function makeStateSelect(session, index) {
   const select = node('select', `state-select ${stateClasses.get(session.state) || ''}`);
   select.id = `session-state-${index}`;
   label.htmlFor = select.id;
-  select.setAttribute('aria-label', `Estado de la sesión ${session.number}`);
+  select.setAttribute('aria-label', `Estado de ${sessionDisplayLabel(draft, session, moduleRecords())}`);
   for (const value of stateNames) {
     const option = node('option', '', value || 'Sin marcar');
     option.value = value;
@@ -568,7 +568,7 @@ function sessionTextButton(sessionIndex, activityIndex, title) {
   const button = node('button', 'session-text-open', title); button.type = 'button';
   button.id = `session-text-open-${sessionIndex}-${activityIndex}`;
   button.title = 'Editar títulos y descripciones de la sesión';
-  button.setAttribute('aria-label', `Editar sesión ${draft.sessions[sessionIndex].number}, actividad ${activityIndex + 1}: ${title}`);
+  button.setAttribute('aria-label', `Editar sesión ${sessionDisplayLabel(draft, draft.sessions[sessionIndex], moduleRecords())}, actividad ${activityIndex + 1}: ${title}`);
   button.setAttribute('aria-haspopup', 'dialog'); button.setAttribute('aria-controls', 'session-editor-dialog');
   button.addEventListener('click', () => openSessionText(sessionIndex, activityIndex)); return button;
 }
@@ -686,21 +686,21 @@ async function presentTask(task, value) {
 
 function makeTeachingControls(session, sessionIndex) {
   const controls = node('div', 'teaching-controls');
-  controls.setAttribute('role', 'group'); controls.setAttribute('aria-label', `Tareas y examen de la sesión ${session.number}`);
+  controls.setAttribute('role', 'group'); controls.setAttribute('aria-label', `Tareas y examen de la sesión ${sessionDisplayLabel(draft, session, moduleRecords())}`);
   const selected = eventTypes(session, draft);
   for (const [type, label] of [['task', 'Tarea'], ['exam', 'Examen']]) {
-    controls.append(teachingCheckbox(label, `teaching-${type}-${sessionIndex}`, selected.includes(type), `${label} en la sesión ${session.number}`, checked => setSessionEventType(session, type, checked, draft)));
+    controls.append(teachingCheckbox(label, `teaching-${type}-${sessionIndex}`, selected.includes(type), `${label} en la sesión ${sessionDisplayLabel(draft, session, moduleRecords())}`, checked => setSessionEventType(session, type, checked, draft)));
   }
   if (Object.hasOwn(session, 'eventTypes')) {
     const reset = node('button', 'teaching-reset', '↶'); reset.type = 'button';
-    reset.title = 'Volver a las marcas automáticas de la planificación'; reset.setAttribute('aria-label', `Restablecer marcas previstas de la sesión ${session.number}`);
+    reset.title = 'Volver a las marcas automáticas de la planificación'; reset.setAttribute('aria-label', `Restablecer marcas previstas de la sesión ${sessionDisplayLabel(draft, session, moduleRecords())}`);
     reset.addEventListener('click', () => changeTeaching(() => { delete session.eventTypes; }, `teaching-task-${sessionIndex}`));
     controls.append(reset);
   }
   const progress = taskProgress(session, draft);
   if (selected.includes('task') && progress.total) {
     const id = `task-presented-${sessionIndex}`;
-    const control = teachingCheckbox(progress.total === 1 ? 'Presentada' : `Presentadas ${progress.presented}/${progress.total}`, id, progress.presented === progress.total, `Todas las tareas presentadas y abiertas para trabajar en la sesión ${session.number}`, checked => requestPresentation(sessionIndex, checked, undefined, id), true);
+    const control = teachingCheckbox(progress.total === 1 ? 'Presentada' : `Presentadas ${progress.presented}/${progress.total}`, id, progress.presented === progress.total, `Todas las tareas presentadas y abiertas para trabajar en la sesión ${sessionDisplayLabel(draft, session, moduleRecords())}`, checked => requestPresentation(sessionIndex, checked, undefined, id), true);
     control.querySelector('input').indeterminate = progress.presented > 0 && progress.presented < progress.total;
     controls.append(control);
   }
@@ -717,7 +717,7 @@ function makeTeachingControls(session, sessionIndex) {
         action.addEventListener('click', () => markExamReminder(exam)); controls.append(action);
       }
     } else {
-      controls.append(teachingCheckbox(exam.code ? `Avisado ${exam.code}` : 'Avisado', `exam-announced-${sessionIndex}${exam.officialTaskId ? '-' + examIndex : ''}`, exam.announced, `Aviso al alumnado del examen${exam.title ? ' ' + exam.title : ''} de la sesión ${session.number}, ${dateInfo(session.date).full}`, checked => setExamAnnouncement(draft, exam, checked)));
+      controls.append(teachingCheckbox(exam.code ? `Avisado ${exam.code}` : 'Avisado', `exam-announced-${sessionIndex}${exam.officialTaskId ? '-' + examIndex : ''}`, exam.announced, `Aviso al alumnado del examen${exam.title ? ' ' + exam.title : ''} de la sesión ${sessionDisplayLabel(draft, session, moduleRecords())}, ${dateInfo(session.date).full}`, checked => setExamAnnouncement(draft, exam, checked)));
     }
     }
   }
@@ -765,6 +765,7 @@ async function markExamReminder(exam) {
 }
 
 function makeSession(session, sessionIndex, heading) {
+  const displayLabel = sessionDisplayLabel(draft, session, moduleRecords());
   const first = session.activities[0];
   const isOpen = openSessions.has(session.id);
   const section = node('article', 'session');
@@ -776,18 +777,18 @@ function makeSession(session, sessionIndex, heading) {
   top.dataset.eventType = activityEventType(session, first, draft);
   const toggle = node('button', 'session-toggle', isOpen ? '−' : '+');
   toggle.type = 'button';
-  toggle.setAttribute('aria-label', `${isOpen ? 'Plegar' : 'Abrir'} sesión ${session.number}`);
+  toggle.setAttribute('aria-label', `${isOpen ? 'Plegar' : 'Abrir'} ${displayLabel}`);
   toggle.setAttribute('aria-expanded', String(isOpen));
   toggle.setAttribute('aria-controls', `session-content-${sessionIndex}`);
   const date = dateInfo(session.date);
   const dateTile = node('time', `date-tile${excludedSession(session) ? ' plan-excluded-date' : ''}`);
   dateTile.dateTime = session.date;
   dateTile.title = date.full;
-  dateTile.setAttribute('aria-label', `Sesión ${session.number}${heading.periods.length ? ' · Periodos ' + heading.periods.join(', ') : ''} · ${date.full}`);
+  dateTile.setAttribute('aria-label', `${displayLabel}${heading.periods.length ? ' · Periodos ' + heading.periods.join(', ') : ''} · ${date.full}`);
   const dateLine = node('span', 'session-date-line');
   dateLine.append(node('span', 'date-day', heading.day));
   if (heading.monthLabel) dateLine.append(node('span', 'date-month', heading.monthLabel));
-  dateTile.append(node('span', 'session-number-line', `${addedSession(draft, session.id) ? '+' : ''}${heading.sessionLabel}`), dateLine);
+  dateTile.append(node('span', 'session-number-line', heading.sessionLabel.replace(/^S\d+/, displayLabel)), dateLine);
   markTemporalRow(top, dateTile, sessionIndex);
   const description = node('div', 'session-description');
   const title = node('h3', 'session-title');
@@ -815,7 +816,7 @@ function makeSession(session, sessionIndex, heading) {
     body.hidden = !next;
     toggle.textContent = next ? '−' : '+';
     toggle.setAttribute('aria-expanded', String(next));
-    toggle.setAttribute('aria-label', `${next ? 'Plegar' : 'Abrir'} sesión ${session.number}`);
+    toggle.setAttribute('aria-label', `${next ? 'Plegar' : 'Abrir'} ${displayLabel}`);
     updateGlobalExpansion();
   });
   section.append(top);
@@ -863,8 +864,9 @@ function renderSessions() {
   const container = $('sessions');
   container.replaceChildren();
   if (!draft.sessions.length) container.append(node('p', 'empty-sessions', 'Este documento no contiene sesiones.'));
-  const headings = compactSessionHeaders(draft.sessions, presentationPeriods(catalog));
-  draft.sessions.forEach((session, index) => container.append(makeSession(session, index, headings[index])));
+  const rows = chronologicalSessionRows(draft.sessions);
+  const headings = compactSessionHeaders(rows.map(row => row.session), presentationPeriods(catalog));
+  rows.forEach(({ session, index }, position) => container.append(makeSession(session, index, headings[position])));
   $('workspace').classList.toggle('has-row-resources', Boolean(container.querySelector('.row-resources:not(.is-empty)')));
   const resourceIcons = Math.max(1, ...[...container.querySelectorAll('.row-resources')].map(cell => cell.querySelectorAll('.resource-icon').length));
   $('workspace').style.setProperty('--row-resource-width', `${resourceIcons * 28 + (resourceIcons - 1) * 3}px`);
@@ -891,7 +893,7 @@ function renderSessionBand() {
     button.type = 'button';
     button.disabled = busy;
     const types = [item.task ? 'Tarea' : '', item.exam ? 'Examen' : ''].filter(Boolean).join(' y ');
-    const label = `Sesión ${item.number} · ${dateInfo(item.date).full}${types ? ` · ${types}` : ''}${item.today ? ' · Hoy' : ''}${item.past ? ' · Fecha pasada' : ''}`;
+    const label = `${sessionDisplayLabel(draft, draft.sessions[item.index], moduleRecords())} · ${dateInfo(item.date).full}${types ? ` · ${types}` : ''}${item.today ? ' · Hoy' : ''}${item.past ? ' · Fecha pasada' : ''}`;
     button.title = label; button.setAttribute('aria-label', label);
     button.addEventListener('click', () => {
       if (busy) return;
@@ -1230,7 +1232,7 @@ function openEditor(sessionIndex, activityIndex, targetField = 'observations', o
   const official = visibleSessionTasks(session, draft).filter(task => task.presentation.activityId === activity.id || (!task.presentation.activityId && activityIndex === 0));
   editorTarget = { sessionIndex, activityIndex, officialTaskId: officialTaskId || (official.length === 1 ? official[0].id : undefined),
     sessionTask: !hasTaskPlan(draft) && taskTarget(session, activityIndex) === session };
-  $('editor-kicker').textContent = `SESIÓN ${session.number} · ${activityIndex === 0 ? 'PRIMERA PORCIÓN' : 'ACTIVIDAD'}`;
+  $('editor-kicker').textContent = `SESIÓN ${sessionDisplayLabel(draft, session, moduleRecords())} · ${activityIndex === 0 ? 'PRIMERA PORCIÓN' : 'ACTIVIDAD'}`;
   $('editor-title').textContent = editorTarget.officialTaskId ? taskHeading(draft.module.code, editorTaskTarget().code, editorTaskTarget().title) : activity.title || 'Actividad';
   $('editor-time').textContent = `${activity.start}–${activity.end} · ${dateInfo(session.date).full}`;
   $('editor-progress').hidden = !progressNames.has(activity.progress);
@@ -1559,6 +1561,7 @@ const preparationUI = createPreparationUI({
   },
 });
 const sessionEditorUI = createSessionEditorUI({
+  getRecords: moduleRecords,
   isBusy: () => busy, setBusy, onStateChange: updateSaveState,
   canOpen: () => Boolean(connection && draft) && !$('editor').open && !presentationUI.isOpen() && !registryUI.isOpen() && !preparationUI.isOpen() && !generalNotesUI.isOpen() && !generalNotesUI.hasPending() && !$('suggestions-dialog').open && !$('module-profile-dialog').open,
   getActive: () => activeEntry && ({ path: activeEntry.path, sha: originalSha, savedDocument, draft, blocked: blockedSave }),

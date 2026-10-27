@@ -1,4 +1,4 @@
-import { addedSession, sessionPlanningLabel } from './replanning.mjs?v=20261027-rf32';
+import { sessionDisplayLabel, sessionPlanningLabel } from './replanning.mjs?v=20261027-rf32-labels';
 import { unitLabel } from './unit-tools.mjs?v=20261027-rf32';
 import { moduleOverview, weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261027-rf32';
 import { dayLetters, dayNames, commonCoursePath } from './common-course.mjs?v=20261027-rf32';
@@ -112,9 +112,10 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
           const types = eventTypes(session, row.record.document);
           const button = el('button', `overview-session band-day${types.includes('task') ? ' has-task' : ''}${types.includes('exam') ? ' has-exam' : ''}${['Cancelada', 'Reprogramada'].includes(session.state) ? ' excluded-session' : ''}${session.date < today ? ' elapsed-session' : ''}`);
           button.type = 'button'; button.dataset.sessionId = session.id; button.dataset.weekday = String(cell.weekday);
-          button.append(el('strong', 'overview-number', `${addedSession(row.record.document, session.id) ? '+' : ''}S${session.number}`));
+          const displayLabel = sessionDisplayLabel(row.record.document, session, records);
+          button.append(el('strong', 'overview-number', displayLabel));
           button.append(el('span', 'overview-cell-date', dateText));
-          const description = `${row.unit.code} · Sesión ${session.number} · ${shortDate(session.date)} · ${session.activities[0].start} · ${session.activities[0].title}${types.length ? ' · ' + types.map(type => type === 'task' ? 'Tarea' : 'Examen').join(' y ') : ''}${session.state ? ' · ' + sessionPlanningLabel(row.record.document, session, records) : ''}`;
+          const description = `${row.unit.code} · ${displayLabel} · ${shortDate(session.date)} · ${session.activities[0].start} · ${session.activities[0].title}${types.length ? ' · ' + types.map(type => type === 'task' ? 'Tarea' : 'Examen').join(' y ') : ''}${session.state ? ' · ' + sessionPlanningLabel(row.record.document, session, records) : ''}`;
           button.title = description; button.setAttribute('aria-label', description);
           button.addEventListener('click', () => onOpen(row.unit.path, session.id)); td.append(button);
         }
