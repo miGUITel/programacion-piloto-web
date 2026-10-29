@@ -1,7 +1,7 @@
-import { meetingsForDay } from './startup-context.mjs?v=20261027-rf32';
-import { recordGroup, recordKey, groupForSchedule, meetingTitle } from './meeting-records.mjs?v=20261027-rf32';
+import { meetingsForDay } from './startup-context.mjs?v=20261029-rf24';
+import { recordGroup, recordKey, groupForSchedule, meetingTitle } from './meeting-records.mjs?v=20261029-rf24';
 
-export const hasMeetingContent = record => Boolean(record?.notes?.trim() || ['topics', 'requests'].some(field => record?.[field]?.some(value => value.trim())));
+export const hasMeetingContent = record => Boolean(record?.notes?.trim() || record?.minutes?.text?.trim() || ['topics', 'requests'].some(field => record?.[field]?.some(value => value.trim())));
 export const calendarGroups = document => (document?.groups ?? []).map(group => ({ ...group, space: 'meetings' }));
 
 // A calendar day is a view, not a persisted meeting or a confirmation of attendance.
@@ -31,7 +31,7 @@ export function meetingCalendar(document, common, groupId = null) {
   const months = new Map();
   for (const day of [...days.values()].sort((a, b) => a.date.localeCompare(b.date) || a.groupKey.localeCompare(b.groupKey))) {
     day.records.sort((a, b) => recordKey(a).localeCompare(recordKey(b)));
-    day.hasContent = day.records.some(hasMeetingContent);
+    day.hasContent = day.records.some(hasMeetingContent) || day.records.some(r => document?.meetingTasks?.some(t => !t.deleted && t.recordId === recordKey(r)));
     const month = day.date.slice(0, 7);
     if (!months.has(month)) months.set(month, { month, groups: [] });
     const rows = months.get(month).groups;

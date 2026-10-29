@@ -1,5 +1,5 @@
 import { ApiError, ConflictError, UnknownSaveError, decodeUtf8Base64, encodeUtf8Base64 } from './core.mjs?v=20261027-rf32';
-import { meetingNotesPath, validateMeetingNotes } from './startup-context.mjs?v=20261027-rf32';
+import { meetingNotesPath, validateMeetingNotes } from './startup-context.mjs?v=20261029-rf24';
 
 // One fixed private registry. Every note save has a version and confirmed reread.
 export class MeetingReader {
@@ -43,14 +43,14 @@ export class MeetingReader {
     if(!Object.hasOwn(catalog,'meetings'))return {document:null,sha:null};
     const result=await this.#read(this.#path(catalog));this.#blocked=false;return result;
   });}
-  save(catalog,document,sha){return this.#enqueue(async()=>{
+  save(catalog,document,sha,{message='Guardar notas de reunión'}={}){return this.#enqueue(async()=>{
     if(this.#blocked)throw new UnknownSaveError('reload-required');
     if(typeof sha!=='string'||!sha||validateMeetingNotes(document).length)throw new ApiError('Revisa la reunión y su versión.',{code:'INVALID_DOCUMENT'});
     const path=this.#path(catalog),snapshot=structuredClone(document);
     try{
       const remote=await this.#read(path);
       if(remote.sha!==sha)throw new ConflictError();
-      const response=await this.#request('PUT',path,{message:'Guardar notas de reunión',content:encodeUtf8Base64(JSON.stringify(snapshot,null,2)+'\n'),sha,branch:'main'});
+      const response=await this.#request('PUT',path,{message:['Guardar notas de reunión','Guardar tarea de reunión','Eliminar tarea de reunión','Guardar acta de reunión'].includes(message)?message:'Guardar notas de reunión',content:encodeUtf8Base64(JSON.stringify(snapshot,null,2)+'\n'),sha,branch:'main'});
       if(response?.content?.path!==path||!response.content.sha||!response?.commit?.sha)throw new UnknownSaveError('invalid-response');
       let confirmed;
       try{confirmed=await this.#read(path);}catch{throw new UnknownSaveError('verification-failed');}

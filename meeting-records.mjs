@@ -1,3 +1,4 @@
+import { validateMeetingWork } from './meeting-work.mjs?v=20261029-rf24';
 const object=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
 const text=v=>typeof v==='string'&&v.trim().length>0;
 const date=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&Number.isFinite(Date.parse(v+'T12:00:00Z'))&&new Date(v+'T12:00:00Z').toISOString().slice(0,10)===v;
@@ -24,7 +25,7 @@ export function validateMeetingDocument(doc) {
     for(const f of ['topics','requests'])if(r[f]!==undefined&&(!Array.isArray(r[f])||r[f].some(v=>typeof v!=='string')))errors.push('Los temas y ruegos deben ser listas de textos.');
     if(r.notes!==undefined&&typeof r.notes!=='string')errors.push('Las notas deben ser texto.');
   }
-  return errors;
+  return [...errors,...validateMeetingWork(doc)];
 }
 export const recordKey=r=>r.id??`schedule:${r.meetingId}:${r.date}`;
 export function recordGroup(doc,record){return doc?.groups?.find(g=>g.id===record.groupId)??doc?.groups?.find(g=>g.scheduleRefs.includes(record.meetingId))??null;}

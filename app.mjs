@@ -1,9 +1,11 @@
 import { createReplanningUI } from './replanning-ui.mjs?v=20261027-rf32-gaps';
 import { sessionDisplayLabel, chronologicalSessionRows, excludedSession } from './replanning.mjs?v=20261027-rf32-labels';
-import { createContextMemory, catalogEntries, chooseStartup, resolveRemembered, unitContext, meetingContext, meetingsForDay, madridClock } from './startup-context.mjs?v=20261027-rf32';
+import { createContextMemory, catalogEntries, chooseStartup, resolveRemembered, unitContext, meetingContext, meetingsForDay, madridClock } from './startup-context.mjs?v=20261029-rf24';
 import { elapsedTiming, timingDescription } from './row-time.mjs?v=20261027-rf32';
-import { MeetingReader } from './meeting-reader.mjs?v=20261027-rf32';
-import { createMeetingWorkspace } from './meeting-workspace-ui.mjs?v=20261027-rf32';
+import { MeetingReader } from './meeting-reader.mjs?v=20261029-rf24';
+import { createMeetingWorkspace } from './meeting-workspace-ui.mjs?v=20261029-rf24';
+import { createMeetingWorkUI } from './meeting-work-ui.mjs?v=20261029-rf24';
+import { createMeetingTaskListUI } from './meeting-task-list-ui.mjs?v=20261029-rf24';
 import { createResourcesUI } from './resources-ui.mjs?v=20261027-rf32';
 import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261027-rf32';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261027-rf32';
@@ -90,7 +92,8 @@ function editorDirty() {
     || (!$('task-fields').hidden && JSON.stringify(readTaskEditor()) !== JSON.stringify(taskDetails(target)));
 }
 
-function hasPendingChanges() { return meetingsUI.hasPending() || dirty() || editorDirty() || presentationUI.isOpen() || registryUI.hasPending() || preparationUI.hasPending() || sessionEditorUI.hasPending() || resourcesUI.hasPending(); }
+const meetingWorkOpen = () => Boolean(document.querySelector('#meeting-task-dialog[open],#meeting-minutes-dialog[open]'));
+function hasPendingChanges() { return meetingWorkUI.hasPending() || meetingsUI.hasPending() || dirty() || editorDirty() || presentationUI.isOpen() || registryUI.hasPending() || preparationUI.hasPending() || sessionEditorUI.hasPending() || resourcesUI.hasPending(); }
 
 function checked(value, entry = activeEntry) {
   const errors = validateDocument(value, entry ?? undefined);
@@ -124,11 +127,11 @@ function updateConnectionState() {
 
 function updateSaveState() {
   const state = $('save-state'), disk = $('save');
-  const independentPending = meetingsUI.hasPending() || registryUI.hasPending() || preparationUI.hasPending() || sessionEditorUI.hasPending() || resourcesUI.hasPending() || generalNotesUI.hasPending() || suggestionsUI.hasPending();
+  const independentPending = meetingWorkUI.hasPending() || meetingsUI.hasPending() || registryUI.hasPending() || preparationUI.hasPending() || sessionEditorUI.hasPending() || resourcesUI.hasPending() || generalNotesUI.hasPending() || suggestionsUI.hasPending();
   const pending = hasPendingChanges() || independentPending;
   const independentError = independentPending && ['meetings-message', 'registry-message', 'preparation-message', 'session-editor-message', 'resources-message', 'general-notes-message', 'suggestion-message']
     .some(id => !$(id).hidden && ($(id).classList.contains('error') || $(id).classList.contains('warning')));
-  const error = blockedSave || failedSave || independentError;
+  const error = blockedSave || failedSave || independentError || meetingWorkUI.hasError();
   const status = busy ? 'busy' : error ? 'error' : pending ? 'pending' : draft ? 'clean' : 'empty';
   const description = busy ? 'Operación con GitHub en curso. Espera su confirmación.'
     : error ? 'Hay un guardado fallido o pendiente de revisión. Los borradores se conservan; consulta el aviso.'
@@ -151,8 +154,8 @@ function updateSaveState() {
   $('meeting-select').disabled = busy || !$('meeting-select').options.length;
   $('open-suggestions').hidden = !catalog;
   updateConnectionState();
-  $('save').disabled = busy || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen() || resourcesUI.isOpen());
-  $('refresh').disabled = busy || !draft || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen() || resourcesUI.isOpen());
+  $('save').disabled = meetingWorkOpen() || busy || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen() || resourcesUI.isOpen());
+  $('refresh').disabled = meetingWorkOpen() || busy || !draft || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen() || resourcesUI.isOpen());
   $('disconnect').disabled = busy;
   $('download-draft').disabled = busy || !draft;
   $('recovery-actions').hidden = !(dirty() || blockedSave || failedSave);
@@ -163,6 +166,8 @@ function updateSaveState() {
   sessionEditorUI.availability();
   resourcesUI.availability();
   meetingsUI.availability();
+  meetingWorkUI.availability();
+  meetingTaskListUI.availability();
 }
 
 function selectedEntry() {
@@ -172,7 +177,7 @@ function selectedEntry() {
 }
 
 function navigationBlocked() {
-  return busy || !connection || hasPendingChanges() || blockedSave || $('editor').open || registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen() || resourcesUI.isOpen()
+  return meetingWorkOpen() || busy || !connection || hasPendingChanges() || blockedSave || $('editor').open || registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen() || resourcesUI.isOpen()
     || generalNotesUI.hasPending() || generalNotesUI.isOpen() || $('module-profile-dialog').open || $('suggestions-dialog').open;
 }
 
@@ -185,7 +190,7 @@ function restoreUnitSelection() {
 }
 
 function updateNavigation() {
-  const editing = hasPendingChanges() || $('editor').open || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen() || resourcesUI.isOpen()) || blockedSave || generalNotesUI.hasPending() || generalNotesUI.isOpen();
+  const editing = meetingWorkOpen() || hasPendingChanges() || $('editor').open || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen() || resourcesUI.isOpen()) || blockedSave || generalNotesUI.hasPending() || generalNotesUI.isOpen();
   const selectedModule = catalog?.modules.find(item => item.code === $('module-select').value);
   const virtual = $('module-select').value.startsWith('@');
   if (virtual) {
@@ -393,8 +398,12 @@ async function correctTask(task, value) {
 function selectWorkspaceView(view) {
   if (!['unit', 'module', 'tasks', 'preparation'].includes(view) || !draft || busy || document.querySelector('dialog[open]')) return;
   const leavingMeeting = currentView === 'meeting';
-  if (view === 'tasks' && currentView !== 'tasks') moduleViews.enterTasks(activeEntry.moduleCode, currentView === 'unit' ? activeEntry.unitCode : '');
+  if (view === 'tasks' && currentView !== 'tasks') {
+    $('tasks-source').value = leavingMeeting ? 'meetings' : 'academic';
+    if (!leavingMeeting) moduleViews.enterTasks(activeEntry.moduleCode, currentView === 'unit' ? activeEntry.unitCode : '');
+  }
   setWorkspaceView(view);
+  if (view === 'tasks') renderTaskSource(true);
   if (leavingMeeting) {
     if (activeEntry) { $('module-select').value = activeEntry.moduleCode; fillUnits(activeEntry.unitCode); }
     rememberUnit();
@@ -1150,6 +1159,7 @@ function disconnect() {
   $('unit-information-context').textContent = ''; $('unit-information-open').hidden = true;
   delete $('unit-information').dataset.unitId;
   moduleViews.clear();
+  meetingWorkUI.clear(); meetingTaskListUI.clear(); $('tasks-source').value = 'academic'; renderTaskSource();
   $('exam-reminders').replaceChildren(); $('exam-reminders').hidden = true;
   $('stats').replaceChildren();
   $('stats').hidden = true;
@@ -1184,6 +1194,7 @@ function disconnect() {
 }
 
 async function refresh() {
+  if (meetingWorkOpen()) return;
   if (busy || !store || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen() || resourcesUI.isOpen())) return;
   if (dirty() && !window.confirm('Actualizar descartará el borrador y cargará la versión de GitHub. Descarga primero el borrador si quieres conservarlo. ¿Continuar?')) return;
   setBusy(true);
@@ -1200,6 +1211,7 @@ async function refresh() {
 }
 
 async function save() {
+  if (meetingWorkOpen()) return;
   if (busy || !store || !draft || !dirty() || blockedSave || $('editor').open || presentationUI.isOpen() || (registryUI.isOpen() || preparationUI.isOpen() || sessionEditorUI.isOpen() || resourcesUI.isOpen())) return;
   const errors = validateDocument(draft, activeEntry);
   if (!Array.isArray(errors) || errors.length) {
@@ -1621,7 +1633,24 @@ const meetingsUI = createMeetingWorkspace({
   onLocation:syncMeetingSelection,onRemember:rememberContext,
   onShow:()=>{setWorkspaceView('meeting');$('workspace').hidden=false;},
   onWarning:warnNavigation,
+  onWorkRender:state=>{ meetingWorkUI.render($('meeting-work-panel'),state); if(state.loaded) meetingTaskListUI.accept(state.loaded); },
 });
+const meetingWorkUI = createMeetingWorkUI({
+  getState:()=>({catalog,reader:meetingReader,...meetingsUI.state()}), isBusy:()=>busy,setBusy,onStateChange:updateSaveState,
+  onSaved:result=>{if(!meetingsUI.acceptExternal(result))throw Error('Las notas pendientes requieren revisión. El guardado independiente se ha confirmado; conserva ambos borradores.');meetingTaskListUI.accept(result);},
+  onWarning:warnNavigation, onSavedMessage:content=>message('navigation-message',content),
+});
+const meetingTaskListUI = createMeetingTaskListUI({
+  getCatalog:()=>catalog,getReader:()=>meetingReader,isBusy:()=>busy,setBusy,onStateChange:updateSaveState,
+  openTask:(id,anchor)=>meetingWorkUI.openTask(id,anchor),
+  onLoaded:result=>meetingsUI.acceptExternal(result),
+});
+function renderTaskSource(load=false){
+  const administrative=$('tasks-source').value==='meetings';
+  $('academic-task-panel').hidden=administrative;$('meeting-task-panel').hidden=!administrative;
+  if(administrative){meetingTaskListUI.render($('meeting-task-panel'));if(load&&connection)void meetingTaskListUI.load();}
+}
+$('tasks-source').addEventListener('change',()=>{if(!busy&&!meetingWorkOpen())renderTaskSource(true);});
 setInterval(() => {
   if (!draft) return;
   refreshTemporalIndicators();

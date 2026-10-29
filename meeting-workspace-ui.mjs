@@ -1,7 +1,7 @@
 import { saveErrorFeedback } from './core.mjs?v=20261027-rf32';
-import { recordKey, recordGroup, groupForSchedule, meetingTitle, withMeetingRecord } from './meeting-records.mjs?v=20261027-rf32';
-import { madridClock, meetingContext, meetingGroupContext } from './startup-context.mjs?v=20261027-rf32';
-import { meetingCalendar, calendarGroups, dayChoices } from './meeting-calendar.mjs?v=20261027-rf32';
+import { recordKey, recordGroup, groupForSchedule, meetingTitle, withMeetingRecord } from './meeting-records.mjs?v=20261029-rf24';
+import { madridClock, meetingContext, meetingGroupContext } from './startup-context.mjs?v=20261029-rf24';
+import { meetingCalendar, calendarGroups, dayChoices } from './meeting-calendar.mjs?v=20261029-rf24';
 const $ = id => document.getElementById(id);
 const node = (tag, text, className = '') => { const e = document.createElement(tag); e.className = className; if (text !== undefined) e.textContent = text; return e; };
 const listText = value => (value ?? []).join('\n');
@@ -9,7 +9,7 @@ const lines = value => value.split('\n').map(v => v.trim()).filter(Boolean);
 const newId = () => 'meeting-' + [...crypto.getRandomValues(new Uint32Array(4))].map(n => n.toString(16).padStart(8, '0')).join('');
 const fullDate = date => new Intl.DateTimeFormat('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric', timeZone:'UTC' }).format(new Date(date + 'T12:00:00Z'));
 
-export function createMeetingWorkspace({ getCatalog, getReader, getCommon, loadCommon, isBusy, setBusy, onStateChange, onLocation, onRemember, onShow, onWarning }) {
+export function createMeetingWorkspace({ getCatalog, getReader, getCommon, loadCommon, isBusy, setBusy, onStateChange, onLocation, onRemember, onShow, onWarning, onWorkRender=()=>{} }) {
   let loaded = null, groupId = null, record = null, baseline = null, draftId = null, editingGroupId = null, blocked = false, error = false, calendarCommon = null, selectedDay = null;
   const controls = ['meeting-record-date', 'meeting-record-title', 'meeting-topics', 'meeting-requests', 'meeting-notes'];
   const message = (content = '', kind = '') => { const e = $('meetings-message'); e.textContent = content; e.className = 'message' + (kind ? ' ' + kind : ''); e.hidden = !content; };
@@ -33,7 +33,39 @@ export function createMeetingWorkspace({ getCatalog, getReader, getCommon, loadC
     $('meeting-editor').hidden = !baseline;
     $('meeting-editor-return').hidden = !baseline; $('meeting-editor-return').disabled = busy;
   }
-  function change() { availability(); onStateChange(); }
+  function change() { availability(); onWorkRender(workState()); onStateChange(); }
+  function workState() {
+    let anchor = null;
+    if (baseline) {
+      anchor = { id:record?.id ?? draftId, date:record?.date ?? $('meeting-record-date').value, ...(editingGroupId ? {groupId:editingGroupId} : {}) };
+      if (record?.meetingId) anchor.meetingId = record.meetingId;
+      else anchor.title = record?.title ?? $('meeting-record-title').value.trim();
+      if (record && !record.id && loaded?.document.meetings.some(r => recordKey(r) === recordKey(record))) delete anchor.id;
+    }
+    return { loaded, anchor, groupId, recordId:anchor ? recordKey(anchor) : null };
+  }
+  function acceptExternal(result) {
+    if (!result?.document || !result.sha) return false;
+    if (blocked) { message('Conserva las notas pendientes y revisa el guardado de esta reunión antes de aceptar otra versión del registro.', 'warning'); change(); return false; }
+    const identity = baseline ? record?.id ?? draftId : null;
+    const key = record ? recordKey(record) : identity;
+    const find = doc => doc?.meetings.find(r => recordKey(r) === key || (identity && r.id === identity));
+    const oldRecord = find(loaded?.document), nextRecord = find(result.document);
+    const noteFields = r => JSON.stringify({date:r?.date ?? null,title:r?.title ?? '',topics:r?.topics ?? [],requests:r?.requests ?? [],notes:r?.notes ?? ''});
+    const introducedNotes = !oldRecord && nextRecord && (nextRecord.notes?.trim() || nextRecord.topics?.length || nextRecord.requests?.length);
+    if (pending() && ((oldRecord && noteFields(oldRecord) !== noteFields(nextRecord)) || introducedNotes)) {
+      blocked = true; error = true;
+      message('La reunión ha cambiado en GitHub mientras tienes notas pendientes. Conserva el borrador y revisa ambas versiones antes de guardar.', 'warning');
+      change(); return false;
+    }
+    const dirty = pending(); accept(result);
+    if (oldRecord && !nextRecord && !dirty) resetEditor();
+    else if (nextRecord) {
+      if (!dirty && baseline && noteFields(oldRecord) !== noteFields(nextRecord)) populate(nextRecord, editingGroupId);
+      else record = nextRecord;
+    }
+    renderHistory(); change(); return true;
+  }
   function notifyLocation() { onLocation({ space:'meetings', groupId }); }
   function accept(result) { loaded = result; blocked = false; error = false; }
   function resetEditor() { record = null; baseline = null; draftId = null; editingGroupId = null; selectedDay = null; blocked = false; controls.forEach(id => { $(id).value = ''; }); $('meeting-day-choices').replaceChildren(); }
@@ -164,14 +196,15 @@ export function createMeetingWorkspace({ getCatalog, getReader, getCommon, loadC
     if (!topics.some(x => x.trim()) && !requests.some(x => x.trim()) && !v.notes.trim()) { message('Añade al menos un tema, ruego o nota antes de guardar.', 'error'); return; }
     setBusy(true);
     try {
-      const fields = { id:record?.id ?? draftId, date:v.date, topics, requests, notes:v.notes };
+      const exists = record && loaded.document.meetings.some(r => recordKey(r) === recordKey(record));
+      const sourceKey = exists ? recordKey(record) : null;
+      const fields = { ...(record?.id ? {id:record.id} : !exists ? {id:draftId} : {}), date:v.date, topics, requests, notes:v.notes };
       if (record?.meetingId) fields.meetingId = record.meetingId; else fields.title = v.title.trim();
       if (editingGroupId) fields.groupId = editingGroupId;
-      const exists = record && loaded.document.meetings.some(r => recordKey(r) === recordKey(record));
       const next = withMeetingRecord(loaded.document, exists ? recordKey(record) : null, fields);
       const confirmed = await getReader().save(getCatalog(), next, loaded.sha); accept(confirmed);
-      const saved = confirmed.document.meetings.find(r => r.id === fields.id);
-      selectedDay = allDays().find(day => day.records.some(r => r.id === fields.id))?.key ?? null;
+      const saved = confirmed.document.meetings.find(r => sourceKey ? recordKey(r) === sourceKey : r.id === draftId);
+      selectedDay = allDays().find(day => day.records.some(r => recordKey(r) === recordKey(saved)))?.key ?? null;
       populate(saved); const day = allDays().find(day => day.key === selectedDay); if (day) showDayChoices(day);
       message('Reunión guardada y comprobada.'); rememberRecord();
     } catch (e) { const feedback = saveErrorFeedback(e); blocked = feedback.requiresReload; error = true; message(feedback.message, feedback.kind); }
@@ -196,7 +229,7 @@ export function createMeetingWorkspace({ getCatalog, getReader, getCommon, loadC
   $('meeting-download').addEventListener('click', () => { if (!baseline) return; const data = { recordId:record?.id ?? draftId, groupId:editingGroupId, values:values() }; const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type:'application/json' })); const a = node('a'); a.href = url; a.download = 'borrador-reunion.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); });
   return {
     seed(result) { if (!pending()) { accept(result); calendarCommon = getCommon(); renderHistory(); change(); } },
-    document:() => loaded?.document ?? null, groups, spaces:() => loaded?.document ? [{ id:'meetings', title:'Reuniones' }] : [],
+    document:() => loaded?.document ?? null, state:workState, acceptExternal, groups, spaces:() => loaded?.document ? [{ id:'meetings', title:'Reuniones' }] : [],
     location:() => ({ space:'meetings', groupId }), hasPending:pending, hasError:() => error, availability, openGroup, openRecord, openScheduled,
     clear() { loaded = null; calendarCommon = null; resetEditor(); groupId = null; message(); $('meeting-history').replaceChildren(); change(); }
   };

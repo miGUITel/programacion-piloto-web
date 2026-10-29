@@ -1396,3 +1396,39 @@ dialog :is(.suggestions-header,.editor-header) > :first-child { min-width:0; ove
 .plan-shift-detail:focus { outline:1px dotted #a5b3bd; outline-offset:3px; }
 .overview-label .replanning-signals { display:flex; margin-top:4px; }
 @media(max-width:680px) { .plan-signal,.plan-session-signal { min-height:36px; } .replanning-dialog { width:calc(100vw - 12px); max-width:calc(100vw - 12px); } }
+:root{--meeting-work-accent:#087b73}
+.meeting-work-column{min-width:0}
+.meeting-work-panel{margin-top:18px;padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--white)}
+.meeting-work-heading,.meeting-task-list-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:16px 0 10px}
+.meeting-work-heading h3{margin:0;font-size:16px}
+.meeting-work-pending{padding:10px 12px;background:#f0f5ef;border-radius:7px}
+.meeting-work-pending>summary{font-weight:650;cursor:pointer;min-height:28px}
+.meeting-work-task-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.meeting-work-task-description{display:grid;gap:4px;min-width:0;overflow-wrap:anywhere}
+.meeting-work-dialog{width:min(1100px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);padding:0;color:var(--ink);background:var(--white);border:1px solid var(--line);border-radius:12px}
+.meeting-work-dialog::backdrop{background:#10253380}
+.meeting-work-dialog .suggestions-form{max-height:calc(100dvh - 34px);display:flex;flex-direction:column}
+.meeting-work-dialog .meeting-work-form{display:grid;gap:14px;min-height:0;overflow:auto;padding:20px 24px}
+.meeting-work-form label{display:grid;gap:6px;font-weight:650;min-width:0}
+.meeting-work-form input,.meeting-work-form select,.meeting-work-form textarea{font:inherit;width:100%;max-width:100%;padding:10px;border:1px solid #bdcfc2;border-radius:6px;background:#fffefa;color:var(--ink)}
+.meeting-work-form textarea{resize:vertical;min-height:110px;line-height:1.55}
+.meeting-work-form #meeting-minutes-text{min-height:38dvh;font-weight:400}
+.meeting-work-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.meeting-work-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.meeting-work-dialog .message{margin:0 24px 12px;white-space:pre-wrap}
+.tasks-source-toolbar{border-bottom:1px solid var(--line);padding-bottom:10px}
+.tasks-source-toolbar label{font-weight:650}
+.tasks-source-toolbar select,.meeting-task-filters select{font:inherit;min-height:36px;padding:7px 10px;border:1px solid #bdcfc2;border-radius:6px;background:var(--white);color:var(--ink)}
+.meeting-task-filters{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:12px 0}
+.meeting-task-filters label{display:grid;gap:5px}
+.meeting-task-filters select{min-width:160px}
+.meeting-task-global-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 18px;padding:14px 10px;border-top:1px solid var(--line);align-items:center}
+.meeting-task-global-main{display:grid;gap:5px;min-width:0;overflow-wrap:anywhere}
+.meeting-task-global-meta{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:12px}
+.meeting-task-status{font-weight:650}
+.meeting-task-overdue{color:#9d362c;font-weight:650}
+.meeting-task-global-notes{white-space:pre-wrap;overflow-wrap:anywhere}
+.meeting-task-source{color:var(--muted);font-size:12px}
+.meeting-minutes-print{display:none}
+@media(max-width:600px){.meeting-work-dialog{width:calc(100vw - 16px);max-height:calc(100dvh - 16px)}.meeting-work-dialog .suggestions-form{max-height:calc(100dvh - 18px)}.meeting-work-dialog .meeting-work-form{padding:14px}.meeting-work-dialog .message{margin:0 14px 10px}.meeting-work-grid{grid-template-columns:1fr}.meeting-work-panel{padding:12px}.meeting-work-actions .button,.meeting-work-task-row .button,.meeting-task-global-row .button{min-height:44px}.meeting-task-filters{align-items:stretch}.meeting-task-filters label{flex:1 1 150px}.meeting-task-filters select{min-width:0;width:100%}.meeting-task-global-row{grid-template-columns:minmax(0,1fr)}.meeting-task-global-row>.button{justify-self:start}}
+@media print{body.meeting-minutes-printing>*:not(.meeting-minutes-print){display:none!important}body.meeting-minutes-printing .meeting-minutes-print{display:block!important;white-space:pre-wrap;background:white;color:black;padding:16px}body.meeting-minutes-printing .meeting-minutes-print pre{font:12pt/1.5 Georgia,serif;white-space:pre-wrap;overflow-wrap:anywhere}}
