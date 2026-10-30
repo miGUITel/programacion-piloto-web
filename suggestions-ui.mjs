@@ -11,6 +11,7 @@ export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademic
   let saved = false;
   let returnOrigin = null;
   const launchers = [ $('open-suggestions') ];
+  const registeredHosts = new WeakSet();
 
   const hasPending = () => !saved && Boolean(entry || $('suggestion-title').value || $('suggestion-description').value);
   function message(content = '', kind = '') {
@@ -19,6 +20,7 @@ export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademic
     $('suggestion-message').hidden = !content;
   }
   function updateAvailability() {
+    discoverDialogs();
     const busy = isBusy();
     for (const button of launchers) {
       button.disabled = busy || !store || (button === $('open-suggestions') && isAcademicEditorOpen());
@@ -142,9 +144,10 @@ export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademic
     if (!entry && !saved) $('suggestion-title').focus();
     else $('hide-suggestions').focus();
   }
-  for (const host of document.querySelectorAll('dialog')) {
-    if (host === dialog) continue;
-    const header = host.querySelector('header'); if (!header) continue;
+  function registerDialog(host) {
+    if (host === dialog || !host.id || registeredHosts.has(host)) return false;
+    const header = host.querySelector('header'); if (!header) return false;
+    registeredHosts.add(host);
     const button = $('open-suggestions').cloneNode(true);
     button.id = 'suggestions-from-' + host.id; button.className = 'button dialog-suggestions'; button.hidden = true;
     button.dataset.suggestionsLauncher = host.id;
@@ -153,8 +156,20 @@ export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademic
     header.append(actions); actions.append(button);
     if (closeButton) actions.append(closeButton);
     launchers.push(button);
+    button.addEventListener('click', () => openFrom(button));
+    host.addEventListener('close', onStateChange);
+    return true;
   }
-  for (const button of launchers) button.addEventListener('click', () => openFrom(button));
+  function discoverDialogs() {
+    let added = false;
+    for (const host of document.querySelectorAll('dialog')) added = registerDialog(host) || added;
+    return added;
+  }
+  discoverDialogs();
+  // Dialogs such as resource pickers and meeting editors are created after startup.
+  const observer = new MutationObserver(() => { if (discoverDialogs()) updateAvailability(); });
+  observer.observe(document.body, { childList:true, subtree:true });
+  $('open-suggestions').addEventListener('click', () => openFrom($('open-suggestions')));
   $('suggestions-form').addEventListener('submit', send);
   $('suggestions-form').addEventListener('input', () => { updateAvailability(); onStateChange(); });
   $('close-suggestions').addEventListener('click', close);
