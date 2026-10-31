@@ -32,7 +32,9 @@
 .task-key{background:#216cba}.exam-key{background:#ce650a}.elapsed-key{height:3px;background:var(--time-graphite)}
 .session-band-scroll{flex:0 0 auto}
 .session-band{display:flex;align-items:center;gap:5px;list-style:none;margin:0;padding:0;width:max-content;min-width:100%}
-.band-month{width:32px;flex:0 0 32px;font-size:10px;font-weight:750;color:var(--teal);text-align:center}
+.band-month{width:32px;flex:0 0 32px}
+.band-month,.task-band-caption{font-size:10px;font-weight:750;color:var(--teal);text-align:center}
+.task-band-caption{flex:0 0 auto;margin:0 10px 7px 0}
 .band-cell{position:relative;padding-bottom:7px;flex:0 0 auto}
 .band-cell::after{content:"";position:absolute;bottom:0;left:-3px;right:-3px;height:3px;background:#d9e0db}
 .band-cell.elapsed::after{background:var(--time-graphite)}
@@ -691,7 +693,8 @@ textarea{resize:vertical;line-height:1.6}
   .module-picker .general-improvements{margin-left:auto}
   .library-bar .unit-picker select{max-width:calc(100% - 58px)}
   .band-day,.task-band-tile{min-width:32px;height:32px;font-size:14px}
-  .band-month{width:34px;flex-basis:34px;font-size:12px}
+  .band-month{width:34px;flex-basis:34px}
+  .band-month,.task-band-caption{font-size:12px}
   #activity-event-type{font-size:16px;min-height:44px}
 }
 
