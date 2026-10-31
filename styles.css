@@ -58,8 +58,9 @@
 .task-band-tile{border-color:#216cba;background:#216cba;color:white;text-decoration:none;cursor:pointer;line-height:1.15;overflow:hidden;white-space:nowrap}
 .task-band-exam .task-band-tile{border-color:#ce650a;background:#ce650a;color:white}
 .task-band-task + .task-band-exam{margin-left:6px}
-.task-band-tile.task-band-unlinked{border-style:dashed;background:transparent;color:#17558f}
-.task-band-exam .task-band-tile.task-band-unlinked{color:#8f4405}
+.task-band-tile.task-band-unlinked{border-style:dashed}
+.task-band-tile.task-not-ready{background:#e1edf8;border-color:#a6c5e2;color:#245779}
+.task-band-exam .task-band-tile.task-not-ready{background:#fff0df;border-color:#dfbd95;color:#86501f}
 .task-band-tile:hover{filter:brightness(.96)}
 .task-band-tile:focus-visible,.unit-bands:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 .task-band-tile:disabled{opacity:.55;cursor:wait}

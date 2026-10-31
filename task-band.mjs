@@ -32,17 +32,19 @@ export function taskBand(document) {
     const links = linked(task);
     const preferred = preferredTypes.flatMap(type => links.resources.filter(resource => resource.type === type));
     const selected = preferred.length ? preferred : links.resources.filter(resource => fallbackTypes.has(resource.type) && resource.audience !== 'teacher');
-    return { id: task.id, code: task.code, label: taskBandLabel(task.code), title: task.title,
+    return { id: task.id, code: task.code, label: taskBandLabel(task.code), title: task.title, prepared: task.preparation === 'ready', known: true,
       resources: structuredClone(selected), unresolved: links.unresolved };
   });
-  const examLinks = visible.filter(task => task.type === 'exam').map(linked);
+  const examTasks = visible.filter(task => task.type === 'exam');
+  const examLinks = examTasks.map(linked);
   const examResources = new Map(examLinks.flatMap(links => links.resources).filter(resource => resource.type === 'exam').map(resource => [resource.id, resource]));
   const unresolved = unique(examLinks.flatMap(links => links.unresolved));
   const unclassified = [...examResources.values()].filter(resource => !examParts.has(resource.examPart));
-  const exams = [ ['test', 'Test', 'Examen test'], ['practical', 'Práctico', 'Examen práctico'] ].map(([id, label, title]) => ({
-    id, label, title,
-    resources: structuredClone([...examResources.values()].filter(resource => resource.examPart === id)),
-    unresolved: [...unresolved], unclassified: structuredClone(unclassified),
-  }));
+  const exams = [ ['test', 'Test', 'Examen test'], ['practical', 'Práctico', 'Examen práctico'] ].map(([id, label, title]) => {
+    const selected = [...examResources.values()].filter(resource => resource.examPart === id);
+    const owners = examTasks.filter(task => selected.some(resource => task.resourceRefs?.includes(resource.id)));
+    return { id, label, title, prepared: owners.length > 0 && owners.every(task => task.preparation === 'ready'), known: owners.length > 0,
+      resources: structuredClone(selected), unresolved: [...unresolved], unclassified: structuredClone(unclassified) };
+  });
   return { tasks, exams };
 }
