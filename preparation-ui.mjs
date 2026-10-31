@@ -1,5 +1,5 @@
-import { preparationMaterials, materialLabels, preparationValues, preparationSummary, preparationSnapshot, assertPreparationRead, preparePreparationSave, PreparationError } from './preparation.mjs?v=20261031-rf28';
-import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261031-rf28';
+import { preparationMaterials, materialLabels, preparationValues, preparationSummary, preparationSnapshot, assertPreparationRead, preparePreparationSave, PreparationError } from './preparation.mjs?v=20261031-rf28-removal';
+import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261031-rf28-removal';
 import { taskPreparationGroups, taskAdditionIssue, createPreparationTask, taskRemovalIssue, taskType } from './preparation-tasks.mjs?v=20261027-rf32';
 import { saveTaskDocument } from './task-edit.mjs?v=20261027-rf32';
 import { saveErrorFeedback } from './core.mjs?v=20261027-rf32';

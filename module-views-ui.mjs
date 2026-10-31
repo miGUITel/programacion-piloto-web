@@ -6,7 +6,7 @@ import { renderCommonCourse } from './common-course-ui.mjs?v=20261027-rf32';
 import { eventTypes } from './teaching.mjs?v=20261027-rf32';
 import { taskStates } from './task-cycle.mjs?v=20261027-rf32';
 import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261027-rf32';
-import { preparationBadge } from './preparation-ui.mjs?v=20261031-rf28';
+import { preparationBadge } from './preparation-ui.mjs?v=20261031-rf28-removal';
 
 const $ = id => document.getElementById(id);
 function el(tag, className, text) {

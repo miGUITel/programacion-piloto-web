@@ -1,5 +1,5 @@
 /** RF 28: preparation is derived from resources, never manual session checks. */
-import { sessionPreparation } from './session-preparation.mjs?v=20261031-rf28';
+import { sessionPreparation } from './session-preparation.mjs?v=20261031-rf28-removal';
 import { taskPreparationGroups, createPreparationTask, taskRemovalIssue } from './preparation-tasks.mjs?v=20261027-rf32';
 export const preparationMaterials = ['ppt', 'web', 'tasks', 'exam'];
 export const preparationLabels = { pending: 'Pendiente', draft: 'En preparación', 'exam-pending': 'Examen pendiente', ready: 'Preparada' };
@@ -28,7 +28,7 @@ export function preparationSummary(document, records = []) {
   const examMissing = groups.exam.items.filter(task => task.preparation !== 'ready');
   const state = materials === 4 && total > 0 && sessions === total ? 'ready'
     : teachingReady && groups.exam.total > 0 && (examMissing.length || sessionDetails.some(session => session.missing.some(item => item.kind === 'exam'))) ? 'exam-pending'
-    : materials > 0 || sessions > 0 || groups.tasks.ready > 0 || groups.exam.ready > 0 || sessionDetails.some(session => session.dependencies.some(item => item.ready)) ? 'draft' : 'pending';
+    : materials > 0 || groups.tasks.ready > 0 || groups.exam.ready > 0 || sessionDetails.some(session => session.dependencies.some(item => item.ready)) ? 'draft' : 'pending';
   const detail = state === 'exam-pending' ? 'Falta preparar: ' + [...new Set([
     ...examMissing.map(task => `Examen ${task.code} · ${task.title}`),
     ...sessionDetails.flatMap(session => session.missing.filter(item => item.kind === 'exam').map(item => item.label)),

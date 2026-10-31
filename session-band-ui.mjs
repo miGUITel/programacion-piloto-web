@@ -1,4 +1,4 @@
-import { sessionBand, madridToday } from './unit-tools.mjs?v=20261031-rf28';
+import { sessionBand, madridToday } from './unit-tools.mjs?v=20261031-rf28-removal';
 import { sessionDisplayLabel } from './replanning.mjs?v=20261027-rf32-labels';
 
 export function renderSessionResourceBand(container, document, { records = [], today = madridToday(), onOpen, busy = false } = {}) {
