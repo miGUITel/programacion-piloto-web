@@ -11,8 +11,8 @@
   <link rel="icon" href="./favicon.ico?v=20261029" sizes="16x16 32x32 48x48">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20261029">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20261029">
-  <link rel="stylesheet" href="./styles.css?v=20261029-rf24">
-  <script type="module" src="./app.mjs?v=20261030-rf16"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261031-task-band">
+  <script type="module" src="./app.mjs?v=20261031-task-band"></script>
 </head>
 <body>
   <header class="app-header">
@@ -86,6 +86,10 @@
         <section id="session-band-section" class="session-band-section" aria-label="Sesiones de la unidad">
           <div class="band-caption"><p><span class="band-key task-key"></span>Tarea <span class="band-key exam-key"></span>Examen <span class="band-key elapsed-key"></span>Tiempo transcurrido</p></div>
           <div class="session-band-scroll" tabindex="0" role="region" aria-label="Sesiones de la UT; desliza para ver todas"><ol id="session-band" class="session-band"></ol></div>
+        </section>
+        <section id="task-band-section" class="task-band-section" aria-labelledby="task-band-title" hidden>
+          <h2 id="task-band-title">Tareas</h2>
+          <div class="task-band-scroll" tabindex="0" role="region" aria-label="Tareas y exámenes de la UT; desliza para ver todos"><ol id="task-band" class="task-band"></ol></div>
         </section>
         <div id="exam-reminders" class="exam-reminders" aria-live="polite" hidden></div>
         <div class="list-heading session-list-heading"><h2>Sesiones</h2><div class="session-preparation-tools"><div id="unit-preparation" class="unit-preparation"></div><div id="unit-replanning" aria-live="polite"></div><button id="unit-information-open" class="unit-information-open" type="button" aria-label="Información de la unidad: diseño, referencias y notas" title="Información de la unidad" aria-haspopup="dialog" aria-controls="unit-information" hidden><span aria-hidden="true">i</span></button></div><p><span class="temporal-legend" aria-hidden="true"></span>Tiempo previsto transcurrido · no confirma impartición.</p></div>

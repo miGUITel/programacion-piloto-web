@@ -43,6 +43,7 @@ export function validateResources(resources, errors = [], prefix = 'resources') 
     if (!object(resource)) { errors.push(`${path}: recurso no válido.`); return; }
     if (!text(resource.id) || ids.has(resource.id)) errors.push(`${path}.id: identificador no válido o duplicado.`); ids.add(resource.id);
     if (!text(resource.title) || !own(resourceTypes, resource.type)) errors.push(`${path}: título y tipo requeridos.`);
+    if (own(resource, 'examPart') && (resource.type !== 'exam' || !['test','practical'].includes(resource.examPart))) errors.push(`${path}.examPart: Test o Práctico solo corresponde a un recurso de examen.`);
     if (own(resource, 'audience') && !['students','teacher','both'].includes(resource.audience)) errors.push(`${path}.audience: destinatario no válido.`);
     for (const field of ['description','version']) if (own(resource, field) && typeof resource[field] !== 'string') errors.push(`${path}.${field}: texto requerido.`);
     if (own(resource, 'location')) {

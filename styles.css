@@ -43,6 +43,19 @@
 .band-day:hover{outline:2px solid #779b94;outline-offset:1px}
 .band-cell.today .band-day{outline:2px solid var(--teal);outline-offset:2px}
 .band-cell.today::after{background:var(--teal)}
+.task-band-section{display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)}
+.task-band-section h2{flex:0 0 auto;margin:0;font-size:12px;color:var(--muted);font-weight:650}
+.task-band-scroll{min-width:0;max-width:100%;overflow-x:auto;padding:3px;overscroll-behavior-x:contain}
+.task-band{display:flex;align-items:stretch;gap:6px;list-style:none;margin:0;padding:0;width:max-content}
+.task-band-cell{display:flex;flex:0 0 auto}
+.task-band-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:44px;min-height:44px;padding:4px 8px;border:1px solid #216cba;border-radius:5px;background:#edf5fc;color:#17558f;font:inherit;font-size:15px;font-weight:750;text-decoration:none;cursor:pointer;line-height:1.15}
+.task-band-tile small{font-size:9px;font-weight:500;white-space:nowrap}
+.task-band-exam .task-band-tile{border-color:#ce650a;background:#fff4e8;color:#8f4405}
+.task-band-exam:has(+.task-band-exam){margin-left:9px}
+.task-band-tile.task-band-unlinked{border-style:dashed;background:transparent}
+.task-band-tile:hover{filter:brightness(.96)}
+.task-band-tile:focus-visible,.task-band-scroll:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.task-band-tile:disabled{opacity:.55;cursor:wait}
 #activity-event-type{width:100%;min-height:36px;padding:8px;border:1px solid #cbd6ce;border-radius:5px;color:var(--ink);background:white;font-size:14px}
 .general-notes-comparison{border-top:1px solid var(--line);margin-top:18px}
 .general-notes-comparison textarea{background:#f0f3ed}

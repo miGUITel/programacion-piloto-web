@@ -1,4 +1,4 @@
-import { resourceTypes, resourceValues, assertResourceRead, prepareResourceSave, ResourceEditError, parsePrivateLocation, locationInput, safeResourceUrl, validateResources, validateModuleResources } from './resources.mjs?v=20261027-rf32';
+import { resourceTypes, resourceValues, assertResourceRead, prepareResourceSave, ResourceEditError, parsePrivateLocation, locationInput, safeResourceUrl, validateResources, validateModuleResources } from './resources.mjs?v=20261031-task-band';
 import { saveTaskDocument } from './task-edit.mjs?v=20261027-rf32';
 import { saveErrorFeedback } from './core.mjs?v=20261027-rf32';
 import { renderPrivateMarkdown } from './private-markdown.mjs?v=20261027-rf32';
@@ -10,10 +10,11 @@ export function createResourcesUI({ getState, getActive, getConnection, unitStor
   const modules = new Map(), stores = new Map();
   let loaded = null, source = null, target = null, scope = 'unit', values = null, blocked = false, editing = null, initialForm = null, position = null;
   let privateGeneration = 0;
+  let examPartField = null, examPartInput = null;
   const removed = new Map();
   const moduleStore = code => { if (!stores.has(code)) stores.set(code, getConnection().forModuleResources(code)); return stores.get(code); };
   const changed = () => Boolean(loaded && !equal(values, resourceValues(loaded.document)));
-  const formValues = () => ({ title: $('resource-title').value, type: $('resource-type').value, locationKind: $('resource-location-kind').value, location: $('resource-location').value, public: $('resource-public').checked, description: $('resource-description').value, version: $('resource-version').value, audience: $('resource-audience').value, taskIds: [...$('resource-task-options').querySelectorAll('input:checked')].map(i => i.value) });
+  const formValues = () => ({ title: $('resource-title').value, type: $('resource-type').value, examPart: $('resource-type').value === 'exam' ? examPartInput?.value ?? '' : '', locationKind: $('resource-location-kind').value, location: $('resource-location').value, public: $('resource-public').checked, description: $('resource-description').value, version: $('resource-version').value, audience: $('resource-audience').value, taskIds: [...$('resource-task-options').querySelectorAll('input:checked')].map(i => i.value) });
   const unfinished = () => !$('resource-form').hidden && !equal(formValues(), initialForm);
   const pending = () => Boolean(loaded && (blocked || changed() || unfinished()));
   function message(text = '', kind = '') { $('resources-message').textContent = text; $('resources-message').className = 'message ' + kind; $('resources-message').hidden = !text; }
@@ -79,7 +80,19 @@ export function createResourcesUI({ getState, getActive, getConnection, unitStor
     if (module?.loading) root.append(el('p','scope-note','Leyendo los enlaces del módulo…'));
     if (module?.error) { const warning = el('p','message warning','No se han podido leer los enlaces del módulo. '); warning.append(button('Reintentar', async () => { if (isBusy()) return; setBusy(true); try { await loadModule(state.entry.moduleCode,true); } finally { setBusy(false); } })); root.append(warning); }
   }
-  function resetForm() { $('resource-form').hidden = true; editing = null; initialForm = null; for (const id of ['resource-title','resource-location','resource-description','resource-version']) $(id).value = ''; $('resource-public').checked = false; $('resource-task-options').replaceChildren(); $('resource-form-message').textContent = ''; }
+  function resetForm() { $('resource-form').hidden = true; editing = null; initialForm = null; if (examPartInput) { examPartInput.value = ''; examPartField.hidden = true; } for (const id of ['resource-title','resource-location','resource-description','resource-version']) $(id).value = ''; $('resource-public').checked = false; $('resource-task-options').replaceChildren(); $('resource-form-message').textContent = ''; }
+  function showExamPart() {
+    if (!examPartField) {
+      examPartField = el('label','','Parte del examen'); examPartField.htmlFor = 'resource-exam-part';
+      examPartInput = el('select'); examPartInput.id = 'resource-exam-part';
+      for (const [value,label] of [['','Sin especificar'],['test','Test'],['practical','Práctico']]) { const option = el('option','',label); option.value = value; examPartInput.append(option); }
+      examPartField.append(examPartInput);
+      const typeLabel = $('resource-type').parentElement;
+      if (typeLabel?.after) typeLabel.after(examPartField); else $('resource-form').append(examPartField);
+    }
+    examPartField.hidden = $('resource-type').value !== 'exam';
+    if (examPartField.hidden) examPartInput.value = '';
+  }
   function renderEditor() {
     const root = $('resources-editor-list'); root.replaceChildren();
     for (const resource of values.resources) {
@@ -121,6 +134,7 @@ export function createResourcesUI({ getState, getActive, getConnection, unitStor
     const options = $('resource-type'); options.replaceChildren();
     for (const [type,label] of Object.entries(resourceTypes)) if (scope === 'unit' || ['presentation','web'].includes(type)) { const option = el('option','',label); option.value = type; options.append(option); }
     options.value = resource?.type ?? (scope === 'module' ? 'presentation' : 'assignment');
+    showExamPart(); examPartInput.value = resource?.type === 'exam' ? resource.examPart ?? '' : '';
     $('resource-location-kind').value = resource?.location?.kind === 'github' ? 'github' : resource?.location?.kind === 'workspace' ? 'workspace' : 'https';
     $('resource-location').value = locationInput(resource?.location); $('resource-public').checked = resource?.location?.public === true; $('resource-audience').value = resource ? resource.audience ?? '' : 'both';
     const tasks = $('resource-task-options'); tasks.replaceChildren(); $('resource-task-fieldset').hidden = scope !== 'unit' || !loaded.document.tasks?.length;
@@ -134,6 +148,7 @@ export function createResourcesUI({ getState, getActive, getConnection, unitStor
     try {
       if (!form.title.trim()) throw new Error('Escribe un título para el recurso.');
       const old = values.resources.find(r => r.id === editing), resource = { ...old, id: old?.id ?? `resource-${crypto.randomUUID()}`, title: form.title.trim(), type: form.type };
+      if (form.type === 'exam' && form.examPart) resource.examPart = form.examPart; else delete resource.examPart;
       if (form.locationKind === 'github') resource.audience = 'teacher'; else if (form.audience) resource.audience = form.audience; else delete resource.audience;
       if (!form.location.trim()) throw new Error('Indica el enlace o la ruta del recurso.');
       if (form.locationKind === 'github') resource.location = parsePrivateLocation(form.location);
@@ -196,7 +211,7 @@ export function createResourcesUI({ getState, getActive, getConnection, unitStor
   $('resources-manage').addEventListener('click',() => open('unit')); $('resources-module-manage').addEventListener('click',() => open('module'));
   $('resource-add').addEventListener('click',() => edit()); $('resource-apply').addEventListener('click',apply); $('resource-form-cancel').addEventListener('click',() => { resetForm(); availability(); onStateChange(); });
   $('resource-form').addEventListener('input',() => { availability(); onStateChange(); }); $('resource-form').addEventListener('change',() => { locationHelp(); availability(); locationHelp(); onStateChange(); });
-  $('resource-type').addEventListener('change',() => { if ($('resource-type').value === 'guide') $('resource-location-kind').value = 'github'; locationHelp(); });
+  $('resource-type').addEventListener('change',() => { if ($('resource-type').value === 'guide') $('resource-location-kind').value = 'github'; showExamPart(); locationHelp(); });
   $('resources-save-form').addEventListener('submit',save); for (const id of ['resources-close','resources-cancel']) $(id).addEventListener('click',close);
   $('resources-dialog').addEventListener('cancel',event => { event.preventDefault(); close(); }); $('resource-private-close').addEventListener('click',closePrivate); $('resource-private-dialog').addEventListener('cancel',event => {event.preventDefault();closePrivate();});
   $('resources-download').addEventListener('click',() => { if (!loaded || isBusy()) return; const data = { scope,path:scope === 'unit' ? target.path : `${target.moduleCode}/resources.json`,baseSha:loaded.sha,values,unfinished:unfinished() ? formValues() : null }; const url = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)+'\n'],{type:'application/json;charset=utf-8'})); const link = el('a'); link.href = url; link.download = `${target.moduleCode}-${scope === 'unit' ? target.unitCode : 'modulo'}-borrador-recursos.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url),1000); });

@@ -1,4 +1,4 @@
-import { safeResourceUrl } from './resources.mjs?v=20261027-rf32';
+import { safeResourceUrl, validGithubLocation, resourceTypes } from './resources.mjs?v=20261031-task-band';
 
 const groups = [
   { id:'assignment', label:'Tarea o enunciado', paths:['M9 5H6v16h12V5h-3','M9 3h6v4H9z','M9 11h6M9 15h6'] },
@@ -139,5 +139,38 @@ export function createRowResourcesUI({isBusy,canOpen,openPrivate,fetchImpl=globa
     if(unresolved.length){const warning=node('span','resource-reference-warning','!');warning.title='Hay referencias pendientes de resolver';warning.setAttribute('aria-label',warning.title);cell.append(warning);}
     cell.classList.toggle('is-empty',!resources.length&&!unresolved.length);
   }
-  return {render,clear(){generation++;closePicker();publicReads.clear();}};
+  // The task band shares the same private reader and safe external links as rows.
+  // Missing destinations are explicit; opening a resource never writes a document.
+  function access({resources,moduleCode,label,title,unresolved=[],onManage,emptyMessage='Todavía no hay un recurso enlazado.'}) {
+    const location=resources[0]?.location;
+    const direct=resources.length===1&&!unresolved.length&&(location?.kind==='https'&&safeResourceUrl(location.url,location.public===true)||validGithubLocation(location));
+    const item=direct?control(resources[0],moduleCode,label):node('button','',label);
+    item.title=title;item.setAttribute('aria-label',title);
+    if(direct&&location.kind==='github'){item.setAttribute('aria-haspopup','dialog');item.setAttribute('aria-controls','resource-private-dialog');}
+    if(!direct) {
+      item.type='button';item.setAttribute('aria-haspopup','dialog');item.setAttribute('aria-controls','row-resource-picker');
+      item.addEventListener('click',()=>{
+        if(!allowed())return;
+        ensurePicker();returnTo=item;heading.textContent=title;body.replaceChildren();
+        if(!resources.length)body.append(node('p','',emptyMessage));
+        const list=node('ul','resource-choice-list');
+        for(const resource of resources) {
+          const li=node('li');
+          // Local paths remain visible until the teacher supplies a published URL.
+          if(resource.location?.kind==='workspace')li.append(node('p','',`${resource.title} · Archivo local: ${resource.location.path}`));
+          else li.append(control(resource,moduleCode,`${resourceTypes[resource.type]??'Recurso'} · ${resource.title}`,item));
+          list.append(li);
+        }
+        body.append(list);
+        if(unresolved.length)body.append(node('p','message warning','Hay referencias pendientes de resolver o de clasificar como Test/Práctico. Revísalas en Recursos.'));
+        if(onManage) {
+          const manage=node('button','resource-choice','Gestionar recursos');manage.type='button';
+          manage.addEventListener('click',()=>{if(!allowed())return;closePicker();onManage();});body.append(manage);
+        }
+        picker.showModal();body.querySelector('a,button')?.focus();
+      });
+    }
+    return item;
+  }
+  return {render,access,clear(){generation++;closePicker();publicReads.clear();}};
 }
