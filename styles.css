@@ -42,6 +42,13 @@
 .band-day.has-task{background:#216cba;border-color:#216cba;color:#fff}
 .band-day.has-exam{background:#ce650a;border-color:#ce650a;color:#fff}
 .band-day.has-task.has-exam{background:linear-gradient(135deg,#216cba 50%,#ce650a 50%);border-color:#86633f}
+.band-day.session-not-ready{background:#f6f7f3;border-color:#d6dfd8;color:#576d62}
+.band-day.has-task.session-not-ready{background:#e1edf8;border-color:#a6c5e2;color:#245779}
+.band-day.has-exam.session-not-ready{background:#fff0df;border-color:#dfbd95;color:#86501f}
+.band-day.has-task.has-exam.session-not-ready{background:linear-gradient(135deg,#e1edf8 50%,#fff0df 50%);border-color:#c2c5b8;color:#425c5a}
+.preparation-exam-pending{background:#fff0da!important;border-color:#d8a253!important;color:#7b4908!important}
+.preparation-sessions .unit-bands{max-width:100%;margin:0}
+.preparation-sessions .band-day{cursor:default}
 .band-day:hover{outline:2px solid #779b94;outline-offset:1px}
 .band-cell.today .band-day{outline:2px solid var(--teal);outline-offset:2px}
 .band-cell.today::after{background:var(--teal)}

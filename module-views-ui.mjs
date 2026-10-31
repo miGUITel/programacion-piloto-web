@@ -6,7 +6,7 @@ import { renderCommonCourse } from './common-course-ui.mjs?v=20261027-rf32';
 import { eventTypes } from './teaching.mjs?v=20261027-rf32';
 import { taskStates } from './task-cycle.mjs?v=20261027-rf32';
 import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261027-rf32';
-import { preparationBadge } from './preparation-ui.mjs?v=20261027-rf32';
+import { preparationBadge } from './preparation-ui.mjs?v=20261031-rf28';
 
 const $ = id => document.getElementById(id);
 function el(tag, className, text) {
@@ -97,7 +97,7 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
       const title = el('button', 'unit-link', unitLabel(row.unit));
       title.type = 'button'; title.title = title.textContent;
       title.addEventListener('click', () => onOpen(row.unit.path)); label.append(title);
-      if (row.record) { label.append(preparationBadge(row.record.document, () => onPreparation(row.record.entry))); if (planStatus) label.append(planStatus(row.record.document)); }
+      if (row.record) { label.append(preparationBadge(row.record.document, () => onPreparation(row.record.entry), state.allRecords ?? records)); if (planStatus) label.append(planStatus(row.record.document)); }
       if (row.unit.path === activePath) label.append(el('span', 'overview-active', 'Abierta'));
       if (!row.record) label.append(el('span', 'overview-unavailable', 'Sin datos · reintenta Actualizar'));
       if (row.shiftIssue) label.append(el('span', 'overview-shift-note', row.shiftIssue));

@@ -1,7 +1,8 @@
-/** RF 3: preparation is derived from confirmed materials and session marks. */
+/** RF 28: preparation is derived from resources, never manual session checks. */
+import { sessionPreparation } from './session-preparation.mjs?v=20261031-rf28';
 import { taskPreparationGroups, createPreparationTask, taskRemovalIssue } from './preparation-tasks.mjs?v=20261027-rf32';
 export const preparationMaterials = ['ppt', 'web', 'tasks', 'exam'];
-export const preparationLabels = { pending: 'Pendiente', draft: 'En preparación', ready: 'Preparada' };
+export const preparationLabels = { pending: 'Pendiente', draft: 'En preparación', 'exam-pending': 'Examen pendiente', ready: 'Preparada' };
 export const materialLabels = { ppt: 'PPT', web: 'Web', tasks: 'Tareas', exam: 'Examen' };
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 export class PreparationError extends Error {
@@ -11,17 +12,28 @@ const fail = (code, message) => { throw new PreparationError(code, message); };
 
 export function preparationValues(document) {
   return { materials: Object.fromEntries(preparationMaterials.map(key => [key, document.unit.resourcePreparation?.[key] ?? ''])),
-    sessions: Object.fromEntries(document.sessions.map(session => [session.id, session.preparation ?? ''])),
     tasks: Object.fromEntries((document.tasks ?? []).map(task => [task.id, task.preparation ?? ''])), additions: [], removals: [] };
 }
 
-export function preparationSummary(document) {
+export function preparationSummary(document, records = []) {
   const groups = taskPreparationGroups(document);
   const materials = preparationMaterials.filter(key => (groups[key]?.state ?? document.unit.resourcePreparation?.[key]) === 'Listo').length;
-  const sessions = document.sessions.filter(session => session.preparation === 'ready').length;
+  const sessionDetails = document.sessions.map(session => sessionPreparation(document, session, records));
+  const sessions = sessionDetails.filter(session => session.ready).length;
   const total = document.sessions.length;
-  const state = materials === 4 && total > 0 && sessions === total ? 'ready' : materials > 0 || sessions > 0 || groups.tasks.ready > 0 || groups.exam.ready > 0 ? 'draft' : 'pending';
-  return { state, label: preparationLabels[state], materials, sessions, total, groups };
+  const unlinked = sessionDetails.filter(session => !session.known).length;
+  const teachingReady = ['ppt','web'].every(key => document.unit.resourcePreparation?.[key] === 'Listo')
+    && groups.tasks.state === 'Listo' && total > 0 && !unlinked
+    && sessionDetails.every(session => session.dependencies.every(item => item.kind === 'exam' || item.ready));
+  const examMissing = groups.exam.items.filter(task => task.preparation !== 'ready');
+  const state = materials === 4 && total > 0 && sessions === total ? 'ready'
+    : teachingReady && groups.exam.total > 0 && (examMissing.length || sessionDetails.some(session => session.missing.some(item => item.kind === 'exam'))) ? 'exam-pending'
+    : materials > 0 || sessions > 0 || groups.tasks.ready > 0 || groups.exam.ready > 0 || sessionDetails.some(session => session.dependencies.some(item => item.ready)) ? 'draft' : 'pending';
+  const detail = state === 'exam-pending' ? 'Falta preparar: ' + [...new Set([
+    ...examMissing.map(task => `Examen ${task.code} · ${task.title}`),
+    ...sessionDetails.flatMap(session => session.missing.filter(item => item.kind === 'exam').map(item => item.label)),
+  ])].join('; ') : unlinked ? `${unlinked} sesión/es con recursos sin vincular` : !groups.exam.total ? 'Examen por concretar' : '';
+  return { state, label: preparationLabels[state], materials, sessions, total, groups, sessionDetails, unlinked, detail };
 }
 
 export function assertPreparationRead(loaded, entry, active) {
@@ -31,7 +43,7 @@ export function assertPreparationRead(loaded, entry, active) {
   }
 }
 
-export function preparationSnapshot(document, values) {
+export function preparationSnapshot(document, values, records = []) {
   const result = structuredClone(document);
   const original = preparationValues(document);
   for (const key of ['ppt', 'web']) {
@@ -42,13 +54,6 @@ export function preparationSnapshot(document, values) {
     if (value) result.unit.resourcePreparation[key] = value; else delete result.unit.resourcePreparation[key];
   }
   if (result.unit.resourcePreparation && !Object.keys(result.unit.resourcePreparation).length) delete result.unit.resourcePreparation;
-  if (!equal(Object.keys(values.sessions).sort(), document.sessions.map(session => session.id).sort())) fail('PREPARATION_INVALID', 'La lista de sesiones ha cambiado. Revisa la unidad.');
-  for (const session of result.sessions) {
-    const value = values.sessions[session.id];
-    if (!['', 'draft', 'ready'].includes(value)) fail('PREPARATION_INVALID', 'Revisa la preparación de las sesiones.');
-    if (value === original.sessions[session.id]) continue;
-    if (value) session.preparation = value; else delete session.preparation;
-  }
   // Preserve legacy visibility before replacing its former manual preparation gate.
   // V3 approvals are explicit and are never created by a preparation calculation.
   if (document.schemaVersion !== 3) for (const task of result.tasks ?? []) {
@@ -84,14 +89,14 @@ export function preparationSnapshot(document, values) {
       (result.unit.resourcePreparation ??= {})[key] = groups[key].state;
     }
   }
-  const state = preparationSummary(result).state;
-  if (state === 'pending') delete result.unit.preparation; else result.unit.preparation = state;
+  const state = preparationSummary(result, records).state;
+  if (state === 'pending') delete result.unit.preparation; else result.unit.preparation = state === 'ready' ? 'ready' : 'draft';
   return result;
 }
 
-export function preparePreparationSave(loaded, entry, values, active) {
+export function preparePreparationSave(loaded, entry, values, active, records = []) {
   assertPreparationRead(loaded, entry, active);
-  const document = preparationSnapshot(loaded.document, values);
+  const document = preparationSnapshot(loaded.document, values, records);
   let unitDraft = null;
   if (active?.path === entry.path) {
     unitDraft = structuredClone(active.draft);
@@ -111,11 +116,6 @@ export function preparePreparationSave(loaded, entry, values, active) {
     if (values.removals?.length) unitDraft.tasks = (unitDraft.tasks ?? []).filter(task => !values.removals.includes(task.id));
     merge(unitDraft.unit, before.unit, document.unit, 'resourcePreparation');
     merge(unitDraft.unit, before.unit, document.unit, 'preparation');
-    for (const session of document.sessions) {
-      const target = unitDraft.sessions.find(item => item.id === session.id);
-      if (!target) fail('PREPARATION_LOCAL_CONFLICT', 'Una sesión ha cambiado en el borrador de Unidad. Conserva y revisa ambos borradores.');
-      merge(target, before.sessions.find(item => item.id === session.id), session, 'preparation');
-    }
     for (const task of document.tasks ?? []) {
       const original = before.tasks?.find(item => item.id === task.id);
       const target = unitDraft.tasks?.find(item => item.id === task.id);

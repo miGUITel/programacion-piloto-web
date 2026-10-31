@@ -7,24 +7,25 @@ import { createMeetingWorkspace } from './meeting-workspace-ui.mjs?v=20261029-rf
 import { createMeetingWorkUI } from './meeting-work-ui.mjs?v=20261029-rf24';
 import { createMeetingTaskListUI } from './meeting-task-list-ui.mjs?v=20261029-rf24';
 import { createResourcesUI } from './resources-ui.mjs?v=20261031-task-band';
+import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261031-rf28';
 import { renderTaskBand } from './task-band-ui.mjs?v=20261031-task-band-inline';
 import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261027-rf32';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261030-rf16';
 import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261027-rf32';
-import { orderedUnits, unitLabel, madridToday, sessionBand, presentationPeriods, compactSessionHeaders, globalSessionExpansion, calendarCurrentUnits } from './unit-tools.mjs?v=20261027-rf32';
+import { orderedUnits, unitLabel, madridToday, presentationPeriods, compactSessionHeaders, globalSessionExpansion, calendarCurrentUnits } from './unit-tools.mjs?v=20261031-rf28';
 import { rowResources } from './resources.mjs?v=20261027-rf32';
 import { createRowResourcesUI } from './row-resources-ui.mjs?v=20261031-task-band';
 import { eventTypes, setSessionEventType, activityEventType, activityEventTypes, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261027-rf32';
 import { libraryIntegrity } from './model-v3.mjs?v=20261027-rf32';
 import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261027-rf32';
-import { createModuleViews } from './module-views-ui.mjs?v=20261027-rf32-gaps';
+import { createModuleViews } from './module-views-ui.mjs?v=20261031-rf28';
 import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261027-rf32';
 import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261027-rf32';
 import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261027-rf32';
 import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261027-rf32';
 import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261027-rf32';
 import { renderUnitInformation, sessionInformationLines } from './unit-information.mjs?v=20261027-rf32';
-import { createPreparationUI } from './preparation-ui.mjs?v=20261027-rf32';
+import { createPreparationUI } from './preparation-ui.mjs?v=20261031-rf28';
 import { createSessionEditorUI, bindSessionEditRow } from './session-editor-ui.mjs?v=20261027-rf32-labels';
 
 const $ = (id) => document.getElementById(id);
@@ -890,31 +891,14 @@ function renderSessions() {
 
 function renderSessionBand() {
   const container = $('session-band');
-  container.replaceChildren();
   if (!draft) return;
-  container.dataset.today = madridToday();
-  for (const item of sessionBand(draft.sessions, container.dataset.today, draft)) {
-    if (item.monthLabel) {
-      const month = node('li', 'band-month', item.monthLabel);
-      month.title = item.monthName; month.setAttribute('aria-label', item.monthName);
-      container.append(month);
-    }
-    const cell = node('li', `band-cell${item.past ? ' elapsed' : ''}${item.today ? ' today' : ''}`);
-    const button = node('button', `band-day${item.task ? ' has-task' : ''}${item.exam ? ' has-exam' : ''}`, item.day);
-    button.type = 'button';
-    button.disabled = busy;
-    const types = [item.task ? 'Tarea' : '', item.exam ? 'Examen' : ''].filter(Boolean).join(' y ');
-    const label = `${sessionDisplayLabel(draft, draft.sessions[item.index], moduleRecords())} · ${dateInfo(item.date).full}${types ? ` · ${types}` : ''}${item.today ? ' · Hoy' : ''}${item.past ? ' · Fecha pasada' : ''}`;
-    button.title = label; button.setAttribute('aria-label', label);
-    button.addEventListener('click', () => {
+  renderSessionResourceBand(container,draft,{records:libraryRecords(),busy,onOpen:item=>{
       if (busy) return;
       rememberUnit(draft.sessions[item.index]?.id);
       const section = $('sessions').querySelector(`[data-session-index="${item.index}"]`);
       section?.scrollIntoView({ block: 'start', behavior: 'instant' });
       section?.querySelector('.session-title')?.focus({ preventScroll: true });
-    });
-    cell.append(button); container.append(cell);
-  }
+  }});
   $('session-band-section').hidden = !draft.sessions.length;
 }
 

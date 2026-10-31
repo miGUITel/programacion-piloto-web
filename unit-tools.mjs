@@ -1,4 +1,5 @@
 import { eventTypes } from './teaching.mjs?v=20261027-rf32';
+import { sessionPreparation } from './session-preparation.mjs?v=20261031-rf28';
 import { timeToMinutes } from './core.mjs?v=20261027-rf32';
 
 /** Presentation helpers. Codes, titles, dates and academic states remain unchanged. */
@@ -82,7 +83,7 @@ export function calendarCurrentUnits(records, today) {
   });
 }
 
-export function sessionBand(sessions, today = madridToday(), document) {
+export function sessionBand(sessions, today = madridToday(), document, records = []) {
   let previousMonth = '';
   return sessions.map((session, index) => ({ session, index }))
     .sort((a, b) => a.session.date.localeCompare(b.session.date) || a.index - b.index)
@@ -90,13 +91,16 @@ export function sessionBand(sessions, today = madridToday(), document) {
       const month = session.date.slice(0, 7);
       const monthLabel = previousMonth === month ? null : months[Number(session.date.slice(5, 7)) - 1];
       previousMonth = month;
+      const preparation = document ? sessionPreparation(document, session, records) : null;
+      const selected = eventTypes(session, document);
+      const types = Object.hasOwn(session, 'eventTypes') ? selected : [...new Set([...selected, ...(preparation?.task ? ['task'] : []), ...(preparation?.exam ? ['exam'] : [])])];
       return {
         id: session.id, index, number: session.number, date: session.date,
         day: String(Number(session.date.slice(8))), monthLabel,
         monthName: new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${session.date}T12:00:00Z`)),
         past: session.date < today, today: session.date === today,
-        task: eventTypes(session, document).includes('task'),
-        exam: eventTypes(session, document).includes('exam'),
+        task: types.includes('task'),
+        exam: types.includes('exam'), preparation,
       };
     });
 }

@@ -11,8 +11,8 @@
   <link rel="icon" href="./favicon.ico?v=20261029" sizes="16x16 32x32 48x48">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20261029">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20261029">
-  <link rel="stylesheet" href="./styles.css?v=20261031-task-band-separator">
-  <script type="module" src="./app.mjs?v=20261031-task-band-inline"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261031-rf28">
+  <script type="module" src="./app.mjs?v=20261031-rf28"></script>
 </head>
 <body>
   <header class="app-header">
@@ -145,7 +145,7 @@
           <div id="tasks-list" class="tasks-list"></div></div><div id="meeting-task-panel" hidden></div>
         </section>
         <section id="preparation-view" aria-label="Preparación de las unidades" hidden>
-          <div class="module-view-toolbar"><label class="visually-hidden" for="preparation-module">Módulo</label><select id="preparation-module"></select><label class="visually-hidden" for="preparation-status">Preparación</label><select id="preparation-status"><option value="">Todos los estados</option><option value="pending">Pendiente</option><option value="draft">En preparación</option><option value="ready">Preparada</option><option value="unavailable">Sin leer</option></select><button id="preparation-refresh" class="button button-small" type="button">Actualizar preparación</button></div>
+          <div class="module-view-toolbar"><label class="visually-hidden" for="preparation-module">Módulo</label><select id="preparation-module"></select><label class="visually-hidden" for="preparation-status">Preparación</label><select id="preparation-status"><option value="">Todos los estados</option><option value="pending">Pendiente</option><option value="draft">En preparación</option><option value="exam-pending">Examen pendiente</option><option value="ready">Preparada</option><option value="unavailable">Sin leer</option></select><button id="preparation-refresh" class="button button-small" type="button">Actualizar preparación</button></div>
           <p id="preparation-count" class="scope-note" role="status"></p><p id="preparation-scope" class="scope-note"></p><div id="preparation-list" class="preparation-list"></div>
         </section>
         <footer class="workspace-footer"><span id="loaded-version"></span><span>Títulos y descripciones editables · Guardado explícito</span></footer>
@@ -281,7 +281,7 @@
       <header class="suggestions-header"><h2 id="preparation-title"></h2></header>
       <div class="suggestions-content">
         <p><span id="preparation-result" role="status"></span></p><p id="preparation-detail" class="scope-note"></p>
-        <p class="field-help">Todo listo: Preparada. Algún material, tarea, examen o sesión listo: En preparación. Ninguno listo: Pendiente. Las altas, eliminaciones y marcas se confirman al pulsar Guardar preparación. Puedes deshacer una eliminación antes de guardar.</p>
+        <p class="field-help">Todo listo: Preparada. Solo falta el examen: Examen pendiente. Las sesiones se calculan desde sus recursos, sin marcarlas. Sin asociaciones suficientes: Recursos sin vincular. Las altas, eliminaciones y marcas se confirman al pulsar Guardar preparación. Puedes deshacer una eliminación antes de guardar.</p>
         <div id="preparation-fields"></div>
         <fieldset id="preparation-task-editor" class="preparation-task-editor" hidden>
           <legend>Añadir a la lista oficial</legend>

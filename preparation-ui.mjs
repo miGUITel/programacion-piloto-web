@@ -1,4 +1,5 @@
-import { preparationMaterials, materialLabels, preparationValues, preparationSummary, preparationSnapshot, assertPreparationRead, preparePreparationSave, PreparationError } from './preparation.mjs?v=20261027-rf32';
+import { preparationMaterials, materialLabels, preparationValues, preparationSummary, preparationSnapshot, assertPreparationRead, preparePreparationSave, PreparationError } from './preparation.mjs?v=20261031-rf28';
+import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261031-rf28';
 import { taskPreparationGroups, taskAdditionIssue, createPreparationTask, taskRemovalIssue, taskType } from './preparation-tasks.mjs?v=20261027-rf32';
 import { saveTaskDocument } from './task-edit.mjs?v=20261027-rf32';
 import { saveErrorFeedback } from './core.mjs?v=20261027-rf32';
@@ -6,10 +7,10 @@ const $ = id => document.getElementById(id);
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const el = (tag, css = '', text) => { const item = document.createElement(tag); item.className = css; if (text !== undefined) item.textContent = text; return item; };
 
-export function preparationBadge(document, onClick) {
-  const summary = preparationSummary(document);
+export function preparationBadge(document, onClick, records = []) {
+  const summary = preparationSummary(document, records);
   const badge = el('button', 'preparation-badge preparation-' + summary.state, summary.label);
-  badge.type = 'button'; badge.title = `${summary.materials}/4 materiales · ${summary.sessions}/${summary.total} sesiones listas`;
+  badge.type = 'button'; badge.title = `${summary.materials}/4 materiales · ${summary.sessions}/${summary.total} sesiones por recursos${summary.detail ? ' · '+summary.detail : ''}`;
   badge.setAttribute('aria-label', `${document.module.code} · ${document.unit.code}: ${summary.label}. Editar preparación`);
   badge.addEventListener('click', onClick); return badge;
 }
@@ -33,10 +34,12 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
   }
   function preview() {
     if (!loaded) return;
-    const summary = preparationSummary(preparationSnapshot(loaded.document, values));
+    const records = getState().records ?? [];
+    const snapshot = preparationSnapshot(loaded.document, values, records), summary = preparationSummary(snapshot, records);
     $('preparation-result').textContent = summary.label;
     $('preparation-result').className = 'preparation-badge preparation-' + summary.state;
-    $('preparation-detail').textContent = `${summary.materials}/4 materiales · ${summary.sessions}/${summary.total} sesiones listas${summary.total ? '' : ' · Falta planificar las sesiones'}`;
+    $('preparation-detail').textContent = `${summary.materials}/4 materiales · ${summary.sessions}/${summary.total} sesiones por recursos${summary.total ? '' : ' · Falta planificar las sesiones'}${summary.detail ? ' · '+summary.detail : ''}`;
+    renderSessionResourceBand($('preparation-session-band'), snapshot, { records });
     for (const key of ['tasks', 'exam']) {
       const group = summary.groups[key];
       const text = `${group.ready}/${group.total} ${key === 'tasks' ? 'preparadas' : 'preparados'} · ${group.state === 'Sin mirar' ? 'Pendiente' : group.state}`;
@@ -126,26 +129,14 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
       label.append(select); materials.append(label);
     }
     fields.append(materials);
-    const tasks = el('div', 'preparation-task-lists'); tasks.id = 'preparation-task-lists'; fields.append(tasks);
-    renderTaskLists();
+    const tasks = el('div', 'preparation-task-lists'); tasks.id = 'preparation-task-lists';
     const sessions = el('fieldset', 'preparation-sessions'); sessions.append(el('legend', '', 'Sesiones'));
     if (!loaded.document.sessions.length) sessions.append(el('p', 'scope-note', 'Esta UT todavía no tiene sesiones.'));
-    else {
-      const actions = el('div', 'preparation-session-actions');
-      for (const [title, value] of [['Todas listas', 'ready'], ['Todas pendientes', 'draft']]) {
-        const button = el('button', 'button button-small', title); button.type = 'button';
-        button.addEventListener('click', () => { Object.keys(values.sessions).forEach(id => { values.sessions[id] = value; }); sessions.querySelectorAll('input').forEach(input => { input.checked = value === 'ready'; }); preview(); }); actions.append(button);
-      }
-      sessions.append(actions);
-    }
-    for (const session of loaded.document.sessions) {
-      const label = el('label', 'preparation-session'), input = el('input'); input.type = 'checkbox'; input.checked = session.preparation === 'ready';
-      const title = `S${session.number} · ${session.date} · ${session.activities[0]?.title || 'Sesión'}${session.state ? ' · ' + session.state : ''}`;
-      input.setAttribute('aria-label', `Lista: ${title}`);
-      input.addEventListener('change', () => { values.sessions[session.id] = input.checked ? 'ready' : 'draft'; preview(); });
-      label.append(input, el('span', '', title)); sessions.append(label);
-    }
+    sessions.append(el('p','scope-note','Indicador automático por recursos. Color aclarado: falta preparación o vincular recursos.'));
+    const scroll=el('div','unit-bands');scroll.tabIndex=0;scroll.setAttribute('role','region');scroll.setAttribute('aria-label','Preparación automática de sesiones; desliza para ver todas');
+    const band=el('ol','session-band');band.id='preparation-session-band';scroll.append(band);sessions.append(scroll);
     fields.append(sessions);
+    fields.append(tasks);renderTaskLists();
     const select = $('preparation-new-session'); select.replaceChildren();
     const empty = el('option', '', 'Sin sesión asignada'); empty.value = ''; select.append(empty);
     for (const session of loaded.document.sessions) { const option = el('option', '', `S${session.number} · ${session.date} · ${session.activities[0]?.title || 'Sesión'}`); option.value = session.id; select.append(option); }
@@ -180,7 +171,7 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
     setBusy(true);
     try {
       for (const id of values.removals) { const issue = removalIssue(entry, id); if (issue) throw new PreparationError('PREPARATION_LOCAL_CONFLICT', issue); }
-      const prepared = preparePreparationSave(loaded, entry, values, getActive());
+      const prepared = preparePreparationSave(loaded, entry, values, getActive(), getState().records ?? []);
       const result = await saveTaskDocument(sourceStore, prepared, { entry }, loaded.sha);
       onSaved(entry, result, prepared); loaded = result; blocked = false; fill();
       render(); onMessage('Preparación guardada y confirmada en GitHub.'); confirmed = true;
@@ -213,16 +204,16 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
   function render() {
     const { catalog, records, activeEntry, draft, ready } = getState();
     const badge = $('unit-preparation'); badge.replaceChildren();
-    if (draft) badge.append(preparationBadge(draft, () => open(activeEntry)));
+    if (draft) badge.append(preparationBadge(draft, () => open(activeEntry), records));
     const list = $('preparation-list'); list.replaceChildren(); if (!catalog) return;
     const filter = $('preparation-module'), previous = filter.value; filter.replaceChildren();
     for (const [value, title] of [['', 'Todos los módulos'], ...catalog.modules.map(module => [module.code, module.code])]) { const option = el('option', '', title); option.value = value; filter.append(option); }
     if (catalog.modules.some(module => module.code === previous)) filter.value = previous;
     const byPath = new Map(records.map(record => [record.entry.path, record]));
-    const counts = { pending: 0, draft: 0, ready: 0, unavailable: 0 }; let visible = 0, total = 0;
+    const counts = { pending: 0, draft: 0, 'exam-pending': 0, ready: 0, unavailable: 0 }; let visible = 0, total = 0;
     for (const module of catalog.modules) for (const unit of module.units) {
       if (filter.value && filter.value !== module.code) continue;
-      total++; const record = byPath.get(unit.path), summary = record ? preparationSummary(record.document) : null;
+      total++; const record = byPath.get(unit.path), summary = record ? preparationSummary(record.document, records) : null;
       const state = summary?.state ?? 'unavailable'; counts[state]++;
       if ($('preparation-status').value && $('preparation-status').value !== state) continue;
       visible++; const row = el('div', 'preparation-row');
@@ -232,13 +223,13 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
       row.append(link, el('span', 'preparation-unit-title', record?.document.unit.title ?? unit.title));
       if (record) {
         row.append(el('span', 'scope-note', `${summary.materials}/4 materiales · ${summary.sessions}/${summary.total} sesiones`));
-        row.append(preparationBadge(record.document, () => open(record.entry)));
+        row.append(preparationBadge(record.document, () => open(record.entry), records));
       } else row.append(el('span', 'preparation-unavailable', ready ? 'No se ha podido consultar' : 'Cargando…'));
       list.append(row);
     }
     if (!visible) list.append(el('p', 'empty-sessions', 'No hay unidades con estos filtros.'));
-    $('preparation-count').textContent = `${visible}/${total} · ${counts.ready} preparadas · ${counts.draft} en preparación · ${counts.pending} pendientes${counts.unavailable ? ` · ${counts.unavailable} sin leer` : ''}`;
-    $('preparation-scope').textContent = ready ? 'Unidades incorporadas al catálogo. El estado se calcula con los materiales y las sesiones marcados como listos.' : 'Leyendo las unidades del catálogo…';
+    $('preparation-count').textContent = `${visible}/${total} · ${counts.ready} preparadas · ${counts['exam-pending']} con examen pendiente · ${counts.draft} en preparación · ${counts.pending} pendientes${counts.unavailable ? ` · ${counts.unavailable} sin leer` : ''}`;
+    $('preparation-scope').textContent = ready ? 'Preparación calculada desde materiales, tareas y exámenes; las sesiones se deducen de sus recursos asociados.' : 'Leyendo las unidades del catálogo…';
     availability();
   }
   for (const id of ['preparation-module', 'preparation-status']) $(id).addEventListener('change', render);
