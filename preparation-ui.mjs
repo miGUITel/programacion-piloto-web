@@ -1,8 +1,10 @@
-import { preparationMaterials, materialLabels, preparationValues, preparationSummary, preparationSnapshot, assertPreparationRead, preparePreparationSave, PreparationError } from './preparation.mjs?v=20261031-rf28-removal';
-import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261031-rf28-removal';
-import { taskPreparationGroups, taskAdditionIssue, createPreparationTask, taskRemovalIssue, taskType } from './preparation-tasks.mjs?v=20261027-rf32';
-import { saveTaskDocument } from './task-edit.mjs?v=20261027-rf32';
-import { saveErrorFeedback } from './core.mjs?v=20261027-rf32';
+import { preparationMaterials, materialLabels, preparationValues, preparationSummary, preparationSnapshot, assertPreparationRead, preparePreparationSave, PreparationError } from './preparation.mjs?v=20261101-preparation-links';
+import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261101-preparation-links';
+import { taskPreparationGroups, taskAdditionIssue, createPreparationTask, taskRemovalIssue, taskType } from './preparation-tasks.mjs?v=20261101-preparation-links';
+import { saveTaskDocument } from './task-edit.mjs?v=20261101-preparation-links';
+import { saveErrorFeedback } from './core.mjs?v=20261101-preparation-links';
+import { removalImpact, removalWarning, taskLinks } from './preparation-links.mjs?v=20261101-preparation-links';
+import { savePreparationWithLinks } from './preparation-save.mjs?v=20261101-preparation-links';
 const $ = id => document.getElementById(id);
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const el = (tag, css = '', text) => { const item = document.createElement(tag); item.className = css; if (text !== undefined) item.textContent = text; return item; };
@@ -10,13 +12,20 @@ const el = (tag, css = '', text) => { const item = document.createElement(tag); 
 export function preparationBadge(document, onClick, records = []) {
   const summary = preparationSummary(document, records);
   const badge = el('button', 'preparation-badge preparation-' + summary.state, summary.label);
-  badge.type = 'button'; badge.title = `${summary.materials}/4 materiales · ${summary.sessions}/${summary.total} sesiones por recursos${summary.detail ? ' · '+summary.detail : ''}`;
+  badge.type = 'button'; badge.title = `${summary.materials}/4 materiales · ${summary.sessions}/${summary.total} sesiones activas por recursos${summary.excluded ? ' · '+summary.excluded+' cancelada/s o reprogramada/s fuera del cómputo' : ''}${summary.detail ? ' · '+summary.detail : ''}`;
   badge.setAttribute('aria-label', `${document.module.code} · ${document.unit.code}: ${summary.label}. Editar preparación`);
   badge.addEventListener('click', onClick); return badge;
 }
 
 export function createPreparationUI({ getState, getActive, unitStore, isBusy, setBusy, canOpen, onSaved, onBlocked, onStateChange, onMessage, onRetry, onOpenUnit, additionIssue = () => '', removalIssue = () => '' }) {
   let loaded = null, entry = null, sourceStore = null, blocked = false, values = null, position = null;
+  const confirmations = new Map();
+  const records = () => getState().records ?? [];
+  function blockRemovalTargets() {
+    const targets = [entry,...records().filter(record => record.entry.path !== entry.path && record.document.module.code === entry.moduleCode
+      && (values.removals ?? []).some(id=>taskLinks(record.document,id).length)).map(record=>record.entry)];
+    for (const target of targets) onBlocked(target);
+  }
   const newTaskInput = () => ({ type: $('preparation-new-type').value, code: $('preparation-new-code').value, title: $('preparation-new-title').value, sessionId: $('preparation-new-session').value });
   const unfinishedTask = () => !$('preparation-task-editor').hidden && Boolean(newTaskInput().code || newTaskInput().title || newTaskInput().sessionId);
   const changed = () => Boolean(loaded && !equal(values, preparationValues(loaded.document)));
@@ -38,7 +47,7 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
     const snapshot = preparationSnapshot(loaded.document, values, records), summary = preparationSummary(snapshot, records);
     $('preparation-result').textContent = summary.label;
     $('preparation-result').className = 'preparation-badge preparation-' + summary.state;
-    $('preparation-detail').textContent = `${summary.materials}/4 materiales · ${summary.sessions}/${summary.total} sesiones por recursos${summary.total ? '' : ' · Falta planificar las sesiones'}${summary.detail ? ' · '+summary.detail : ''}`;
+    $('preparation-detail').textContent = `${summary.materials}/4 materiales · ${summary.sessions}/${summary.total} sesiones activas por recursos${summary.excluded ? ' · '+summary.excluded+' cancelada/s o reprogramada/s fuera del cómputo' : ''}${summary.total ? '' : ' · Falta planificar las sesiones'}${summary.detail ? ' · '+summary.detail : ''}`;
     renderSessionResourceBand($('preparation-session-band'), snapshot, { records });
     for (const key of ['tasks', 'exam']) {
       const group = summary.groups[key];
@@ -83,9 +92,10 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
         remove.addEventListener('click', () => {
           if (isBusy() || blocked) return;
           const added = values.additions.some(item => item.id === task.id);
-          const problem = taskRemovalIssue(loaded.document, task.id) || (!added && removalIssue(entry, task.id));
+          const problem = added ? '' : taskRemovalIssue(loaded.document, task.id) || removalIssue(entry, task.id);
           if (problem) { message(problem, 'warning'); return; }
-          if (!added && !window.confirm(`¿Eliminar ${task.code} · ${task.title}? Se retirarán este elemento y su preparación, fechas y seguimiento al pulsar Guardar preparación. Sus sesiones se conservarán. Antes de guardar puedes deshacerlo.`)) return;
+          if (!added && !window.confirm(removalWarning(loaded.document,task,records()))) return;
+          if (!added) confirmations.set(task.id,removalImpact(loaded.document,task.id,records()));
           if (added) values.additions = values.additions.filter(item => item.id !== task.id); else values.removals.push(task.id);
           renderTaskLists(); preview(); message(added ? 'Elemento nuevo retirado del borrador.' : 'Eliminación pendiente. Puedes deshacerla o pulsar Guardar preparación para confirmarla.');
         });
@@ -97,7 +107,7 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
         undo.addEventListener('click', () => {
           if (isBusy() || blocked) return;
           const next = { ...values, removals: values.removals.filter(id => id !== task.id) };
-          try { preparationSnapshot(loaded.document, next); values = next; renderTaskLists(); preview(); message('Eliminación deshecha.'); }
+          try { preparationSnapshot(loaded.document, next); values = next; confirmations.delete(task.id); renderTaskLists(); preview(); message('Eliminación deshecha.'); }
           catch (error) { message(error.message, 'warning'); }
         });
         row.append(undo); group.append(row);
@@ -112,6 +122,7 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
     if (issue) root.append(el('p', 'message warning', issue));
   }
   function fill() {
+    confirmations.clear();
     values = preparationValues(loaded.document);
     resetNewTask();
     const fields = $('preparation-fields'); fields.replaceChildren();
@@ -171,13 +182,14 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
     setBusy(true);
     try {
       for (const id of values.removals) { const issue = removalIssue(entry, id); if (issue) throw new PreparationError('PREPARATION_LOCAL_CONFLICT', issue); }
-      const prepared = preparePreparationSave(loaded, entry, values, getActive(), getState().records ?? []);
-      const result = await saveTaskDocument(sourceStore, prepared, { entry }, loaded.sha);
+      const saved = await savePreparationWithLinks({loaded,entry,values,active:getActive(),records:records(),confirmations,store:sourceStore,unitStore});
+      const {prepared,result} = saved;
+      for (const item of saved.related) onSaved(item.entry,item.result,item.prepared);
       onSaved(entry, result, prepared); loaded = result; blocked = false; fill();
       render(); onMessage('Preparación guardada y confirmada en GitHub.'); confirmed = true;
     } catch (error) {
-      if (error instanceof PreparationError) { message(error.message, 'warning'); if (error.code === 'PREPARATION_STALE') { blocked = true; onBlocked(entry); } }
-      else { const feedback = saveErrorFeedback(error); blocked = feedback.requiresReload || error.code === 'HTTP_422'; if (blocked) onBlocked(entry); message(feedback.message + ' [' + feedback.code + ']', feedback.kind); }
+      if (error instanceof PreparationError) { message(error.message, 'warning'); if (error.code === 'PREPARATION_STALE') { blocked = true; blockRemovalTargets(); } }
+      else { const feedback = saveErrorFeedback(error); blocked = feedback.requiresReload || error.code === 'HTTP_422'; if (blocked) blockRemovalTargets(); message(feedback.message + ' [' + feedback.code + ']', feedback.kind); }
     } finally { setBusy(false); availability(); onStateChange(); if (confirmed) close(); }
   });
   for (const id of ['preparation-new-code', 'preparation-new-title', 'preparation-new-session']) $(id).addEventListener('input', () => { availability(); onStateChange(); });
@@ -222,7 +234,7 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
       link.addEventListener('click', event => { event.preventDefault(); if (!isBusy()) onOpenUnit(unit.path); });
       row.append(link, el('span', 'preparation-unit-title', record?.document.unit.title ?? unit.title));
       if (record) {
-        row.append(el('span', 'scope-note', `${summary.materials}/4 materiales · ${summary.sessions}/${summary.total} sesiones`));
+        row.append(el('span', 'scope-note', `${summary.materials}/4 materiales · ${summary.sessions}/${summary.total} sesiones activas`));
         row.append(preparationBadge(record.document, () => open(record.entry), records));
       } else row.append(el('span', 'preparation-unavailable', ready ? 'No se ha podido consultar' : 'Cargando…'));
       list.append(row);

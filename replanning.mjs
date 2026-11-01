@@ -1,5 +1,5 @@
 // RF32: explicit, approved history. Reading never migrates or edits a document.
-import { evaluationsFor, validateCommonCourse } from './common-course.mjs?v=20261027-rf32';
+import { evaluationsFor, validateCommonCourse } from './common-course.mjs?v=20261101-preparation-links';
 
 export const resolutionLabels = Object.freeze({ absorbed: 'Absorbida', added: 'Añadida', 'not-recovered': 'No Recuperada' });
 export class PlanningError extends Error {}

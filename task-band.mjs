@@ -1,4 +1,4 @@
-import { visiblePlanTasks } from './task-plan.mjs?v=20261027-rf32';
+import { visiblePlanTasks } from './task-plan.mjs?v=20261101-preparation-links';
 
 const preferredTypes = ['assignment', 'guide'];
 const fallbackTypes = new Set(['presentation', 'web', 'tool', 'notes', 'example', 'moodle', 'other']);

@@ -1,7 +1,7 @@
-import { resourceTypes, resourceValues, assertResourceRead, prepareResourceSave, ResourceEditError, parsePrivateLocation, locationInput, safeResourceUrl, validateResources, validateModuleResources } from './resources.mjs?v=20261031-task-band';
-import { saveTaskDocument } from './task-edit.mjs?v=20261027-rf32';
-import { saveErrorFeedback } from './core.mjs?v=20261027-rf32';
-import { renderPrivateMarkdown } from './private-markdown.mjs?v=20261027-rf32';
+import { resourceTypes, resourceValues, assertResourceRead, prepareResourceSave, ResourceEditError, parsePrivateLocation, locationInput, safeResourceUrl, validateResources, validateModuleResources } from './resources.mjs?v=20261101-preparation-links';
+import { saveTaskDocument } from './task-edit.mjs?v=20261101-preparation-links';
+import { saveErrorFeedback } from './core.mjs?v=20261101-preparation-links';
+import { renderPrivateMarkdown } from './private-markdown.mjs?v=20261101-preparation-links';
 const $ = id => document.getElementById(id);
 const equal = (a,b) => JSON.stringify(a) === JSON.stringify(b);
 const el = (tag, css = '', value) => { const item = document.createElement(tag); item.className = css; if (value !== undefined) item.textContent = value; return item; };

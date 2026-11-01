@@ -1,4 +1,4 @@
-import { ApiError, ConflictError, UnknownSaveError, validateCatalog, validateTaskRegistry, encodeUtf8Base64, decodeUtf8Base64 } from './core.mjs?v=20261027-rf32';
+import { ApiError, ConflictError, UnknownSaveError, validateCatalog, validateTaskRegistry, encodeUtf8Base64, decodeUtf8Base64 } from './core.mjs?v=20261101-preparation-links';
 
 const codes = new Set(['LM', 'SR', 'SOS', 'ED', 'PRO']);
 const object = value => value && typeof value === 'object' && !Array.isArray(value);

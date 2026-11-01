@@ -1,8 +1,11 @@
 // Read-only dependencies. Stored session.preparation is retained as historical data.
+import { excludedSession } from './replanning.mjs?v=20261101-preparation-links';
 const own = (value, key) => Object.hasOwn(value ?? {}, key);
 const keyOf = document => document.unit?.id ?? document.module?.code ?? '';
 
 export function sessionPreparation(document, session, records = []) {
+  if (excludedSession(session)) return { excluded:true, ready:false, known:true, dependencies:[], missing:[], issues:[],
+    task:false, exam:false, label:`${session.state} · Fuera del cómputo de preparación` };
   const dependencies = new Map(), issues = new Set(), linkedTypes = new Set(), inactiveTypes = new Set();
   const owners = [document, ...records.map(record => record.document ?? record)
     .filter(owner => owner !== document && keyOf(owner) !== keyOf(document) && owner.module?.code === document.module?.code)];
@@ -36,6 +39,9 @@ export function sessionPreparation(document, session, records = []) {
   const activities = session.activities ?? [];
   for (const id of session.resourceRefs ?? []) addResource(document, id);
   for (const activity of activities) {
+    if (Array.isArray(document.tasks) && Array.isArray(activity.taskRefs) && !activity.taskRefs.length) {
+      inactiveTypes.add('task'); inactiveTypes.add('exam');
+    }
     for (const id of activity.resourceRefs ?? []) addResource(document, id);
     for (const id of activity.taskRefs ?? []) {
       const matches = owners.flatMap(owner => (owner.tasks ?? []).filter(task => task.id === id).map(task => ({owner,task})));

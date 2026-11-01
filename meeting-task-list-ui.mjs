@@ -1,5 +1,5 @@
-import { recordKey, recordGroup } from './meeting-records.mjs?v=20261029-rf24';
-import { meetingTaskRows } from './meeting-work.mjs?v=20261029-rf24';
+import { recordKey, recordGroup } from './meeting-records.mjs?v=20261101-preparation-links';
+import { meetingTaskRows } from './meeting-work.mjs?v=20261101-preparation-links';
 
 const LABELS = { pending:'Pendiente', 'in-progress':'En curso', completed:'Completada' };
 const element = (tag, text, className = '') => { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (className) el.className = className; return el; };

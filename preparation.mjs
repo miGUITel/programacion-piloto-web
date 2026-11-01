@@ -1,6 +1,7 @@
 /** RF 28: preparation is derived from resources, never manual session checks. */
-import { sessionPreparation } from './session-preparation.mjs?v=20261031-rf28-removal';
-import { taskPreparationGroups, createPreparationTask, taskRemovalIssue } from './preparation-tasks.mjs?v=20261027-rf32';
+import { sessionPreparation } from './session-preparation.mjs?v=20261101-preparation-links';
+import { taskPreparationGroups, createPreparationTask, taskRemovalIssue } from './preparation-tasks.mjs?v=20261101-preparation-links';
+import { detachTaskLinks, sameTaskLinks } from './preparation-links.mjs?v=20261101-preparation-links';
 export const preparationMaterials = ['ppt', 'web', 'tasks', 'exam'];
 export const preparationLabels = { pending: 'Pendiente', draft: 'En preparación', 'exam-pending': 'Examen pendiente', ready: 'Preparada' };
 export const materialLabels = { ppt: 'PPT', web: 'Web', tasks: 'Tareas', exam: 'Examen' };
@@ -19,12 +20,14 @@ export function preparationSummary(document, records = []) {
   const groups = taskPreparationGroups(document);
   const materials = preparationMaterials.filter(key => (groups[key]?.state ?? document.unit.resourcePreparation?.[key]) === 'Listo').length;
   const sessionDetails = document.sessions.map(session => sessionPreparation(document, session, records));
-  const sessions = sessionDetails.filter(session => session.ready).length;
-  const total = document.sessions.length;
-  const unlinked = sessionDetails.filter(session => !session.known).length;
+  const activeSessions = sessionDetails.filter(session => !session.excluded);
+  const sessions = activeSessions.filter(session => session.ready).length;
+  const total = activeSessions.length;
+  const excluded = sessionDetails.length - total;
+  const unlinked = activeSessions.filter(session => !session.known).length;
   const teachingReady = ['ppt','web'].every(key => document.unit.resourcePreparation?.[key] === 'Listo')
     && groups.tasks.state === 'Listo' && total > 0 && !unlinked
-    && sessionDetails.every(session => session.dependencies.every(item => item.kind === 'exam' || item.ready));
+    && activeSessions.every(session => session.dependencies.every(item => item.kind === 'exam' || item.ready));
   const examMissing = groups.exam.items.filter(task => task.preparation !== 'ready');
   const state = materials === 4 && total > 0 && sessions === total ? 'ready'
     : teachingReady && groups.exam.total > 0 && (examMissing.length || sessionDetails.some(session => session.missing.some(item => item.kind === 'exam'))) ? 'exam-pending'
@@ -33,7 +36,7 @@ export function preparationSummary(document, records = []) {
     ...examMissing.map(task => `Examen ${task.code} · ${task.title}`),
     ...sessionDetails.flatMap(session => session.missing.filter(item => item.kind === 'exam').map(item => item.label)),
   ])].join('; ') : unlinked ? `${unlinked} sesión/es con recursos sin vincular` : !groups.exam.total ? 'Examen por concretar' : '';
-  return { state, label: preparationLabels[state], materials, sessions, total, groups, sessionDetails, unlinked, detail };
+  return { state, label: preparationLabels[state], materials, sessions, total, excluded, groups, sessionDetails, unlinked, detail };
 }
 
 export function assertPreparationRead(loaded, entry, active) {
@@ -72,7 +75,10 @@ export function preparationSnapshot(document, values, records = []) {
     const issue = taskRemovalIssue(document, id); if (issue) fail('PREPARATION_INVALID', issue);
   }
   // Keep an empty official list: removing it would reactivate historical session markers.
-  if (removals.length) result.tasks = result.tasks.filter(task => !removals.includes(task.id));
+  if (removals.length) {
+    detachTaskLinks(result, removals);
+    result.tasks = result.tasks.filter(task => !removals.includes(task.id));
+  }
   for (const addition of values.additions) {
     if (document.tasks?.some(task => task.id === addition.id)) fail('PREPARATION_INVALID', 'Una nueva tarea no puede reutilizar una identidad anterior.');
     let task;
@@ -111,9 +117,12 @@ export function preparePreparationSave(loaded, entry, values, active, records = 
     if (!equal(localValues, beforeValues) && !equal(localValues, preparationValues(document))) fail('PREPARATION_LOCAL_CONFLICT', 'La preparación también tiene cambios locales en Unidad. Revisa ambos borradores antes de guardar.');
     for (const id of values.removals ?? []) {
       const original = before.tasks.find(task => task.id === id), local = unitDraft.tasks?.find(task => task.id === id);
-      if ((local && !equal(local, original)) || taskRemovalIssue(unitDraft, id)) fail('PREPARATION_LOCAL_CONFLICT', 'El elemento que quieres eliminar tiene cambios o vínculos pendientes en Unidad. Revisa su borrador antes de eliminarlo; no se ha enviado ningún cambio.');
+      if ((local && !equal(local, original)) || !sameTaskLinks(before, unitDraft, id)) fail('PREPARATION_LOCAL_CONFLICT', 'El elemento que quieres eliminar tiene cambios o vínculos pendientes en Unidad. Revisa su borrador antes de eliminarlo; no se ha enviado ningún cambio.');
     }
-    if (values.removals?.length) unitDraft.tasks = (unitDraft.tasks ?? []).filter(task => !values.removals.includes(task.id));
+    if (values.removals?.length) {
+      detachTaskLinks(unitDraft, values.removals);
+      unitDraft.tasks = (unitDraft.tasks ?? []).filter(task => !values.removals.includes(task.id));
+    }
     merge(unitDraft.unit, before.unit, document.unit, 'resourcePreparation');
     merge(unitDraft.unit, before.unit, document.unit, 'preparation');
     for (const task of document.tasks ?? []) {

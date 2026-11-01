@@ -49,6 +49,7 @@
 .preparation-exam-pending{background:#fff0da!important;border-color:#d8a253!important;color:#7b4908!important}
 .preparation-sessions .unit-bands{max-width:100%;margin:0}
 .preparation-sessions .band-day{cursor:default}
+.band-day.session-preparation-excluded{background:#e5e7eb;color:#68727c;text-decoration:line-through;box-shadow:none}
 .band-day:hover{outline:2px solid #779b94;outline-offset:1px}
 .band-cell.today .band-day{outline:2px solid var(--teal);outline-offset:2px}
 .band-cell.today::after{background:var(--teal)}

@@ -1,6 +1,6 @@
-import { eventTypes } from './teaching.mjs?v=20261027-rf32';
-import { sessionPreparation } from './session-preparation.mjs?v=20261031-rf28-removal';
-import { timeToMinutes } from './core.mjs?v=20261027-rf32';
+import { eventTypes } from './teaching.mjs?v=20261101-preparation-links';
+import { sessionPreparation } from './session-preparation.mjs?v=20261101-preparation-links';
+import { timeToMinutes } from './core.mjs?v=20261101-preparation-links';
 
 /** Presentation helpers. Codes, titles, dates and academic states remain unchanged. */
 export function orderedUnits(units) {

@@ -1,5 +1,5 @@
-import { taskBand } from './task-band.mjs?v=20261031-task-band-preparation';
-import { safeResourceUrl, validGithubLocation } from './resources.mjs?v=20261031-task-band';
+import { taskBand } from './task-band.mjs?v=20261101-preparation-links';
+import { safeResourceUrl, validGithubLocation } from './resources.mjs?v=20261101-preparation-links';
 
 export function renderTaskBand(section, list, document, { resourceUI, isBusy, onManage }) {
   list.replaceChildren();section.hidden=!document;

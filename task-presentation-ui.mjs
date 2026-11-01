@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-import { presentationDefaults } from './task-cycle.mjs?v=20261027-rf32';
+import { presentationDefaults } from './task-cycle.mjs?v=20261101-preparation-links';
 
 /** A modal draft only. Nothing changes until every required date is confirmed. */
 export function createTaskPresentationUI({ onConfirm, onClose }) {

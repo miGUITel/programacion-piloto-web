@@ -1,9 +1,9 @@
-import { validateResources, validateModuleResources, moduleResourcePath, validGithubLocation } from './resources.mjs?v=20261027-rf32';
-import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261027-rf32';
-import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261027-rf32';
-import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261027-rf32';
+import { validateResources, validateModuleResources, moduleResourcePath, validGithubLocation } from './resources.mjs?v=20261101-preparation-links';
+import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261101-preparation-links';
+import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261101-preparation-links';
+import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261101-preparation-links';
 
-import { validatePlanningChanges } from './replanning.mjs?v=20261027-rf32';
+import { validatePlanningChanges } from './replanning.mjs?v=20261101-preparation-links';
 
 const OWNER = 'miGUITel';
 const REPOSITORY = 'programacion-piloto-datos';
@@ -394,8 +394,8 @@ export class GithubStore {
     return result;
   }
 
-  async #request(method, body, path, repository = `${OWNER}/${REPOSITORY}`) {
-    const writing = method === 'PUT';
+  async #request(method, body, path, repository = `${OWNER}/${REPOSITORY}`, gitData = false) {
+    const writing = method !== 'GET';
     const controller = new AbortController();
     let timer;
     const timeout = new Promise((_, reject) => {
@@ -407,8 +407,9 @@ export class GithubStore {
     const request = (async () => {
       let response;
       try {
-        const endpoint = repository === `${OWNER}/${REPOSITORY}` ? `${CONTENTS_ENDPOINT}${path}` : `https://api.github.com/repos/${repository}/contents/${path}`;
-        response = await this.#fetch(writing ? endpoint : `${endpoint}?ref=${BRANCH}`, {
+        const endpoint = gitData ? `https://api.github.com/repos/${OWNER}/${REPOSITORY}/git/${path}`
+          : repository === `${OWNER}/${REPOSITORY}` ? `${CONTENTS_ENDPOINT}${path}` : `https://api.github.com/repos/${repository}/contents/${path}`;
+        response = await this.#fetch(writing || gitData ? endpoint : `${endpoint}?ref=${BRANCH}`, {
           method,
           signal: controller.signal,
           cache: 'no-store',
@@ -541,6 +542,60 @@ export class GithubStore {
       if (errors.length) throw new ApiError('El documento de GitHub no cumple el formato del piloto.', { code: 'INVALID_DOCUMENT', errors });
       this.#needsReload = false;
       return { document, sha };
+    });
+  }
+
+  // Publish an owner and its cross-unit detachments in one non-forced commit.
+  saveDocuments(changes, guards = []) {
+    return this.#enqueue(async () => {
+      if (this.#needsReload) throw new UnknownSaveError('reload-required');
+      if (!Array.isArray(changes) || !changes.length || new Set(changes.map(item => item.entry?.path)).size !== changes.length
+        || !changes.some(item => item.entry?.path === this.#entry.path)) throw new ApiError('Revisa los documentos de la operación.', { code:'INVALID_TARGET' });
+      const snapshots = changes.map(item => {
+        const errors = [...validateEntry(item.entry), ...validateDocument(item.document, item.entry)];
+        if (errors.length || item.entry.moduleCode !== this.#entry.moduleCode) throw new ApiError('Los documentos no cumplen el formato del módulo.', { code:'INVALID_DOCUMENT', errors });
+        if (!nonemptyText(item.sha)) throw new ApiError('Falta una versión leída.', { code:'MISSING_SHA' });
+        return { entry:structuredClone(item.entry), document:structuredClone(item.document), sha:item.sha };
+      });
+      if (!Array.isArray(guards) || guards.some(item => validateEntry(item.entry).length || item.entry.moduleCode !== this.#entry.moduleCode || !nonemptyText(item.sha)))
+        throw new ApiError('Revisa las versiones consultadas del módulo.', {code:'INVALID_TARGET'});
+      const versions = [...snapshots,...guards];
+      if (new Set(versions.map(item=>item.entry.path)).size !== versions.length) throw new ApiError('Hay documentos repetidos en la operación.',{code:'INVALID_TARGET'});
+      const git = (method, path, body) => this.#request(method, body, path, undefined, true);
+      const shaOf = value => /^[a-f0-9]{40}$/.test(value ?? '');
+      try {
+        const ref = await git('GET', `ref/heads/${BRANCH}`), head = ref?.object?.sha;
+        if (!shaOf(head)) throw new ApiError('No se ha podido comprobar la rama.', {code:'INVALID_RESPONSE'});
+        const commit = await git('GET', `commits/${head}`), treeSha = commit?.tree?.sha;
+        if (!shaOf(treeSha)) throw new ApiError('No se ha podido comprobar la versión.', {code:'INVALID_RESPONSE'});
+        const tree = await git('GET', `trees/${treeSha}?recursive=1`);
+        if (tree?.truncated || !Array.isArray(tree?.tree)) throw new ApiError('No se ha leído el árbol completo.', {code:'INVALID_RESPONSE'});
+        for (const item of versions) if (tree.tree.find(file => file.path === item.entry.path && file.type === 'blob')?.sha !== item.sha) throw new ConflictError();
+        const files = [];
+        for (const item of snapshots) {
+          const blob = await git('POST', 'blobs', {content:encodeUtf8Base64(JSON.stringify(item.document, null, 2)+'\n'), encoding:'base64'});
+          if (!shaOf(blob?.sha)) throw new UnknownSaveError('invalid-response');
+          files.push({path:item.entry.path,mode:'100644',type:'blob',sha:blob.sha});
+        }
+        const nextTree = await git('POST', 'trees', {base_tree:treeSha, tree:files});
+        if (!shaOf(nextTree?.sha)) throw new UnknownSaveError('invalid-response');
+        const next = await git('POST', 'commits', {message:'Guardar preparación y retirar asociaciones de tareas',tree:nextTree.sha,parents:[head]});
+        if (!shaOf(next?.sha)) throw new UnknownSaveError('invalid-response');
+        try { await git('PATCH', `refs/heads/${BRANCH}`, {sha:next.sha,force:false}); }
+        catch (error) { if (error.status === 422) throw new ConflictError(); throw error; }
+        const results = [];
+        for (const [index,item] of snapshots.entries()) {
+          let read;
+          try { read = await this.#readJson(item.entry.path,'INVALID_DOCUMENT'); }
+          catch { throw new UnknownSaveError('verification-failed'); }
+          if (read.sha !== files[index].sha || JSON.stringify(read.value) !== JSON.stringify(item.document)) throw new UnknownSaveError('verification-differs');
+          results.push({entry:item.entry,document:read.value,sha:read.sha,commitSha:next.sha});
+        }
+        return {results,commitSha:next.sha};
+      } catch (error) {
+        if (error instanceof UnknownSaveError || error instanceof ConflictError || error.code === 'HTTP_422') this.#needsReload = true;
+        throw error;
+      }
     });
   }
 

@@ -447,3 +447,12 @@ La política CSP permite código y estilos únicamente del mismo origen y conexi
 Para una comprobación local se necesita servir este directorio por HTTP; abrir el HTML como `file:` puede impedir los módulos ES. No hace falta instalar paquetes ni ejecutar un proceso de compilación. El archivo `.nojekyll` evita el procesamiento de Jekyll. Los cambios del documento privado no requieren volver a publicar esta interfaz.
 
 Las comprobaciones automatizadas de esquema y persistencia corresponden a los tests de `core.mjs`. Las pruebas de interfaz deben usar datos sintéticos fuera del directorio publicable y no deben grabar credenciales reales en capturas, trazas o fixtures.
+
+
+## Preparación del plan activo y eliminación con asociaciones
+
+Las sesiones Cancelada y Reprogramada siguen visibles, con sus fechas, actividades y notas. No cuentan en el denominador de preparación ni crean dependencias pendientes. La banda las identifica como fuera del cómputo. Una UT sin sesiones activas no se declara preparada automáticamente; las tareas y exámenes de la lista oficial mantienen sus marcas propias.
+
+Eliminar una tarea o examen muestra antes de confirmar las UT, sesiones y fechas donde está asociado, incluidas su presentación y sus continuaciones. Se retiran el elemento oficial y sus referencias taskRefs, conservando orden, otras asociaciones, actividades, textos, notas, recursos y marcas históricas. Deshacer restituye el borrador antes de Guardar preparación. Una asociación vacía explícita distingue trabajo retirado de una sesión que nunca estuvo vinculada.
+
+Las notas pendientes en Unidad se conservan y no se publican con esta operación. Cambios pendientes del propio elemento eliminado o de sus vínculos requieren conciliación. Si hay continuaciones en otras UT, se relee el módulo, se comprueba el alcance confirmado y se publica la retirada en un único commit sin forzar la rama, contra todas las versiones consultadas; después se releen los documentos escritos. Un conflicto o un resultado incierto conserva los borradores y bloquea reenvíos hasta una lectura explícita. Lecturas incompletas o identidades duplicadas impiden eliminar. Ningún dato académico se cambia al desplegar la app.
