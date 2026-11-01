@@ -1,4 +1,5 @@
 import { createReplanningUI } from './replanning-ui.mjs?v=20261101-preparation-links';
+import { createWeeklyScheduleUI } from './weekly-schedule-ui.mjs?v=20261101-weekly-schedule';
 import { sessionDisplayLabel, chronologicalSessionRows, excludedSession } from './replanning.mjs?v=20261101-preparation-links';
 import { createContextMemory, catalogEntries, chooseStartup, resolveRemembered, unitContext, meetingContext, meetingsForDay, madridClock } from './startup-context.mjs?v=20261101-preparation-links';
 import { elapsedTiming, timingDescription } from './row-time.mjs?v=20261101-preparation-links';
@@ -54,6 +55,7 @@ let failedSave = false;
 let editorTarget = null;
 let lastConfirmedAt = null;
 let currentView = 'unit';
+let weeklyCommon = null, weeklyCommonError = '', weeklyLoading = false;
 const contextMemory = createContextMemory();
 let startupCommon = null, currentMeeting = null, resumeContext = null, selectedSessionId = null, meetingReader = null;
 let startingNavigation = false;
@@ -170,6 +172,7 @@ function updateSaveState() {
   meetingsUI.availability();
   meetingWorkUI.availability();
   meetingTaskListUI.availability();
+  if (currentView === 'schedule') weeklyUI.render();
 }
 
 function selectedEntry() {
@@ -398,13 +401,14 @@ async function correctTask(task, value) {
 }
 
 function selectWorkspaceView(view) {
-  if (!['unit', 'module', 'tasks', 'preparation'].includes(view) || !draft || busy || document.querySelector('dialog[open]')) return;
+  if (!['unit', 'module', 'tasks', 'preparation', 'schedule'].includes(view) || !draft || busy || document.querySelector('dialog[open]')) return;
   const leavingMeeting = currentView === 'meeting';
   if (view === 'tasks' && currentView !== 'tasks') {
     $('tasks-source').value = leavingMeeting ? 'meetings' : 'academic';
     if (!leavingMeeting) moduleViews.enterTasks(activeEntry.moduleCode, currentView === 'unit' ? activeEntry.unitCode : '');
   }
   setWorkspaceView(view);
+  if (view === 'schedule') refreshWeeklySchedule();
   if (view === 'tasks') renderTaskSource(true);
   if (leavingMeeting) {
     if (activeEntry) { $('module-select').value = activeEntry.moduleCode; fillUnits(activeEntry.unitCode); }
@@ -414,7 +418,7 @@ function selectWorkspaceView(view) {
 function setWorkspaceView(view) {
   currentView = view;
   $('workspace').dataset.view = view;
-  for (const name of ['unit', 'module', 'tasks', 'preparation', 'meeting']) {
+  for (const name of ['unit', 'module', 'tasks', 'preparation', 'meeting', 'schedule']) {
     $(name + '-view').hidden = name !== view;
     $('view-' + name)?.setAttribute('aria-pressed', String(name === view));
   }
@@ -467,6 +471,16 @@ async function refreshPreparationContext() {
   } catch {
     message('workspace-message', 'No se ha podido actualizar la preparación. Se conservan la vista y las notas pendientes.', 'error');
   } finally { setBusy(false); }
+}
+
+async function refreshWeeklySchedule(reloadUnits = false) {
+  if (busy || !connection || !draft || document.querySelector('dialog[open]')) return;
+  if (reloadUnits) await refreshPreparationContext();
+  if (!connection || !draft || busy) return;
+  weeklyLoading = true; weeklyCommonError = ''; setBusy(true);
+  try { weeklyCommon = (await connection.loadCommon(catalog)).document; }
+  catch { weeklyCommon = null; weeklyCommonError = 'No se han podido consultar los datos comunes. Actualiza Horario para reintentar.'; }
+  finally { weeklyLoading = false; setBusy(false); }
 }
 
 function confirmationTime() {
@@ -837,7 +851,7 @@ function makeSession(session, sessionIndex, heading) {
 }
 
 function renderStats() {
-  if (currentView === 'meeting') { $('stats').hidden = true; return; }
+  if (currentView === 'meeting' || currentView === 'schedule') { $('stats').hidden = true; return; }
   if (!draft) return;
   const summary = summarize(draft);
   const stats = $('stats');
@@ -1146,6 +1160,7 @@ function disconnect() {
   $('unit-information-context').textContent = ''; $('unit-information-open').hidden = true;
   delete $('unit-information').dataset.unitId;
   moduleViews.clear();
+  weeklyUI.clear(); weeklyCommon = null; weeklyCommonError = ''; weeklyLoading = false;
   meetingWorkUI.clear(); meetingTaskListUI.clear(); $('tasks-source').value = 'academic'; renderTaskSource();
   $('exam-reminders').replaceChildren(); $('exam-reminders').hidden = true;
   $('stats').replaceChildren();
@@ -1161,7 +1176,7 @@ function disconnect() {
   navigationWarnings.clear(); message('navigation-message');
   meetingsUI.clear(); $('meeting-select').replaceChildren(); $('meeting-date').value = '';
   $('meeting-view').hidden = true; delete $('workspace').dataset.view;
-  for (const name of ['unit', 'module', 'tasks', 'preparation']) {
+  for (const name of ['unit', 'module', 'tasks', 'preparation', 'schedule']) {
     $(name + '-view').hidden = name !== 'unit'; $('view-' + name).setAttribute('aria-pressed', String(name === 'unit'));
   }
   updateGlobalExpansion();
@@ -1408,7 +1423,7 @@ $('unit-select').addEventListener('change', async () => {
   if (navigationBlocked()) { restoreUnitSelection(); return; }
   message('library-message'); await openSelectedUnit();
 });
-$('refresh').addEventListener('click', refresh);
+$('refresh').addEventListener('click', () => currentView === 'schedule' ? refreshWeeklySchedule(true) : refresh());
 $('save').addEventListener('click', save);
 // A forward Tab from editable prose prioritises the action, never saves by itself.
 document.addEventListener('keydown', event => {
@@ -1425,7 +1440,7 @@ document.addEventListener('keydown', event => {
 });
 $('download-draft').addEventListener('click', downloadDraft);
 $('toggle-sessions').addEventListener('click', toggleAllSessions);
-for (const name of ['unit', 'module', 'tasks', 'preparation']) $('view-' + name).addEventListener('click', () => selectWorkspaceView(name));
+for (const name of ['unit', 'module', 'tasks', 'preparation', 'schedule']) $('view-' + name).addEventListener('click', () => selectWorkspaceView(name));
 $('activity-event-type').addEventListener('change', syncTaskFields);
 $('task-presented').addEventListener('change', syncPresentationRequired);
 taskDateFields.forEach(field => $('task-' + field).addEventListener('input', () => $('task-' + field).setCustomValidity('')));
@@ -1602,6 +1617,14 @@ const replanningUI = createReplanningUI({
   isBusy: () => busy,
   getState: () => ({ document: draft, records: moduleRecords(), connection, catalog, complete: moduleContextReady && !moduleFailures().length && !teachingTimeline.errors.length }),
 });
+const weeklyUI = createWeeklyScheduleUI({
+  getState: () => ({ catalog, common: weeklyCommon, records: libraryRecords(),
+    failures: [...moduleLoadFailures.map(entry => entry.path), ...(blockedSave && activeEntry ? [activeEntry.path] : [])],
+    today: madridToday(), commonError: weeklyCommonError, loading: weeklyLoading || !moduleContextReady }),
+  isBusy: () => busy,
+  onOpen: (path, sessionId) => openModuleSource(path, sessionId),
+  onRefresh: () => refreshWeeklySchedule(true),
+});
 const moduleViews = createModuleViews({
   onShift: (record, focus) => replanningUI.open(record.document, focus),
   planStatus: doc => replanningUI.statusNodes(doc),
@@ -1611,7 +1634,7 @@ const moduleViews = createModuleViews({
   onCorrected: correctTask, onPresented: presentTask, onRetry: retryExamContext,
   onPreparation: entry => preparationUI.open(entry),
 });
-document.addEventListener('visibilitychange', () => { if (!document.hidden && draft) { refreshTemporalIndicators(); renderSessionBand(); moduleViews.render(); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && draft) { refreshTemporalIndicators(); renderSessionBand(); moduleViews.render(); if (currentView === 'schedule') weeklyUI.render(); } });
 const meetingsUI = createMeetingWorkspace({
   getCatalog:()=>catalog,getReader:()=>meetingReader,getCommon:()=>startupCommon,
   loadCommon:async()=>{startupCommon=(await connection.loadCommon(catalog)).document;return startupCommon;},
@@ -1640,7 +1663,7 @@ $('tasks-source').addEventListener('change',()=>{if(!busy&&!meetingWorkOpen())re
 setInterval(() => {
   if (!draft) return;
   refreshTemporalIndicators();
-  if ($('session-band').dataset.today !== madridToday()) { renderSessionBand(); moduleViews.render(); }
+  if ($('session-band').dataset.today !== madridToday()) { renderSessionBand(); moduleViews.render(); if (currentView === 'schedule') weeklyUI.render(); }
 }, 60000);
 updateSaveState();
 

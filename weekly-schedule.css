@@ -1,0 +1,92 @@
+/* Weekly schedule is a read-only aggregate; module hue and preparation are distinct. */
+#schedule-view { min-width:0; }
+#schedule-content { min-width:0; padding:4px 0 12px; }
+.weekly-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px; margin-bottom:8px; }
+.weekly-week-nav,.weekly-shortcuts { display:flex; align-items:center; gap:5px; min-width:0; }
+.weekly-week-nav { flex:1 1 220px; }
+.weekly-shortcuts { flex:0 1 auto; }
+.weekly-week-title { flex:1; margin:0; text-align:center; font-size:17px; line-height:1.25; }
+.weekly-control { min-height:34px; min-width:34px; border:1px solid var(--line); border-radius:6px; padding:5px 9px; background:var(--white); color:var(--ink); font:inherit; font-size:12px; cursor:pointer; }
+.weekly-control:hover { background:#e8f0eb; }
+.weekly-control:disabled { opacity:.55; cursor:default; }
+.weekly-control:focus-visible,.weekly-session button:focus-visible { outline:2px solid var(--teal); outline-offset:2px; }
+.weekly-week-nav>.weekly-control { padding:0; font-size:24px; }
+.weekly-legend { display:flex; flex-wrap:wrap; align-items:center; gap:6px 16px; margin:4px 0 10px; font-size:11px; color:var(--muted); }
+.weekly-legend-entry { display:inline-flex; align-items:center; gap:5px; }
+.weekly-legend-swatch { display:inline-grid; place-items:center; width:17px; height:15px; border:1px solid currentColor; border-radius:3px; font-size:10px; line-height:1; }
+.weekly-legend-entry.weekly-state-ready .weekly-legend-swatch { background:#327a76; color:#fff; border-color:#327a76; }
+.weekly-legend-entry.weekly-state-draft .weekly-legend-swatch { background:#e0efed; color:#3a716d; border-color:#a0c6c1; }
+.weekly-legend-entry.weekly-state-pending .weekly-legend-swatch { background:#fbe1de; color:#842821; border-color:#bd4a41; }
+.weekly-legend-entry.weekly-state-unknown .weekly-legend-swatch { background:#e9eceb; color:#566865; border-color:#aab5af; }
+.weekly-day-tabs,.weekly-mobile { display:none; }
+.weekly-desktop { min-width:0; }
+.weekly-grid { display:grid; grid-template-columns:58px repeat(5,minmax(0,1fr)); grid-template-rows:40px var(--weekly-row-template) 15px; gap:0 5px; min-width:0; }
+.weekly-grid>* { min-width:0; grid-column:var(--weekly-col); grid-row:var(--weekly-start) / var(--weekly-end); }
+.weekly-grid-corner { align-self:center; font-size:11px; color:var(--muted); }
+.weekly-day-heading { display:flex; flex-direction:column; justify-content:center; gap:2px; padding:5px; text-align:center; font-size:12px; border-bottom:2px solid var(--line); }
+.weekly-day-heading span { font-size:10px; color:var(--muted); }
+.weekly-day-heading.is-today { border-bottom-color:var(--teal); background:#eef4f0; }
+.weekly-time { padding:2px 5px 0 0; font-size:11px; color:var(--muted); line-height:1.1; font-variant-numeric:tabular-nums; }
+.weekly-time small { display:block; font-size:9px; margin-top:1px; }
+.weekly-grid-cell { border-bottom:1px solid #e2e9e3; background:#f7f9f6; }
+.weekly-grid-cell.is-break { background:repeating-linear-gradient(135deg,#f1f4f0,#f1f4f0 4px,#e9eee8 4px,#e9eee8 5px); }
+.weekly-grid-cell.is-non-teaching { background:#ecefec; }
+.weekly-session-cluster { z-index:1; display:grid; grid-template-rows:repeat(var(--weekly-overlap-count),minmax(40px,1fr)); gap:3px; padding:2px 0; min-height:calc(var(--weekly-overlap-count) * 40px); }
+.weekly-session { --weekly-module-solid:#327a76; --weekly-module-soft:#e0efed; --weekly-module-ink:#205d58; min-width:0; margin:0; border:1px solid #a0c6c1; border-radius:6px; background:var(--weekly-module-soft); color:var(--weekly-module-ink); overflow:hidden; }
+.weekly-module-SR { --weekly-module-solid:#09766f; --weekly-module-soft:#dcefeb; --weekly-module-ink:#175f58; }
+.weekly-module-LM { --weekly-module-solid:#27699c; --weekly-module-soft:#e1edf7; --weekly-module-ink:#245985; }
+.weekly-module-ED { --weekly-module-solid:#775490; --weekly-module-soft:#eee6f4; --weekly-module-ink:#694683; }
+.weekly-module-PRO { --weekly-module-solid:#90620d; --weekly-module-soft:#f7edcf; --weekly-module-ink:#75531a; }
+.weekly-module-SOS { --weekly-module-solid:#457c38; --weekly-module-soft:#e5f0df; --weekly-module-ink:#3a682f; }
+.weekly-session.weekly-state-ready { background:var(--weekly-module-solid); border-color:var(--weekly-module-solid); color:#fff; }
+.weekly-session.weekly-state-draft { background:var(--weekly-module-soft); border-color:color-mix(in srgb,var(--weekly-module-solid) 45%,white); color:var(--weekly-module-ink); }
+.weekly-session.weekly-state-pending { background:#fbe1de; border-color:#bd4a41; color:#842821; }
+.weekly-session.weekly-state-unknown { background:#e9eceb; border-color:#aab5af; color:#566865; }
+.weekly-session.is-cancelled { border-style:dashed; opacity:.8; }
+.weekly-session.is-cancelled .weekly-session-label { text-decoration:line-through; }
+.weekly-session-main { display:grid; grid-template-columns:minmax(0,1fr) 12px; gap:3px 4px; width:100%; min-height:38px; margin:0; padding:6px 7px; border:0; border-radius:5px; color:inherit; background:transparent; text-align:left; font:inherit; line-height:1.2; align-content:center; }
+button.weekly-session-main { cursor:pointer; }
+button.weekly-session-main:hover { box-shadow:inset 0 0 0 1px currentColor; }
+.weekly-session-label { min-width:0; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; font-weight:700; }
+.weekly-state-symbol { font-size:10px; justify-self:end; align-self:center; }
+.weekly-session-tasks { grid-column:1 / -1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; font-weight:500; }
+.weekly-shared-sources { display:flex; flex-wrap:wrap; gap:3px; padding:0 5px 4px; }
+.weekly-shared-sources button { min-height:25px; border:1px solid currentColor; border-radius:3px; padding:2px 4px; font:inherit; font-size:10px; color:inherit; background:transparent; cursor:pointer; }
+.weekly-issues { margin:5px 0 9px; color:#855513; font-size:12px; }
+.weekly-issues summary { cursor:pointer; }
+.weekly-issues ul { margin:5px 0; padding-left:20px; line-height:1.5; }
+.weekly-day-message { margin:10px 0; padding:10px; border-radius:6px; background:#edf1ed; color:var(--muted); font-size:13px; line-height:1.4; }
+@media(max-width:700px) {
+  .weekly-toolbar { gap:6px; }
+  .weekly-week-nav { flex-basis:100%; }
+  .weekly-week-title { font-size:16px; }
+  .weekly-shortcuts { width:100%; justify-content:space-between; gap:4px; }
+  .weekly-shortcuts>.weekly-control { flex:1; min-width:0; padding:6px; font-size:12px; }
+  .weekly-shortcuts>.weekly-control:last-child { flex:0 0 44px; font-size:20px; }
+  .weekly-control { min-height:44px; min-width:44px; }
+  .weekly-day-tabs { display:flex; gap:4px; margin:8px 0; }
+  .weekly-day-tab { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:5px 2px; }
+  .weekly-day-tab strong { font-size:13px; }
+  .weekly-day-tab span { font-size:10px; }
+  .weekly-day-tab[aria-pressed=true] { background:var(--teal); color:white; border-color:var(--teal); }
+  .weekly-day-tab[aria-current=date]:not([aria-pressed=true]) { border-color:var(--teal); }
+  .weekly-legend { gap:6px 10px; font-size:10px; margin:7px 0 10px; }
+  .weekly-legend-swatch { width:15px; height:14px; }
+  .weekly-desktop { display:none; }
+  .weekly-mobile { display:block; }
+  .weekly-mobile-row { display:grid; grid-template-columns:77px minmax(0,1fr); gap:7px; align-items:stretch; margin-bottom:7px; }
+  .weekly-mobile-time { align-self:center; font-size:11px; font-variant-numeric:tabular-nums; color:var(--muted); white-space:nowrap; }
+  .weekly-session-main { min-height:48px; padding:9px; }
+  .weekly-session-label { font-size:14px; }
+  .weekly-session-tasks { font-size:12px; }
+  .weekly-state-symbol { font-size:11px; }
+  .weekly-shared-sources button { min-height:44px; min-width:44px; font-size:12px; }
+}
+
+.workspace[data-view="schedule"] .workspace-footer { display:none; }
+/* Keep the last view icon on the same second toolbar row on narrow phones. */
+@media(max-width:360px) {
+  .app-header .toolbar-views { gap:0; }
+  .app-toolbar { column-gap:0; }
+  .app-header #view-tasks { min-width:48px; width:48px; padding:0; font-size:12px; }
+}
