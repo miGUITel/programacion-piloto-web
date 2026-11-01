@@ -1,8 +1,8 @@
-import { eventTypes } from './teaching.mjs?v=20261101-preparation-links';
-import { taskState } from './task-cycle.mjs?v=20261101-preparation-links';
-import { hasTaskPlan, visiblePlanTasks } from './task-plan.mjs?v=20261101-preparation-links';
-import { moduleWeekdays } from './common-course.mjs?v=20261101-preparation-links';
-import { shiftCalendarCells, groupShiftGaps } from './planning-shifts.mjs?v=20261101-preparation-links';
+import { eventTypes } from './teaching.mjs?v=20261101-exam-fiches';
+import { taskState } from './task-cycle.mjs?v=20261101-exam-fiches';
+import { hasTaskPlan, visiblePlanTasks } from './task-plan.mjs?v=20261101-exam-fiches';
+import { moduleWeekdays } from './common-course.mjs?v=20261101-exam-fiches';
+import { shiftCalendarCells, groupShiftGaps } from './planning-shifts.mjs?v=20261101-exam-fiches';
 
 export const taskDateFields = ['presentedOn', 'dueOn', 'correctBy'];
 

@@ -1,9 +1,9 @@
-import { TaskRegistryStore } from './general-notes.mjs?v=20261101-preparation-links';
-import { taskDateFields, taskDetails } from './module-views.mjs?v=20261101-preparation-links';
-import { TaskEditError, taskEditTarget, taskEditSnapshot, assertTaskRead, prepareTaskSave, saveTaskDocument } from './task-edit.mjs?v=20261101-preparation-links';
-import { presentationDefaults } from './task-cycle.mjs?v=20261101-preparation-links';
-import { taskHeading } from './task-plan.mjs?v=20261101-preparation-links';
-import { saveErrorFeedback, isValidDate } from './core.mjs?v=20261101-preparation-links';
+import { TaskRegistryStore } from './general-notes.mjs?v=20261101-exam-fiches';
+import { taskDateFields, taskDetails } from './module-views.mjs?v=20261101-exam-fiches';
+import { TaskEditError, taskEditTarget, taskEditSnapshot, assertTaskRead, prepareTaskSave, saveTaskDocument } from './task-edit.mjs?v=20261101-exam-fiches';
+import { presentationDefaults } from './task-cycle.mjs?v=20261101-exam-fiches';
+import { taskHeading } from './task-plan.mjs?v=20261101-exam-fiches';
+import { saveErrorFeedback, isValidDate } from './core.mjs?v=20261101-exam-fiches';
 
 const $ = id => document.getElementById(id);
 

@@ -1,5 +1,5 @@
 // Read-only dependencies. Stored session.preparation is retained as historical data.
-import { excludedSession } from './replanning.mjs?v=20261101-preparation-links';
+import { excludedSession } from './replanning.mjs?v=20261101-exam-fiches';
 const own = (value, key) => Object.hasOwn(value ?? {}, key);
 const keyOf = document => document.unit?.id ?? document.module?.code ?? '';
 

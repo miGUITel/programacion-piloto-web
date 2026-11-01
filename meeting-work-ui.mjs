@@ -1,6 +1,6 @@
-import { saveErrorFeedback } from './core.mjs?v=20261101-preparation-links';
-import { recordKey, recordGroup } from './meeting-records.mjs?v=20261101-preparation-links';
-import { withMeetingTask, withMeetingMinutes, meetingTaskRows, draftMeetingMinutes } from './meeting-work.mjs?v=20261101-preparation-links';
+import { saveErrorFeedback } from './core.mjs?v=20261101-exam-fiches';
+import { recordKey, recordGroup } from './meeting-records.mjs?v=20261101-exam-fiches';
+import { withMeetingTask, withMeetingMinutes, meetingTaskRows, draftMeetingMinutes } from './meeting-work.mjs?v=20261101-exam-fiches';
 
 const STATES = [['pending', 'Pendiente'], ['in-progress', 'En curso'], ['completed', 'Completada']];
 const stateLabel = value => STATES.find(([key]) => key === value)?.[1] ?? value;

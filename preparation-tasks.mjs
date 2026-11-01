@@ -29,6 +29,10 @@ export function createPreparationTask(document, input, id) {
   const ids = [document.unit.id, ...document.sessions.flatMap(session => [session.id, ...session.activities.map(activity => activity.id)]), ...(document.tasks ?? []).map(task => task.id)];
   if (typeof id !== 'string' || !id.trim() || ids.includes(id)) throw new Error('No se ha podido crear una identidad nueva. Vuelve a añadir el elemento.');
   const task = { id, code, title, type, approved: true, preparation: 'draft' };
+  if (input.examPart) {
+    if (type !== 'exam' || !['test', 'practical', 'both'].includes(input.examPart)) throw new Error('La parte del examen debe ser Test, Práctico o Test y práctico.');
+    task.examPart = input.examPart;
+  }
   if (input.sessionId) {
     if (!document.sessions.some(session => session.id === input.sessionId)) throw new Error('Selecciona una sesión de esta UT o deja la presentación sin asignar.');
     task.presentation = { sessionId: input.sessionId };

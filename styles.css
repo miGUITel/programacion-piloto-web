@@ -1010,12 +1010,14 @@ textarea{resize:vertical;line-height:1.6}
 .preparation-session-actions { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
 .preparation-dialog .suggestions-content { overflow-y:auto; }
 .preparation-task-lists { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
-.preparation-task { display:flex; gap:10px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--line); }
+.preparation-task { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--line); }
 .preparation-task:last-of-type { margin-bottom:12px; }
 .preparation-task input { flex:0 0 auto; width:18px; height:18px; margin:3px 0; }
 .preparation-task>span,.preparation-task-label { min-width:0; flex:1; overflow-wrap:anywhere; }
 .preparation-dialog .preparation-task-label { display:flex; align-items:flex-start; gap:10px; font-size:14px; font-weight:400; margin:0; }
 .preparation-task-label>span { min-width:0; }
+.preparation-dialog .preparation-exam-part { flex:1 0 100%; order:1; display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0; font-size:13px; font-weight:400; }
+.preparation-exam-part select { width:auto; min-width:0; max-width:100%; }
 .preparation-remove { color:#9a342f; flex:0 0 auto; }
 .preparation-removed { background:var(--paper); color:var(--muted); }
 .preparation-task .scope-note { display:block; margin-top:5px; font-weight:400; }

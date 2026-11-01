@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { preparationSummary, preparationValues, preparationSnapshot, preparePreparationSave } from './preparation.mjs?v=20261101-preparation-links';
-import { sessionPreparation } from './session-preparation.mjs?v=20261101-preparation-links';
-import { detachTaskLinks, taskLinks, removalImpact, removalWarning } from './preparation-links.mjs?v=20261101-preparation-links';
-import { savePreparationWithLinks } from './preparation-save.mjs?v=20261101-preparation-links';
-import { GithubStore, validateDocument, encodeUtf8Base64, decodeUtf8Base64 } from './core.mjs?v=20261101-preparation-links';
+import { preparationSummary, preparationValues, preparationSnapshot, preparePreparationSave } from './preparation.mjs?v=20261101-exam-fiches';
+import { sessionPreparation } from './session-preparation.mjs?v=20261101-exam-fiches';
+import { detachTaskLinks, taskLinks, removalImpact, removalWarning } from './preparation-links.mjs?v=20261101-exam-fiches';
+import { savePreparationWithLinks } from './preparation-save.mjs?v=20261101-exam-fiches';
+import { GithubStore, validateDocument, encodeUtf8Base64, decodeUtf8Base64 } from './core.mjs?v=20261101-exam-fiches';
 
 function fixture(code='UT02') {
   const id='LM-'+code;

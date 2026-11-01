@@ -1,6 +1,6 @@
-import { isValidDate } from './core.mjs?v=20261101-preparation-links';
-import { sessionTaskTargets } from './teaching.mjs?v=20261101-preparation-links';
-import { madridToday } from './unit-tools.mjs?v=20261101-preparation-links';
+import { isValidDate } from './core.mjs?v=20261101-exam-fiches';
+import { sessionTaskTargets } from './teaching.mjs?v=20261101-exam-fiches';
+import { madridToday } from './unit-tools.mjs?v=20261101-exam-fiches';
 
 export const taskStates = Object.freeze({ planned: 'Planificada', presented: 'Presentada', 'to-correct': 'Por corregir', corrected: 'Corregida' });
 

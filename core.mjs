@@ -1,9 +1,9 @@
-import { validateResources, validateModuleResources, moduleResourcePath, validGithubLocation } from './resources.mjs?v=20261101-preparation-links';
-import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261101-preparation-links';
-import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261101-preparation-links';
-import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261101-preparation-links';
+import { validateResources, validateModuleResources, moduleResourcePath, validGithubLocation } from './resources.mjs?v=20261101-exam-fiches';
+import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261101-exam-fiches';
+import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261101-exam-fiches';
+import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261101-exam-fiches';
 
-import { validatePlanningChanges } from './replanning.mjs?v=20261101-preparation-links';
+import { validatePlanningChanges } from './replanning.mjs?v=20261101-exam-fiches';
 
 const OWNER = 'miGUITel';
 const REPOSITORY = 'programacion-piloto-datos';
@@ -268,6 +268,7 @@ export function validateDocument(doc, expectedEntry) {
         if (!isObject(task)) { errors.push(`${path}: debe ser un objeto.`); return; }
         checkId(task.id, `${path}.id`);
         if (task.type !== undefined && !['task', 'exam'].includes(task.type)) errors.push(`${path}.type: debe ser task o exam.`);
+        if (Object.hasOwn(task, 'examPart') && (task.type !== 'exam' || !['test', 'practical', 'both'].includes(task.examPart))) errors.push(`${path}.examPart: solo un examen admite test, practical o both.`);
         if (Object.hasOwn(task, 'preparation') && !['draft', 'ready'].includes(task.preparation)) errors.push(`${path}.preparation: debe ser draft o ready.`);
         if (isV3) validateExtendedTask(task, path, errors, isValidDate);
         else if (!isText(task.code) || !(task.type === 'exam' ? /^\d{2}(?:\d{2}|te|ex|ia)?$/ : /^\d{4}$/).test(task.code)) errors.push(`${path}.code: código oficial no válido.`);
@@ -302,6 +303,7 @@ export function validateTaskRegistry(doc, moduleCode) {
     ids.add(task.id);
     if (!isUnitCode(task.unitCode) || !['task', 'exam'].includes(task.type) || !nonemptyText(task.title) || !(doc.schemaVersion === 2 ? officialCode(task.code) : isText(task.code) && (task.type === 'exam' ? /^\d{2}(?:\d{2}|te|ex|ia)?$/ : /^\d{4}$/).test(task.code))) errors.push(`${path}: identidad de tarea no válida.`);
     if (doc.schemaVersion === 2) validateExtendedTask(task, path, errors, isValidDate);
+    if (Object.hasOwn(task, 'examPart') && (task.type !== 'exam' || !['test', 'practical', 'both'].includes(task.examPart))) errors.push(`${path}.examPart: solo un examen admite test, practical o both.`);
     const identity = `${task.unitCode}/${task.type}/${task.code}`;
     if (identities.has(identity)) errors.push(`${path}: código duplicado.`);
     identities.add(identity);

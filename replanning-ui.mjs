@@ -1,6 +1,6 @@
-import { approvedChanges, planningSnapshot, excludedSession, planningStatus, sessionDisplayLabel, sessionPlanningLabel, resolutionLabels, planningLimit, planningMargin, teachingDates, formatPlanningComparison, operationComplete, PlanningError } from './replanning.mjs?v=20261101-preparation-links';
+import { approvedChanges, planningSnapshot, excludedSession, planningStatus, sessionDisplayLabel, sessionPlanningLabel, resolutionLabels, planningLimit, planningMargin, teachingDates, formatPlanningComparison, operationComplete, PlanningError } from './replanning.mjs?v=20261101-exam-fiches';
 const $ = id => document.getElementById(id);
-import { movesInChange } from './planning-shifts.mjs?v=20261101-preparation-links';
+import { movesInChange } from './planning-shifts.mjs?v=20261101-exam-fiches';
 const node = (tag, className = '', value) => { const el = document.createElement(tag); el.className = className; if (value !== undefined) el.textContent = value; return el; };
 const shortDate = d => d.split('-').reverse().join('/');
 

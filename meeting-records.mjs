@@ -1,4 +1,4 @@
-import { validateMeetingWork } from './meeting-work.mjs?v=20261101-preparation-links';
+import { validateMeetingWork } from './meeting-work.mjs?v=20261101-exam-fiches';
 const object=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
 const text=v=>typeof v==='string'&&v.trim().length>0;
 const date=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&Number.isFinite(Date.parse(v+'T12:00:00Z'))&&new Date(v+'T12:00:00Z').toISOString().slice(0,10)===v;

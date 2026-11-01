@@ -1,5 +1,5 @@
-import { annualPlanRows, annualPlannedPeriods } from './module-profile.mjs?v=20261101-preparation-links';
-import { preparationSummary } from './preparation.mjs?v=20261101-preparation-links';
+import { annualPlanRows, annualPlannedPeriods } from './module-profile.mjs?v=20261101-exam-fiches';
+import { preparationSummary } from './preparation.mjs?v=20261101-exam-fiches';
 
 export function createModuleProfileUI({ isBusy, setBusy, getConnection, getTarget, getRecords, otherEditorOpen }) {
   const $ = id => document.getElementById(id);

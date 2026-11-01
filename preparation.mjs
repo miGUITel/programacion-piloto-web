@@ -1,7 +1,7 @@
 /** RF 28: preparation is derived from resources, never manual session checks. */
-import { sessionPreparation } from './session-preparation.mjs?v=20261101-preparation-links';
-import { taskPreparationGroups, createPreparationTask, taskRemovalIssue } from './preparation-tasks.mjs?v=20261101-preparation-links';
-import { detachTaskLinks, sameTaskLinks } from './preparation-links.mjs?v=20261101-preparation-links';
+import { sessionPreparation } from './session-preparation.mjs?v=20261101-exam-fiches';
+import { taskPreparationGroups, createPreparationTask, taskRemovalIssue } from './preparation-tasks.mjs?v=20261101-exam-fiches';
+import { detachTaskLinks, sameTaskLinks } from './preparation-links.mjs?v=20261101-exam-fiches';
 export const preparationMaterials = ['ppt', 'web', 'tasks', 'exam'];
 export const preparationLabels = { pending: 'Pendiente', draft: 'En preparación', 'exam-pending': 'Examen pendiente', ready: 'Preparada' };
 export const materialLabels = { ppt: 'PPT', web: 'Web', tasks: 'Tareas', exam: 'Examen' };
@@ -13,6 +13,7 @@ const fail = (code, message) => { throw new PreparationError(code, message); };
 
 export function preparationValues(document) {
   return { materials: Object.fromEntries(preparationMaterials.map(key => [key, document.unit.resourcePreparation?.[key] ?? ''])),
+    examParts: Object.fromEntries((document.tasks ?? []).filter(task => task.type === 'exam').map(task => [task.id, task.examPart ?? ''])),
     tasks: Object.fromEntries((document.tasks ?? []).map(task => [task.id, task.preparation ?? ''])), additions: [], removals: [] };
 }
 
@@ -63,11 +64,19 @@ export function preparationSnapshot(document, values, records = []) {
     if (typeof task.approved !== 'boolean') task.approved = document.unit.preparation === 'ready';
   }
   if (!equal(Object.keys(values.tasks).sort(), (document.tasks ?? []).map(task => task.id).sort())) fail('PREPARATION_INVALID', 'La lista de tareas ha cambiado. Revisa la unidad.');
+  const examParts = values.examParts ?? original.examParts;
+  if (!equal(Object.keys(examParts).sort(), Object.keys(original.examParts).sort())) fail('PREPARATION_INVALID', 'La lista de exámenes ha cambiado. Revisa la unidad.');
   for (const task of result.tasks ?? []) {
     const value = values.tasks[task.id];
     if (!['', 'draft', 'ready'].includes(value)) fail('PREPARATION_INVALID', 'Revisa la preparación de las tareas.');
     if (value === original.tasks[task.id]) continue;
     if (value) task.preparation = value; else delete task.preparation;
+  }
+  for (const task of result.tasks ?? []) if (task.type === 'exam') {
+    const value = examParts[task.id];
+    if (!['', 'test', 'practical', 'both'].includes(value)) fail('PREPARATION_INVALID', 'Revisa la parte de cada examen.');
+    if (value === original.examParts[task.id]) continue;
+    if (value) task.examPart = value; else delete task.examPart;
   }
   const removals = values.removals ?? [];
   if (!Array.isArray(removals) || new Set(removals).size !== removals.length || removals.some(id => !document.tasks?.some(task => task.id === id))) fail('PREPARATION_INVALID', 'Revisa los elementos seleccionados para eliminar.');
@@ -113,8 +122,9 @@ export function preparePreparationSave(loaded, entry, values, active, records = 
     }
     const before = loaded.document;
     // Sources are a single logical transaction; local notes and task tracking stay pending.
-    const localValues = preparationValues(unitDraft), beforeValues = preparationValues(before);
-    if (!equal(localValues, beforeValues) && !equal(localValues, preparationValues(document))) fail('PREPARATION_LOCAL_CONFLICT', 'La preparación también tiene cambios locales en Unidad. Revisa ambos borradores antes de guardar.');
+    const withoutExamParts = value => { const { examParts, ...rest } = preparationValues(value); return rest; };
+    const localValues = withoutExamParts(unitDraft), beforeValues = withoutExamParts(before);
+    if (!equal(localValues, beforeValues) && !equal(localValues, withoutExamParts(document))) fail('PREPARATION_LOCAL_CONFLICT', 'La preparación también tiene cambios locales en Unidad. Revisa ambos borradores antes de guardar.');
     for (const id of values.removals ?? []) {
       const original = before.tasks.find(task => task.id === id), local = unitDraft.tasks?.find(task => task.id === id);
       if ((local && !equal(local, original)) || !sameTaskLinks(before, unitDraft, id)) fail('PREPARATION_LOCAL_CONFLICT', 'El elemento que quieres eliminar tiene cambios o vínculos pendientes en Unidad. Revisa su borrador antes de eliminarlo; no se ha enviado ningún cambio.');
@@ -133,8 +143,8 @@ export function preparePreparationSave(loaded, entry, values, active, records = 
         if (!target) (unitDraft.tasks ??= []).push(structuredClone(task));
         continue;
       }
-      if (!target && !equal(original?.approved, task.approved)) fail('PREPARATION_LOCAL_CONFLICT', 'La lista de tareas ha cambiado en el borrador de Unidad. Revisa antes de guardar.');
-      if (target) { merge(target, original, task, 'approved'); merge(target, original, task, 'preparation'); }
+      if (!target && ['approved','preparation','examPart'].some(key => !equal(original?.[key], task[key]))) fail('PREPARATION_LOCAL_CONFLICT', 'La lista de tareas ha cambiado en el borrador de Unidad. Revisa antes de guardar.');
+      if (target) { merge(target, original, task, 'approved'); merge(target, original, task, 'preparation'); merge(target, original, task, 'examPart'); }
     }
   }
   return { document, unitDraft };

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MeetingReader } from './meeting-reader.mjs?v=20261101-preparation-links';
-import { createContextMemory, chooseStartup, resolveRemembered, madridClock, daySchedule, unitContext, validateMeetingNotes } from './startup-context.mjs?v=20261101-preparation-links';
+import { MeetingReader } from './meeting-reader.mjs?v=20261101-exam-fiches';
+import { createContextMemory, chooseStartup, resolveRemembered, madridClock, daySchedule, unitContext, validateMeetingNotes } from './startup-context.mjs?v=20261101-exam-fiches';
 const entry = { moduleCode:'LM',unitCode:'UT01',unitId:'LM-UT01',path:'LM/UT01.json' };
 const other = { moduleCode:'LM',unitCode:'UT02',unitId:'LM-UT02',path:'LM/UT02.json' };
 const catalog = { common:{path:'common/course-2026-2027.json'},modules:[{code:'LM',units:[{id:entry.unitId,code:entry.unitCode,path:entry.path},{id:other.unitId,code:other.unitCode,path:other.path}]}] };

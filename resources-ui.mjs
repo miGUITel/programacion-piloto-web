@@ -1,7 +1,7 @@
-import { resourceTypes, resourceValues, assertResourceRead, prepareResourceSave, ResourceEditError, parsePrivateLocation, locationInput, safeResourceUrl, validateResources, validateModuleResources } from './resources.mjs?v=20261101-preparation-links';
-import { saveTaskDocument } from './task-edit.mjs?v=20261101-preparation-links';
-import { saveErrorFeedback } from './core.mjs?v=20261101-preparation-links';
-import { renderPrivateMarkdown } from './private-markdown.mjs?v=20261101-preparation-links';
+import { resourceTypes, resourceValues, assertResourceRead, prepareResourceSave, ResourceEditError, parsePrivateLocation, locationInput, safeResourceUrl, validateResources, validateModuleResources } from './resources.mjs?v=20261101-exam-fiches';
+import { saveTaskDocument } from './task-edit.mjs?v=20261101-exam-fiches';
+import { saveErrorFeedback } from './core.mjs?v=20261101-exam-fiches';
+import { renderPrivateMarkdown } from './private-markdown.mjs?v=20261101-exam-fiches';
 const $ = id => document.getElementById(id);
 const equal = (a,b) => JSON.stringify(a) === JSON.stringify(b);
 const el = (tag, css = '', value) => { const item = document.createElement(tag); item.className = css; if (value !== undefined) item.textContent = value; return item; };
@@ -58,12 +58,14 @@ export function createResourcesUI({ getState, getActive, getConnection, unitStor
         const row = el('div','resource-task-row'); row.append(el('strong','',`${task.code} · ${task.title}`));
         const refs = resources.filter(resource => task.resourceRefs?.includes(resource.id)); refs.forEach(r => assigned.add(r.id));
         const links = el('div','resource-task-links');
-        for (const type of ['assignment','guide']) {
+        const slots = task.type === 'exam' ? ['guide'] : ['assignment','guide'];
+        for (const type of slots) {
+          const caption = task.type === 'exam' ? 'Ficha docente del examen' : resourceTypes[type];
           const matches = refs.filter(r => r.type === type);
-          if (!matches.length) links.append(el('span','scope-note',`${resourceTypes[type]} pendiente de enlazar`));
-          for (const resource of matches) appendLink(links, resource, matches.length === 1 ? resourceTypes[type] : `${resourceTypes[type]}: ${resource.title}`);
+          if (!matches.length) links.append(el('span','scope-note',`${caption} pendiente de enlazar`));
+          for (const resource of matches) appendLink(links, resource, matches.length === 1 ? caption : `${caption}: ${resource.title}`);
         }
-        for (const resource of refs.filter(r => !['assignment','guide'].includes(r.type))) appendLink(links,resource);
+        for (const resource of refs.filter(r => !slots.includes(r.type))) appendLink(links,resource);
         row.append(links); group.append(row);
       }
       root.append(group);
@@ -76,7 +78,7 @@ export function createResourcesUI({ getState, getActive, getConnection, unitStor
       const section = el('section','resource-group'); section.append(el('h3','',name)); const list = el('ul','resource-list');
       ownResources.forEach(r => list.append(resourceRow(r))); shared.forEach(r => list.append(resourceRow(r,true))); section.append(list); root.append(section);
     }
-    if (!resources.length && !common.length) root.append(el('p','scope-note','Puedes añadir enunciados, fichas docentes, presentaciones, web y herramientas de esta UT.'));
+    if (!resources.length && !common.length) root.append(el('p','scope-note','Puedes añadir enunciados, fichas docentes de tareas y exámenes, presentaciones, web y herramientas de esta UT.'));
     if (module?.loading) root.append(el('p','scope-note','Leyendo los enlaces del módulo…'));
     if (module?.error) { const warning = el('p','message warning','No se han podido leer los enlaces del módulo. '); warning.append(button('Reintentar', async () => { if (isBusy()) return; setBusy(true); try { await loadModule(state.entry.moduleCode,true); } finally { setBusy(false); } })); root.append(warning); }
   }

@@ -1,4 +1,4 @@
-import { safeResourceUrl, validGithubLocation, resourceTypes } from './resources.mjs?v=20261101-preparation-links';
+import { safeResourceUrl, validGithubLocation, resourceTypes } from './resources.mjs?v=20261101-exam-fiches';
 
 const groups = [
   { id:'assignment', label:'Tarea o enunciado', paths:['M9 5H6v16h12V5h-3','M9 3h6v4H9z','M9 11h6M9 15h6'] },

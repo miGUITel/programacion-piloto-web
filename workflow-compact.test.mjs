@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calendarCurrentUnits } from './unit-tools.mjs?v=20261101-preparation-links';
-import { rowResources } from './resources.mjs?v=20261101-preparation-links';
+import { calendarCurrentUnits } from './unit-tools.mjs?v=20261101-exam-fiches';
+import { rowResources } from './resources.mjs?v=20261101-exam-fiches';
 
 const record = (id, dates) => ({ entry:{unitCode:id}, document:{unit:{id},sessions:dates.map(([date,state=''])=>({date,state}))} });
 test('calendar currency includes non-teaching days and boundaries, never the next unit',()=>{

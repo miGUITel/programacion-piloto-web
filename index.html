@@ -11,9 +11,9 @@
   <link rel="icon" href="./favicon.ico?v=20261029" sizes="16x16 32x32 48x48">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20261029">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20261029">
-  <link rel="stylesheet" href="./styles.css?v=20261101-weekly-schedule">
-  <link rel="stylesheet" href="./weekly-schedule.css?v=20261101-weekly-schedule">
-  <script type="module" src="./app.mjs?v=20261101-weekly-schedule"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261101-exam-fiches">
+  <link rel="stylesheet" href="./weekly-schedule.css?v=20261101-exam-fiches">
+  <script type="module" src="./app.mjs?v=20261101-exam-fiches"></script>
 </head>
 <body>
   <header class="app-header">
@@ -292,6 +292,7 @@
             <label>Tipo<select id="preparation-new-type" aria-label="Tipo"><option value="task">Tarea</option><option value="exam">Examen</option></select></label>
             <label>Código oficial<input id="preparation-new-code" type="text" autocomplete="off"></label>
             <label class="preparation-new-title">Título<input id="preparation-new-title" type="text" autocomplete="off"></label>
+            <label id="preparation-new-exam-part-label" hidden>Parte del examen<select id="preparation-new-exam-part"><option value="">Sin asignar</option><option value="test">Test (T)</option><option value="practical">Práctico (P)</option><option value="both">Test y práctico (T/P)</option></select></label>
             <label class="preparation-new-session">Presentación prevista (opcional)<select id="preparation-new-session" aria-label="Presentación prevista (opcional)"></select></label>
           </div>
           <p class="field-help">Se incorporará como Planificada, con preparación pendiente. No se confirma Presentada ni Corregida. Añade el elemento al borrador y después pulsa Guardar preparación.</p>

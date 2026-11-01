@@ -1,13 +1,14 @@
-import { preparationMaterials, materialLabels, preparationValues, preparationSummary, preparationSnapshot, assertPreparationRead, preparePreparationSave, PreparationError } from './preparation.mjs?v=20261101-preparation-links';
-import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261101-preparation-links';
-import { taskPreparationGroups, taskAdditionIssue, createPreparationTask, taskRemovalIssue, taskType } from './preparation-tasks.mjs?v=20261101-preparation-links';
-import { saveTaskDocument } from './task-edit.mjs?v=20261101-preparation-links';
-import { saveErrorFeedback } from './core.mjs?v=20261101-preparation-links';
-import { removalImpact, removalWarning, taskLinks } from './preparation-links.mjs?v=20261101-preparation-links';
-import { savePreparationWithLinks } from './preparation-save.mjs?v=20261101-preparation-links';
+import { preparationMaterials, materialLabels, preparationValues, preparationSummary, preparationSnapshot, assertPreparationRead, preparePreparationSave, PreparationError } from './preparation.mjs?v=20261101-exam-fiches';
+import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261101-exam-fiches';
+import { taskPreparationGroups, taskAdditionIssue, createPreparationTask, taskRemovalIssue, taskType } from './preparation-tasks.mjs?v=20261101-exam-fiches';
+import { saveTaskDocument } from './task-edit.mjs?v=20261101-exam-fiches';
+import { saveErrorFeedback } from './core.mjs?v=20261101-exam-fiches';
+import { removalImpact, removalWarning, taskLinks } from './preparation-links.mjs?v=20261101-exam-fiches';
+import { savePreparationWithLinks } from './preparation-save.mjs?v=20261101-exam-fiches';
 const $ = id => document.getElementById(id);
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const el = (tag, css = '', text) => { const item = document.createElement(tag); item.className = css; if (text !== undefined) item.textContent = text; return item; };
+const examPartOptions = [['', 'Sin asignar'], ['test', 'Test (T)'], ['practical', 'Práctico (P)'], ['both', 'Test y práctico (T/P)']];
 
 export function preparationBadge(document, onClick, records = []) {
   const summary = preparationSummary(document, records);
@@ -26,8 +27,8 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
       && (values.removals ?? []).some(id=>taskLinks(record.document,id).length)).map(record=>record.entry)];
     for (const target of targets) onBlocked(target);
   }
-  const newTaskInput = () => ({ type: $('preparation-new-type').value, code: $('preparation-new-code').value, title: $('preparation-new-title').value, sessionId: $('preparation-new-session').value });
-  const unfinishedTask = () => !$('preparation-task-editor').hidden && Boolean(newTaskInput().code || newTaskInput().title || newTaskInput().sessionId);
+  const newTaskInput = () => ({ type: $('preparation-new-type').value, code: $('preparation-new-code').value, title: $('preparation-new-title').value, sessionId: $('preparation-new-session').value, ...($('preparation-new-type').value === 'exam' ? {examPart: $('preparation-new-exam-part').value} : {}) });
+  const unfinishedTask = () => !$('preparation-task-editor').hidden && Boolean(newTaskInput().code || newTaskInput().title || newTaskInput().sessionId || newTaskInput().examPart);
   const changed = () => Boolean(loaded && !equal(values, preparationValues(loaded.document)));
   const pending = () => Boolean(loaded && (blocked || changed() || unfinishedTask()));
   function message(text = '', kind = '') { $('preparation-message').textContent = text; $('preparation-message').className = 'message ' + kind; $('preparation-message').hidden = !text; }
@@ -60,11 +61,13 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
   function resetNewTask() {
     $('preparation-task-editor').hidden = true;
     $('preparation-new-code').value = ''; $('preparation-new-title').value = ''; $('preparation-new-session').value = '';
+    $('preparation-new-exam-part').value = ''; $('preparation-new-exam-part-label').hidden = true;
     $('preparation-new-message').textContent = '';
   }
   function editNewTask(type) {
     if (isBusy() || blocked || unfinishedTask()) return;
     resetNewTask(); $('preparation-new-type').value = type; $('preparation-task-editor').hidden = false;
+    $('preparation-new-exam-part-label').hidden = type !== 'exam';
     $('preparation-task-editor').scrollIntoView({ block: 'nearest', behavior: 'instant' });
     $('preparation-new-code').focus(); availability();
   }
@@ -87,6 +90,19 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
         const session = snapshot.sessions.find(session => session.id === task.presentation?.sessionId);
         text.append(el('span', 'scope-note', `${session ? `Presentación prevista: S${session.number} · ${session.date}` : 'Sin sesión de presentación asignada'}${values.additions.some(item => item.id === task.id) ? ' · Nuevo, sin guardar' : ''}`));
         label.append(input, text); row.append(label);
+        if (type === 'exam') {
+          const partLabel = el('label', 'preparation-exam-part', 'Parte del examen'), select = el('select');
+          select.setAttribute('aria-label', `Parte del examen ${task.code} · ${task.title}`);
+          for (const [value, title] of examPartOptions) { const option = el('option', '', title); option.value = value; select.append(option); }
+          select.value = task.examPart ?? '';
+          select.addEventListener('change', () => {
+            const added = values.additions.find(item => item.id === task.id);
+            if (added) { if (select.value) added.examPart = select.value; else delete added.examPart; }
+            else values.examParts[task.id] = select.value;
+            preview();
+          });
+          partLabel.append(select); row.append(partLabel);
+        }
         const remove = el('button', 'button button-small preparation-remove', 'Eliminar'); remove.type = 'button';
         remove.setAttribute('aria-label', `Eliminar ${type === 'task' ? 'tarea' : 'examen'} ${task.code} · ${task.title}`);
         remove.addEventListener('click', () => {
@@ -192,7 +208,13 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
       else { const feedback = saveErrorFeedback(error); blocked = feedback.requiresReload || error.code === 'HTTP_422'; if (blocked) blockRemovalTargets(); message(feedback.message + ' [' + feedback.code + ']', feedback.kind); }
     } finally { setBusy(false); availability(); onStateChange(); if (confirmed) close(); }
   });
-  for (const id of ['preparation-new-code', 'preparation-new-title', 'preparation-new-session']) $(id).addEventListener('input', () => { availability(); onStateChange(); });
+  for (const id of ['preparation-new-code', 'preparation-new-title', 'preparation-new-session', 'preparation-new-exam-part']) $(id).addEventListener('input', () => { availability(); onStateChange(); });
+  $('preparation-new-type').addEventListener('change', () => {
+    const exam = $('preparation-new-type').value === 'exam';
+    $('preparation-new-exam-part-label').hidden = !exam;
+    if (!exam) $('preparation-new-exam-part').value = '';
+    availability(); onStateChange();
+  });
   $('preparation-new-cancel').addEventListener('click', () => { if (isBusy()) return; resetNewTask(); availability(); onStateChange(); });
   $('preparation-new-add').addEventListener('click', () => {
     if (!loaded || isBusy() || blocked) return;
