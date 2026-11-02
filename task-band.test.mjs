@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { taskBand, taskBandLabel } from './task-band.mjs?v=20261102-replanning-signals';
+import { taskBand, taskBandLabel } from './task-band.mjs?v=20261102-task-notes-resources';
 
 const fixture = () => ({ schemaVersion: 3, unit: { preparation: 'ready' }, tasks: [
   { id: 't3', code: '0203', title: 'Tercera', type: 'task', approved: true, resourceRefs: ['guide', 'statement', 'statement', 'solution', 'missing'] },

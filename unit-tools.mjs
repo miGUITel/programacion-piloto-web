@@ -1,6 +1,6 @@
-import { eventTypes } from './teaching.mjs?v=20261102-replanning-signals';
-import { sessionPreparation } from './session-preparation.mjs?v=20261102-replanning-signals';
-import { timeToMinutes } from './core.mjs?v=20261102-replanning-signals';
+import { eventTypes } from './teaching.mjs?v=20261102-task-notes-resources';
+import { sessionPreparation } from './session-preparation.mjs?v=20261102-task-notes-resources';
+import { timeToMinutes } from './core.mjs?v=20261102-task-notes-resources';
 
 /** Presentation helpers. Codes, titles, dates and academic states remain unchanged. */
 export function orderedUnits(units) {

@@ -1,5 +1,5 @@
-import { annualPlanRows, annualPlannedPeriods } from './module-profile.mjs?v=20261102-replanning-signals';
-import { preparationSummary } from './preparation.mjs?v=20261102-replanning-signals';
+import { annualPlanRows, annualPlannedPeriods } from './module-profile.mjs?v=20261102-task-notes-resources';
+import { preparationSummary } from './preparation.mjs?v=20261102-task-notes-resources';
 
 export function createModuleProfileUI({ isBusy, setBusy, getConnection, getTarget, getRecords, otherEditorOpen }) {
   const $ = id => document.getElementById(id);

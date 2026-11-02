@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateMeetingDocument, recordKey, recordGroup, meetingHistory, withMeetingRecord } from './meeting-records.mjs?v=20261102-replanning-signals';
-import { MeetingReader } from './meeting-reader.mjs?v=20261102-replanning-signals';
-import { createContextMemory, resolveRemembered, meetingContext, meetingGroupContext } from './startup-context.mjs?v=20261102-replanning-signals';
+import { validateMeetingDocument, recordKey, recordGroup, meetingHistory, withMeetingRecord } from './meeting-records.mjs?v=20261102-task-notes-resources';
+import { MeetingReader } from './meeting-reader.mjs?v=20261102-task-notes-resources';
+import { createContextMemory, resolveRemembered, meetingContext, meetingGroupContext } from './startup-context.mjs?v=20261102-task-notes-resources';
 const catalog={modules:[],meetings:{schemaVersion:1,path:'APP/reuniones.json'},common:{path:'common/course-2026-2027.json'}};
 const book=()=>({schemaVersion:2,kind:'meeting-notes',spaces:[{id:'meetings',title:'Reuniones'},{id:'project',title:'Proyecto'}],groups:[{id:'a',title:'Comisión sintética',space:'meetings',scheduleRefs:['slot-a']},{id:'p',title:'Proyecto sintético',space:'project',scheduleRefs:[]}],meetings:[],extra:{keep:true}});
 const manual=(id='m1',groupId='a',date='2026-10-19')=>({id,groupId,date,title:'Reunión sintética',topics:[' Tema con espacios '],requests:[],notes:'Notas sin datos personales',extra:{keep:true}});

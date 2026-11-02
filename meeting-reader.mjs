@@ -1,5 +1,5 @@
-import { ApiError, ConflictError, UnknownSaveError, decodeUtf8Base64, encodeUtf8Base64 } from './core.mjs?v=20261102-replanning-signals';
-import { meetingNotesPath, validateMeetingNotes } from './startup-context.mjs?v=20261102-replanning-signals';
+import { ApiError, ConflictError, UnknownSaveError, decodeUtf8Base64, encodeUtf8Base64 } from './core.mjs?v=20261102-task-notes-resources';
+import { meetingNotesPath, validateMeetingNotes } from './startup-context.mjs?v=20261102-task-notes-resources';
 
 // One fixed private registry. Every note save has a version and confirmed reread.
 export class MeetingReader {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { renderTaskBand } from './task-band-ui.mjs?v=20261102-replanning-signals';
+import { renderTaskBand } from './task-band-ui.mjs?v=20261102-task-notes-resources';
 
 function node(tagName) {
   const classes = new Set();

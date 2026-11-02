@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateDocument, validateTaskRegistry } from './core.mjs?v=20261102-replanning-signals';
-import { preparationValues, preparationSnapshot, preparePreparationSave } from './preparation.mjs?v=20261102-replanning-signals';
-import { createPreparationTask } from './preparation-tasks.mjs?v=20261102-replanning-signals';
-import { createPreparationUI } from './preparation-ui.mjs?v=20261102-replanning-signals';
+import { validateDocument, validateTaskRegistry } from './core.mjs?v=20261102-task-notes-resources';
+import { preparationValues, preparationSnapshot, preparePreparationSave } from './preparation.mjs?v=20261102-task-notes-resources';
+import { createPreparationTask } from './preparation-tasks.mjs?v=20261102-task-notes-resources';
+import { createPreparationUI } from './preparation-ui.mjs?v=20261102-task-notes-resources';
 
 function fixture(schemaVersion=2) {
   return {schemaVersion,pilot:true,module:{code:'SR',name:'Prueba'},unit:{id:'SR-UT03',code:'UT03',title:'Prueba',resourcePreparation:{ppt:'Listo',web:'Listo',tasks:'Listo',exam:'Listo'}},

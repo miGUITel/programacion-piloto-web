@@ -1,7 +1,7 @@
-import { assertSessionRead, sessionTextValues, prepareSessionSave, SessionEditError } from './session-edit.mjs?v=20261102-replanning-signals';
-import { sessionDisplayLabel } from './replanning.mjs?v=20261102-replanning-signals';
-import { saveTaskDocument } from './task-edit.mjs?v=20261102-replanning-signals';
-import { saveErrorFeedback } from './core.mjs?v=20261102-replanning-signals';
+import { assertSessionRead, sessionTextValues, prepareSessionSave, SessionEditError } from './session-edit.mjs?v=20261102-task-notes-resources';
+import { sessionDisplayLabel } from './replanning.mjs?v=20261102-task-notes-resources';
+import { saveTaskDocument } from './task-edit.mjs?v=20261102-task-notes-resources';
+import { saveErrorFeedback } from './core.mjs?v=20261102-task-notes-resources';
 const $ = id => document.getElementById(id);
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const node = (tag, className = '', text) => { const el = document.createElement(tag); el.className = className; if (text !== undefined) el.textContent = text; return el; };

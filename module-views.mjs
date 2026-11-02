@@ -1,8 +1,8 @@
-import { eventTypes } from './teaching.mjs?v=20261102-replanning-signals';
-import { taskState } from './task-cycle.mjs?v=20261102-replanning-signals';
-import { hasTaskPlan, visiblePlanTasks } from './task-plan.mjs?v=20261102-replanning-signals';
-import { moduleWeekdays } from './common-course.mjs?v=20261102-replanning-signals';
-import { shiftCalendarCells, groupShiftGaps } from './planning-shifts.mjs?v=20261102-replanning-signals';
+import { eventTypes } from './teaching.mjs?v=20261102-task-notes-resources';
+import { taskState } from './task-cycle.mjs?v=20261102-task-notes-resources';
+import { hasTaskPlan, visiblePlanTasks } from './task-plan.mjs?v=20261102-task-notes-resources';
+import { moduleWeekdays } from './common-course.mjs?v=20261102-task-notes-resources';
+import { shiftCalendarCells, groupShiftGaps } from './planning-shifts.mjs?v=20261102-task-notes-resources';
 
 export const taskDateFields = ['presentedOn', 'dueOn', 'correctBy'];
 
@@ -90,7 +90,7 @@ export function moduleTasks(records, moduleCode, today) {
         const details = taskDetails(target);
         if (document.schemaVersion === 2 && target.approved !== true && !target.taskPresented && !target.task?.corrected) continue;
         tasks.push({ key: JSON.stringify([entry.moduleCode, 'task', target.id]), registryTaskId: target.id, type: target.type, code: target.code,
-          entry: { ...entry, unitCode: target.unitCode }, title: target.title, date: details.presentedOn || '', number: null,
+          entry: { ...entry, unitCode: target.unitCode }, title: target.title, teachingNotes: target.teachingNotes, date: details.presentedOn || '', number: null,
           ...details, status: taskState(details, today), missingDates: details.presented && (!details.dueOn || !details.correctBy) });
       }
       continue;
@@ -104,7 +104,7 @@ export function moduleTasks(records, moduleCode, today) {
         const details = taskDetails(target);
         tasks.push({ key: JSON.stringify([entry.moduleCode, 'task', target.id]), officialTaskId: target.id, code: target.code, type: target.type || 'task',
           entry, unitTitle: document.unit.title, sessionId: session?.id, sessionIndex, activityId: session?.activities[activityIndex]?.id, activityIndex,
-          unassigned: !session, title: target.title, date: session?.date || '', number: session?.number ?? null, state: session?.state, ...details,
+          unassigned: !session, title: target.title, teachingNotes: target.teachingNotes, date: session?.date || '', number: session?.number ?? null, state: session?.state, ...details,
           status: taskState(details, today), missingDates: details.presented && (!details.dueOn || !details.correctBy) });
       }
       continue;
@@ -121,7 +121,7 @@ export function moduleTasks(records, moduleCode, today) {
           activityId: activity.id, activityIndex: index, sessionOnly: !!sessionOnly,
           type: 'task',
           title: target.task?.title || activity.title || 'Tarea sin título', code: target.task?.code || '', publishedOn: target.task?.publishedOn || '', date: session.date, number: session.number,
-          state: session.state, ...details, status: taskState(details, today),
+          state: session.state, teachingNotes: target.teachingNotes, ...details, status: taskState(details, today),
           missingDates: details.presented && (!details.dueOn || !details.correctBy) });
       });
     });

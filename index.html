@@ -4,16 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://api.github.com; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://api.github.com https://miguitel.github.io; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Piloto independiente de seguimiento docente. Los datos privados se cargan después de conectar con GitHub.">
   <title>Cuaderno · Piloto docente</title>
   <link rel="icon" href="./favicon.ico?v=20261029" sizes="16x16 32x32 48x48">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20261029">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20261029">
-  <link rel="stylesheet" href="./styles.css?v=20261102-replanning-signals">
-  <link rel="stylesheet" href="./weekly-schedule.css?v=20261102-replanning-signals">
-  <script type="module" src="./app.mjs?v=20261102-replanning-signals"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261102-task-notes-resources">
+  <link rel="stylesheet" href="./weekly-schedule.css?v=20261102-task-notes-resources">
+  <link rel="stylesheet" href="./task-notes.css?v=20261102-task-notes-resources">
+  <script type="module" src="./app.mjs?v=20261102-task-notes-resources"></script>
 </head>
 <body>
   <header class="app-header">
@@ -36,6 +37,7 @@
           <summary id="connection-status" class="toolbar-icon" aria-label="Sin conectar. Opciones del cuaderno" title="Sin conectar. Opciones del cuaderno"><span id="connection-label" class="connection-label" role="img" aria-label="Sin conectar"><span class="status-dot" aria-hidden="true"></span></span></summary>
           <div class="toolbar-menu">
             <button id="resume-context" class="button toolbar-menu-action" type="button" hidden>Continuar donde estaba</button>
+            <button id="resume-task-notes" class="button toolbar-menu-action" type="button" hidden>Notas de tarea pendientes</button>
             <button id="open-meetings" class="button toolbar-menu-action" type="button" disabled>Reuniones</button>
             <div id="stats" class="stats toolbar-summary" aria-label="Resumen de la unidad" hidden></div>
             <button id="module-profile" class="button toolbar-menu-action" type="button" aria-haspopup="dialog" aria-controls="module-profile-dialog" disabled><span class="menu-info-icon" aria-hidden="true">i</span><span>Información del módulo</span></button>

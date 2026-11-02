@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { preparationSummary, preparationValues, preparationSnapshot, preparePreparationSave } from './preparation.mjs?v=20261102-replanning-signals';
-import { sessionPreparation } from './session-preparation.mjs?v=20261102-replanning-signals';
-import { detachTaskLinks, taskLinks, removalImpact, removalWarning } from './preparation-links.mjs?v=20261102-replanning-signals';
-import { savePreparationWithLinks } from './preparation-save.mjs?v=20261102-replanning-signals';
-import { GithubStore, validateDocument, encodeUtf8Base64, decodeUtf8Base64 } from './core.mjs?v=20261102-replanning-signals';
+import { preparationSummary, preparationValues, preparationSnapshot, preparePreparationSave } from './preparation.mjs?v=20261102-task-notes-resources';
+import { sessionPreparation } from './session-preparation.mjs?v=20261102-task-notes-resources';
+import { detachTaskLinks, taskLinks, removalImpact, removalWarning } from './preparation-links.mjs?v=20261102-task-notes-resources';
+import { savePreparationWithLinks } from './preparation-save.mjs?v=20261102-task-notes-resources';
+import { GithubStore, validateDocument, encodeUtf8Base64, decodeUtf8Base64 } from './core.mjs?v=20261102-task-notes-resources';
 
 function fixture(code='UT02') {
   const id='LM-'+code;

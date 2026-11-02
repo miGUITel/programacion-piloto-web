@@ -1,4 +1,4 @@
-import { safeResourceUrl, validGithubLocation, resourceTypes } from './resources.mjs?v=20261102-replanning-signals';
+import { safeResourceUrl, validGithubLocation, resourceTypes, effectiveResourceDestination, effectiveResourceDestinations, modulePublishedWebRoot, modulePublishedRepository } from './resources.mjs?v=20261102-task-notes-resources';
 
 const groups = [
   { id:'assignment', label:'Tarea o enunciado', paths:['M9 5H6v16h12V5h-3','M9 3h6v4H9z','M9 11h6M9 15h6'] },
@@ -26,13 +26,59 @@ export function groupRowResources(resources) {
 }
 
 // A workspace path is never treated as a working web link without a public read.
-export function publicWorkspaceCandidate(resource,moduleCode) {
-  const path=resource.location?.path;
-  if(resource.location?.kind!=='workspace'||!['SR','LM','ED','PRO','SOS'].includes(moduleCode)||typeof path!=='string'||!path.startsWith('repositorio/'))return null;
-  const relative=path.slice('repositorio/'.length);
+export function publicWorkspaceCandidate(resource,moduleCode,moduleResources=[]) {
+  if(!['SR','LM','ED','PRO','SOS'].includes(moduleCode)||resource.audience==='teacher')return null;
+  const repository=modulePublishedRepository(moduleResources);if(!repository)return null;
+  let relative;
+  if(resource.location?.kind==='workspace') {
+    const path=resource.location.path;if(typeof path!=='string'||!path.startsWith('repositorio/'))return null;
+    relative=path.slice('repositorio/'.length);
+  } else if(resource.location?.kind==='https'&&safeResourceUrl(resource.location.url,resource.location.public===true)) {
+    try {
+      const url=new URL(resource.location.url),prefix=`/${repository}/blob/main/`;
+      if(url.hostname!=='github.com'||!url.pathname.startsWith(prefix)||url.search||url.hash)return null;
+      relative=url.pathname.slice(prefix.length).split('/').map(decodeURIComponent).join('/');
+    } catch { return null; }
+  } else return null;
   if(!relative||/[\\\x00-\x1f?#]/.test(relative)||relative.split('/').some(part=>!part||part==='.'||part==='..'))return null;
   const encoded=relative.split('/').map(encodeURIComponent).join('/');
-  return {path:relative,api:`https://api.github.com/repos/miGUITel/${moduleCode}/contents/${encoded}?ref=main`,url:`https://github.com/miGUITel/${moduleCode}/blob/main/${encoded}`};
+  return {path:relative,api:`https://api.github.com/repos/${repository}/contents/${encoded}?ref=main`,url:`https://github.com/${repository}/blob/main/${encoded}`};
+}
+
+function publicMarkdownSource(resource) {
+  try { const url=new URL(resource.location?.url);return resource.audience!=='teacher'&&resource.location?.kind==='https'&&url.hostname==='github.com'&&/\/blob\/main\/.+\.(?:md|markdown)$/i.test(url.pathname); }
+  catch { return false; }
+}
+
+// A guessed Markdown route is only a candidate. It is opened after a public
+// source read and a successful HTML response from the explicitly registered site.
+export async function verifyPublishedResource(candidate, webRoot, { fetchImpl = globalThis.fetch } = {}) {
+  if(!candidate)return null;
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
+  const options={credentials:'omit',referrerPolicy:'no-referrer',redirect:'error',signal:controller.signal};
+  try {
+    const source=await fetchImpl(candidate.api,{...options,method:'GET',headers:{Accept:'application/vnd.github+json'}});
+    if(!source.ok)return null;
+    const file=await source.json();
+    if(file.type!=='file'||file.path!==candidate.path||typeof file.sha!=='string'||!file.sha||new URL(file.html_url).href!==candidate.url)return null;
+    if(/\.(?:md|markdown|html?)$/i.test(candidate.path)) {
+      if(!webRoot)return null;
+      const base=new URL(webRoot);
+      if(base.protocol!=='https:'||base.hostname!=='miguitel.github.io'||base.search||base.hash||!base.pathname.endsWith('/'))return null;
+      const relative=candidate.path.replace(/\.(?:md|markdown)$/i,'.html').split('/').map(encodeURIComponent).join('/');
+      const url=new URL(relative,base);
+      if(url.origin!==base.origin||!url.pathname.startsWith(base.pathname))return null;
+      let response=await fetchImpl(url.href,{...options,method:'HEAD'});
+      if(response.status===405||response.status===501)response=await fetchImpl(url.href,{...options,method:'GET'});
+      if(!response.ok||!/^text\/html(?:;|$)/i.test(response.headers?.get('content-type')??''))return null;
+      if(response.url&&new URL(response.url).href!==url.href)return null;
+      return url.href;
+    }
+    const raw=new URL(file.download_url);
+    const sourceUrl=new URL(candidate.url),expected=`${sourceUrl.pathname.replace('/blob/main/','/main/')}`;
+    if(raw.hostname!=='raw.githubusercontent.com'||raw.pathname!==expected||!safeResourceUrl(raw.href))return null;
+    return raw.href;
+  } catch { return null; } finally { clearTimeout(timer); }
 }
 
 function icon(id) {
@@ -42,7 +88,7 @@ function icon(id) {
   return svg;
 }
 
-export function createRowResourcesUI({isBusy,canOpen,openPrivate,fetchImpl=globalThis.fetch}) {
+export function createRowResourcesUI({isBusy,canOpen,openPrivate,getModuleResources=()=>[],fetchImpl=globalThis.fetch}) {
   let picker=null,body=null,heading=null,returnTo=null,generation=0;
   const publicReads=new Map();
   const allowed=()=>!isBusy()&&canOpen();
@@ -62,30 +108,23 @@ export function createRowResourcesUI({isBusy,canOpen,openPrivate,fetchImpl=globa
   }
   function showInfo(resource,trigger,message) {
     if(!allowed())return;
-    ensurePicker();returnTo=trigger;heading.textContent=resource.title;body.replaceChildren(node('p','',message),node('p','resource-local-path',resource.location?.path||'Ubicación pendiente'));
+    ensurePicker();returnTo=trigger;heading.textContent=resource.title;body.replaceChildren(node('p','',message),node('p','resource-local-path',resource.location?.path||resource.location?.url||'Ubicación pendiente'));
     picker.showModal();
   }
-  async function resolvePublic(candidate) {
-    if(!publicReads.has(candidate.api))publicReads.set(candidate.api,(async()=>{
-      const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
-      try {
-        const response=await fetchImpl(candidate.api,{method:'GET',credentials:'omit',referrerPolicy:'no-referrer',redirect:'error',signal:controller.signal,headers:{Accept:'application/vnd.github+json'}});
-        if(!response.ok)return null;
-        const file=await response.json();
-        return file.type==='file'&&file.path===candidate.path&&typeof file.sha==='string'&&file.sha&&new URL(file.html_url).href===candidate.url?candidate.url:null;
-      }catch{return null;}finally{clearTimeout(timer);}
-    })());
-    const result=await publicReads.get(candidate.api);
-    if(!result)publicReads.delete(candidate.api);
+  async function resolvePublic(candidate,moduleCode) {
+    const root=modulePublishedWebRoot(getModuleResources(moduleCode)),key=`${candidate.api}|${root??''}`;
+    if(!publicReads.has(key))publicReads.set(key,verifyPublishedResource(candidate,root,{fetchImpl}));
+    const result=await publicReads.get(key);
+    if(!result)publicReads.delete(key);
     return result;
   }
   async function openWorkspace(resource,moduleCode,trigger) {
-    const candidate=publicWorkspaceCandidate(resource,moduleCode);
-    if(!candidate){showInfo(resource,trigger,'Este material tiene una ubicación local. Puedes consultarlo en el PC; todavía no hay un enlace web registrado.');return;}
+    const candidate=publicWorkspaceCandidate(resource,moduleCode,getModuleResources(moduleCode));
+    if(!candidate){showInfo(resource,trigger,'Todavía no hay un destino web comprobado para este material. Revisa los enlaces del módulo; se conserva su referencia original.');return;}
     // Reserve the tab during the tap so mobile browsers do not block the opening.
     const tab=window.open('about:blank','_blank');if(tab){tab.opener=null;tab.document.title='Abriendo recurso';tab.document.body.textContent='Comprobando el material…';}
     const current=generation;trigger?.setAttribute('aria-busy','true');
-    const url=await resolvePublic(candidate);trigger?.removeAttribute('aria-busy');
+    const url=await resolvePublic(candidate,moduleCode);trigger?.removeAttribute('aria-busy');
     if(current!==generation){tab?.close();return;}
     if(url&&tab&&!tab.closed){tab.location.replace(url);return;}
     tab?.close();
@@ -96,9 +135,11 @@ export function createRowResourcesUI({isBusy,canOpen,openPrivate,fetchImpl=globa
     if(!url)showInfo(resource,trigger,'No se ha podido comprobar una versión pública de este material. Se conserva su ubicación local.');
   }
   function control(resource,moduleCode,label,origin) {
+    resource=effectiveResourceDestination(resource,getModuleResources(moduleCode));
     const location=resource.location;
+    const candidate=publicWorkspaceCandidate(resource,moduleCode,getModuleResources(moduleCode));
     let item;
-    if(location?.kind==='https'&&safeResourceUrl(location.url,location.public===true)) {
+    if(!candidate&&!publicMarkdownSource(resource)&&location?.kind==='https'&&safeResourceUrl(location.url,location.public===true)) {
       item=node('a','resource-choice',label);item.href=location.url;item.target='_blank';item.rel='noopener noreferrer';item.referrerPolicy='no-referrer';
       item.addEventListener('click',event=>{if(!allowed()){event.preventDefault();return;}closePicker();});
     } else {
@@ -107,7 +148,7 @@ export function createRowResourcesUI({isBusy,canOpen,openPrivate,fetchImpl=globa
         if(!allowed())return;
         const trigger=origin||item;closePicker();
         if(location?.kind==='github')openPrivate(resource);
-        else if(location?.kind==='workspace')openWorkspace(resource,moduleCode,trigger);
+        else if(candidate||publicMarkdownSource(resource)||location?.kind==='workspace')openWorkspace(resource,moduleCode,trigger);
         else showInfo(resource,trigger,'Este recurso todavía no tiene un destino enlazado.');
       });
     }
@@ -125,7 +166,8 @@ export function createRowResourcesUI({isBusy,canOpen,openPrivate,fetchImpl=globa
     picker.showModal();body.querySelector('a,button')?.focus();
   }
   function render(cell,resources,moduleCode,unresolved=[]) {
-    const selected=groupRowResources(resources),overflow=selected.length>3;
+    const deduplicated=effectiveResourceDestinations(resources,getModuleResources(moduleCode));
+    const selected=groupRowResources(deduplicated),overflow=selected.length>3;
     cell.setAttribute('role','group');cell.setAttribute('aria-label','Recursos');
     for(const group of selected.slice(0,overflow?2:3)) {
       const single=group.resources.length===1,resource=group.resources[0];
@@ -142,8 +184,9 @@ export function createRowResourcesUI({isBusy,canOpen,openPrivate,fetchImpl=globa
   // The task band shares the same private reader and safe external links as rows.
   // Missing destinations are explicit; opening a resource never writes a document.
   function access({resources,moduleCode,label,title,unresolved=[],onManage,emptyMessage='Todavía no hay un recurso enlazado.'}) {
+    resources=effectiveResourceDestinations(resources,getModuleResources(moduleCode));
     const location=resources[0]?.location;
-    const direct=resources.length===1&&!unresolved.length&&(location?.kind==='https'&&safeResourceUrl(location.url,location.public===true)||validGithubLocation(location));
+    const direct=resources.length===1&&!unresolved.length&&(location?.kind==='https'&&safeResourceUrl(location.url,location.public===true)||validGithubLocation(location)||publicWorkspaceCandidate(resources[0],moduleCode,getModuleResources(moduleCode)));
     const item=direct?control(resources[0],moduleCode,label):node('button','',label);
     item.title=title;item.setAttribute('aria-label',title);
     if(direct&&location.kind==='github'){item.setAttribute('aria-haspopup','dialog');item.setAttribute('aria-controls','resource-private-dialog');}
@@ -157,8 +200,7 @@ export function createRowResourcesUI({isBusy,canOpen,openPrivate,fetchImpl=globa
         for(const resource of resources) {
           const li=node('li');
           // Local paths remain visible until the teacher supplies a published URL.
-          if(resource.location?.kind==='workspace')li.append(node('p','',`${resource.title} · Archivo local: ${resource.location.path}`));
-          else li.append(control(resource,moduleCode,`${resourceTypes[resource.type]??'Recurso'} · ${resource.title}`,item));
+          li.append(control(resource,moduleCode,`${resourceTypes[resource.type]??'Recurso'} · ${resource.title}`,item));
           list.append(li);
         }
         body.append(list);
@@ -172,5 +214,5 @@ export function createRowResourcesUI({isBusy,canOpen,openPrivate,fetchImpl=globa
     }
     return item;
   }
-  return {render,access,clear(){generation++;closePicker();publicReads.clear();}};
+  return {render,access,link:control,clear(){generation++;closePicker();publicReads.clear();}};
 }

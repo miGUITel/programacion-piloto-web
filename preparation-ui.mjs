@@ -1,10 +1,10 @@
-import { preparationMaterials, materialLabels, preparationValues, preparationSummary, preparationSnapshot, assertPreparationRead, preparePreparationSave, PreparationError } from './preparation.mjs?v=20261102-replanning-signals';
-import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261102-replanning-signals';
-import { taskPreparationGroups, taskAdditionIssue, createPreparationTask, taskRemovalIssue, taskType } from './preparation-tasks.mjs?v=20261102-replanning-signals';
-import { saveTaskDocument } from './task-edit.mjs?v=20261102-replanning-signals';
-import { saveErrorFeedback } from './core.mjs?v=20261102-replanning-signals';
-import { removalImpact, removalWarning, taskLinks } from './preparation-links.mjs?v=20261102-replanning-signals';
-import { savePreparationWithLinks } from './preparation-save.mjs?v=20261102-replanning-signals';
+import { preparationMaterials, materialLabels, preparationValues, preparationSummary, preparationSnapshot, assertPreparationRead, preparePreparationSave, PreparationError } from './preparation.mjs?v=20261102-task-notes-resources';
+import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261102-task-notes-resources';
+import { taskPreparationGroups, taskAdditionIssue, createPreparationTask, taskRemovalIssue, taskType } from './preparation-tasks.mjs?v=20261102-task-notes-resources';
+import { saveTaskDocument } from './task-edit.mjs?v=20261102-task-notes-resources';
+import { saveErrorFeedback } from './core.mjs?v=20261102-task-notes-resources';
+import { removalImpact, removalWarning, taskLinks } from './preparation-links.mjs?v=20261102-task-notes-resources';
+import { savePreparationWithLinks } from './preparation-save.mjs?v=20261102-task-notes-resources';
 const $ = id => document.getElementById(id);
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const el = (tag, css = '', text) => { const item = document.createElement(tag); item.className = css; if (text !== undefined) item.textContent = text; return item; };
@@ -18,7 +18,7 @@ export function preparationBadge(document, onClick, records = []) {
   badge.addEventListener('click', onClick); return badge;
 }
 
-export function createPreparationUI({ getState, getActive, unitStore, isBusy, setBusy, canOpen, onSaved, onBlocked, onStateChange, onMessage, onRetry, onOpenUnit, additionIssue = () => '', removalIssue = () => '' }) {
+export function createPreparationUI({ getState, getActive, unitStore, isBusy, setBusy, canOpen, onSaved, onBlocked, onStateChange, onMessage, onRetry, onOpenUnit, additionIssue = () => '', removalIssue = () => '', makeTaskNotesActions = () => null }) {
   let loaded = null, entry = null, sourceStore = null, blocked = false, values = null, position = null;
   const confirmations = new Map();
   const records = () => getState().records ?? [];
@@ -90,6 +90,10 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
         const session = snapshot.sessions.find(session => session.id === task.presentation?.sessionId);
         text.append(el('span', 'scope-note', `${session ? `Presentación prevista: S${session.number} · ${session.date}` : 'Sin sesión de presentación asignada'}${values.additions.some(item => item.id === task.id) ? ' · Nuevo, sin guardar' : ''}`));
         label.append(input, text); row.append(label);
+        if (!values.additions.some(item => item.id === task.id)) {
+          const notes = makeTaskNotesActions({ entry, officialTaskId: task.id, code: task.code, title: task.title, type: task.type, teachingNotes: task.teachingNotes });
+          if (notes) row.append(notes);
+        }
         if (type === 'exam') {
           const partLabel = el('label', 'preparation-exam-part', 'Parte del examen'), select = el('select');
           select.setAttribute('aria-label', `Parte del examen ${task.code} · ${task.title}`);
@@ -269,5 +273,16 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
   for (const id of ['preparation-module', 'preparation-status']) $(id).addEventListener('change', render);
   $('preparation-refresh').addEventListener('click', onRetry);
   return { open, render, availability, hasPending: pending, isOpen: () => $('preparation-dialog').open,
+    taskNotesIssue(read, task) {
+      if (!loaded || !entry || entry.path !== task.entry.path || !$('preparation-dialog').open) return '';
+      if (blocked || loaded.sha !== read.sha || !equal(loaded.document, read.document)) return 'La preparación y las notas de la tarea tienen versiones distintas. Conserva ambos borradores y revisa la preparación antes de guardar.';
+      return '';
+    },
+    acceptTaskNotes(task, result, baseDocument) {
+      if (!loaded || !entry || entry.path !== task.entry.path || !$('preparation-dialog').open) return;
+      if (!equal(loaded.document, baseDocument)) throw Error('El borrador de preparación necesita conciliar sus notas. Se conserva íntegro.');
+      loaded = { ...result, document: structuredClone(result.document) };
+      renderTaskLists(); preview();
+    },
     clear() { clear(); position = null; $('unit-preparation').replaceChildren(); $('preparation-list').replaceChildren(); $('preparation-module').replaceChildren(); $('preparation-status').value = ''; $('preparation-count').textContent = ''; $('preparation-scope').textContent = ''; } };
 }

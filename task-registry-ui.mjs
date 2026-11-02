@@ -1,9 +1,9 @@
-import { TaskRegistryStore } from './general-notes.mjs?v=20261102-replanning-signals';
-import { taskDateFields, taskDetails } from './module-views.mjs?v=20261102-replanning-signals';
-import { TaskEditError, taskEditTarget, taskEditSnapshot, assertTaskRead, prepareTaskSave, saveTaskDocument } from './task-edit.mjs?v=20261102-replanning-signals';
-import { presentationDefaults } from './task-cycle.mjs?v=20261102-replanning-signals';
-import { taskHeading } from './task-plan.mjs?v=20261102-replanning-signals';
-import { saveErrorFeedback, isValidDate } from './core.mjs?v=20261102-replanning-signals';
+import { TaskRegistryStore } from './general-notes.mjs?v=20261102-task-notes-resources';
+import { taskDateFields, taskDetails } from './module-views.mjs?v=20261102-task-notes-resources';
+import { TaskEditError, taskEditTarget, taskEditSnapshot, assertTaskRead, prepareTaskSave, saveTaskDocument } from './task-edit.mjs?v=20261102-task-notes-resources';
+import { presentationDefaults } from './task-cycle.mjs?v=20261102-task-notes-resources';
+import { taskHeading } from './task-plan.mjs?v=20261102-task-notes-resources';
+import { saveErrorFeedback, isValidDate } from './core.mjs?v=20261102-task-notes-resources';
 
 const $ = id => document.getElementById(id);
 
@@ -121,6 +121,7 @@ export function createTaskRegistryUI({ isBusy, setBusy, canOpen, onChange, onSta
   return { connect(value) { token = value; }, disconnect() { clear(); token = null; stores.clear(); records.clear(); failures = []; },
     isOpen: () => $('registry-dialog').open, hasPending: pending, open,
     records: () => [...records.values()], failures: () => failures,
+    acceptExternal(task, result) { remember(task, result); },
     async load(catalog) {
       records.clear(); failures = [];
       await Promise.all(catalog.modules.filter(module => module.taskRegistry).map(async module => {

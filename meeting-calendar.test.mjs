@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { meetingCalendar, dayChoices, hasMeetingContent } from './meeting-calendar.mjs?v=20261102-replanning-signals';
-import { resolveRemembered } from './startup-context.mjs?v=20261102-replanning-signals';
+import { meetingCalendar, dayChoices, hasMeetingContent } from './meeting-calendar.mjs?v=20261102-task-notes-resources';
+import { resolveRemembered } from './startup-context.mjs?v=20261102-task-notes-resources';
 
 const common = { course: { startsOn: '2026-10-01', endsOn: '2026-11-02' }, timetable: { effectiveFrom: '2026-10-05', weekly: [{ id: 'dept', weekday: 1, start: '12:00', end: '13:00', type: 'meeting', title: 'Departamento' }, { id: 'erasmus', weekday: 2, start: '10:00', end: '11:00', type: 'meeting', title: 'Erasmus' }], exceptions: [] }, calendar: { nonTeaching: [{ from: '2026-10-12', through: '2026-10-13' }] } };
 const document = { schemaVersion: 2, kind: 'meeting-notes', spaces: [{ id: 'meetings', title: 'Reuniones' }], groups: [{ id: 'd', space: 'meetings', title: 'Departamento', scheduleRefs: ['dept'] }, { id: 'e', space: 'meetings', title: 'Erasmus', scheduleRefs: ['erasmus'] }, { id: 'proyecto', space: 'meetings', title: 'Proyecto', scheduleRefs: [] }], meetings: [] };

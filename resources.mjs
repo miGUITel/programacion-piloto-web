@@ -5,6 +5,39 @@ const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const own = (value, key) => Object.hasOwn(value, key);
 export const resourceTypes = Object.freeze({ assignment: 'Enunciado', guide: 'Ficha docente', presentation: 'PPT', web: 'Web', tool: 'Herramienta o entorno', notes: 'Apuntes', example: 'Ejemplo', exam: 'Examen', solution: 'Solución', moodle: 'Aula Virtual', other: 'Otro recurso' });
 export const moduleResourcePath = code => ['LM','SR','ED','PRO','SOS'].includes(code) ? `${code}/resources.json` : null;
+// These are explicit module destinations, never associations inferred from titles.
+export function modulePresentationFolder(resources = []) {
+  const matches = resources.filter(resource => resource?.type === 'presentation' && resource.role === 'presentation-folder'
+    && resource.audience !== 'teacher' && resource.location?.kind === 'https' && resource.location.public === true
+    && safeResourceUrl(resource.location.url, true));
+  return matches.length === 1 ? matches[0] : null;
+}
+export function modulePublishedWebRoot(resources = []) {
+  const matches = resources.filter(resource => resource?.type === 'web' && resource.role === 'published-web-root'
+    && resource.location?.kind === 'https' && safeResourceUrl(resource.location.url, resource.location.public === true));
+  if (matches.length !== 1) return null;
+  try { const url = new URL(matches[0].location.url); return url.hostname === 'miguitel.github.io' && !url.search && !url.hash && url.pathname.endsWith('/') ? url.href : null; }
+  catch { return null; }
+}
+export function modulePublishedRepository(resources = []) {
+  const matches = resources.filter(resource => resource?.role === 'published-web-root' && resource.type === 'web');
+  const repository = matches.length === 1 ? matches[0].repository : null;
+  return typeof repository === 'string' && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)
+    && !repository.split('/').some(part => part === '.' || part === '..') ? repository : null;
+}
+export function effectiveResourceDestination(resource, moduleResources = []) {
+  if (resource?.type !== 'presentation' || resource.location?.kind === 'github') return resource;
+  const folder = modulePresentationFolder(moduleResources);
+  return folder ? { ...resource, title: folder.title, location: { ...folder.location }, moduleFolderId: folder.id } : resource;
+}
+export function effectiveResourceDestinations(resources = [], moduleResources = []) {
+  const seen = new Set();
+  return resources.map(resource => effectiveResourceDestination(resource, moduleResources)).filter(resource => {
+    if (!resource.moduleFolderId) return true;
+    if (seen.has(resource.moduleFolderId)) return false;
+    seen.add(resource.moduleFolderId); return true;
+  });
+}
 export function safeResourceUrl(value, publicSharing = false) {
   try {
     const url = new URL(value), sensitive = /^(?:access_token|refresh_token|token|auth|authorization|password|secret|session(?:id|key)?|sesskey|sid|api[-_]?key|code|signature|sig)$/i;
@@ -43,6 +76,9 @@ export function validateResources(resources, errors = [], prefix = 'resources') 
     if (!object(resource)) { errors.push(`${path}: recurso no válido.`); return; }
     if (!text(resource.id) || ids.has(resource.id)) errors.push(`${path}.id: identificador no válido o duplicado.`); ids.add(resource.id);
     if (!text(resource.title) || !own(resourceTypes, resource.type)) errors.push(`${path}: título y tipo requeridos.`);
+    if (own(resource, 'role') && (!['presentation-folder','published-web-root'].includes(resource.role)
+      || resource.role === 'presentation-folder' && resource.type !== 'presentation'
+      || resource.role === 'published-web-root' && resource.type !== 'web')) errors.push(`${path}.role: destino común de PPT o Web no válido.`);
     if (own(resource, 'examPart') && (resource.type !== 'exam' || !['test','practical'].includes(resource.examPart))) errors.push(`${path}.examPart: Test o Práctico solo corresponde a un recurso de examen.`);
     if (own(resource, 'audience') && !['students','teacher','both'].includes(resource.audience)) errors.push(`${path}.audience: destinatario no válido.`);
     for (const field of ['description','version']) if (own(resource, field) && typeof resource[field] !== 'string') errors.push(`${path}.${field}: texto requerido.`);
@@ -61,6 +97,11 @@ export function validateModuleResources(document, code) {
   if (!object(document) || document.kind !== 'module-resources' || document.schemaVersion !== 1 || document.moduleCode !== code || !moduleResourcePath(code)) return ['Registro de recursos del módulo no válido.'];
   validateResources(document.resources, errors);
   if (!Array.isArray(document.resources) || document.resources.some(r => !['presentation','web'].includes(r?.type))) errors.push('Los enlaces comunes del módulo admiten PPT y Web.');
+  for (const role of ['presentation-folder','published-web-root']) {
+    const matches = (Array.isArray(document.resources) ? document.resources : []).filter(resource => resource?.role === role);
+    if (matches.length > 1) errors.push('Cada destino común de PPT o Web debe tener una única referencia.');
+    if (matches.length === 1 && (role === 'presentation-folder' ? !modulePresentationFolder(matches) : !modulePublishedWebRoot(matches) || !modulePublishedRepository(matches))) errors.push('El destino común requiere un enlace público válido y confirmado y, para Web, su repositorio explícito.');
+  }
   return errors;
 }
 export class ResourceEditError extends Error { constructor(code, message) { super(message); this.code = code; } }

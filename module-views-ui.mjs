@@ -1,12 +1,12 @@
-import { sessionDisplayLabel, sessionPlanningLabel } from './replanning.mjs?v=20261102-replanning-signals';
-import { unitLabel } from './unit-tools.mjs?v=20261102-replanning-signals';
-import { moduleOverview, weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261102-replanning-signals';
-import { dayLetters, dayNames, commonCoursePath } from './common-course.mjs?v=20261102-replanning-signals';
-import { renderCommonCourse } from './common-course-ui.mjs?v=20261102-replanning-signals';
-import { eventTypes } from './teaching.mjs?v=20261102-replanning-signals';
-import { taskStates } from './task-cycle.mjs?v=20261102-replanning-signals';
-import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261102-replanning-signals';
-import { preparationBadge } from './preparation-ui.mjs?v=20261102-replanning-signals';
+import { sessionDisplayLabel, sessionPlanningLabel } from './replanning.mjs?v=20261102-task-notes-resources';
+import { unitLabel } from './unit-tools.mjs?v=20261102-task-notes-resources';
+import { moduleOverview, weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261102-task-notes-resources';
+import { dayLetters, dayNames, commonCoursePath } from './common-course.mjs?v=20261102-task-notes-resources';
+import { renderCommonCourse } from './common-course-ui.mjs?v=20261102-task-notes-resources';
+import { eventTypes } from './teaching.mjs?v=20261102-task-notes-resources';
+import { taskStates } from './task-cycle.mjs?v=20261102-task-notes-resources';
+import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261102-task-notes-resources';
+import { preparationBadge } from './preparation-ui.mjs?v=20261102-task-notes-resources';
 
 const $ = id => document.getElementById(id);
 function el(tag, className, text) {
@@ -25,7 +25,7 @@ function monthName(month) {
   return new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(month + '-15T12:00:00Z'));
 }
 
-export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPresented, onRetry, onPreparation, planStatus, onShift }) {
+export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPresented, onRetry, onPreparation, planStatus, onShift, makeTaskNotesActions = () => null }) {
   let filterModule = '';
   let section = 'sessions', common = null, commonError = '', commonLoading = false, commonAttempted = false;
   let commonConnection = null, commonKey = '', generation = 0;
@@ -244,7 +244,9 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
       }
       const edit = el('button', 'button button-small task-edit', '✎'); edit.type = 'button'; edit.title = 'Editar tarea'; edit.setAttribute('aria-label', `Editar tarea de ${task.entry.moduleCode} · ${task.entry.unitCode}${task.number === null ? '' : ', sesión ' + task.number}: ${task.title}`);
       edit.dataset.taskAction = 'edit';
-      edit.addEventListener('click', () => onEdit(task)); row.append(edit); list.append(row);
+      edit.addEventListener('click', () => onEdit(task));
+      const actions = el('div', 'task-row-actions'), notes = makeTaskNotesActions(task);
+      if (notes) actions.append(notes); actions.append(edit); row.append(actions); list.append(row);
     }
     if (!visible.length) list.append(el('p', 'empty-sessions', tasks.length ? 'No hay tareas con estos filtros.' : 'No hay tareas disponibles en los documentos leídos. Las nuevas aparecerán al cerrar su UT en el proyecto.'));
     if (busy) for (const root of [$('module-view'), $('tasks-view')]) root.querySelectorAll('button,select,input').forEach(element => { element.disabled = true; });

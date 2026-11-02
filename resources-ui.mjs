@@ -1,12 +1,12 @@
-import { resourceTypes, resourceValues, assertResourceRead, prepareResourceSave, ResourceEditError, parsePrivateLocation, locationInput, safeResourceUrl, validateResources, validateModuleResources } from './resources.mjs?v=20261102-replanning-signals';
-import { saveTaskDocument } from './task-edit.mjs?v=20261102-replanning-signals';
-import { saveErrorFeedback } from './core.mjs?v=20261102-replanning-signals';
-import { renderPrivateMarkdown } from './private-markdown.mjs?v=20261102-replanning-signals';
+import { resourceTypes, resourceValues, assertResourceRead, prepareResourceSave, ResourceEditError, parsePrivateLocation, locationInput, safeResourceUrl, validateResources, validateModuleResources, effectiveResourceDestination } from './resources.mjs?v=20261102-task-notes-resources';
+import { saveTaskDocument } from './task-edit.mjs?v=20261102-task-notes-resources';
+import { saveErrorFeedback } from './core.mjs?v=20261102-task-notes-resources';
+import { renderPrivateMarkdown } from './private-markdown.mjs?v=20261102-task-notes-resources';
 const $ = id => document.getElementById(id);
 const equal = (a,b) => JSON.stringify(a) === JSON.stringify(b);
 const el = (tag, css = '', value) => { const item = document.createElement(tag); item.className = css; if (value !== undefined) item.textContent = value; return item; };
 const button = (text, action, css = 'button button-small') => { const item = el('button', css, text); item.type = 'button'; item.addEventListener('click', action); return item; };
-export function createResourcesUI({ getState, getActive, getConnection, unitStore, isBusy, setBusy, canOpen, onStateChange, onSaved, onBlocked, onMessage }) {
+export function createResourcesUI({ getState, getActive, getConnection, unitStore, isBusy, setBusy, canOpen, onStateChange, onSaved, onBlocked, onMessage, makeResourceLink, onModuleResourcesChange = () => {} }) {
   const modules = new Map(), stores = new Map();
   let loaded = null, source = null, target = null, scope = 'unit', values = null, blocked = false, editing = null, initialForm = null, position = null;
   let privateGeneration = 0;
@@ -31,9 +31,13 @@ export function createResourcesUI({ getState, getActive, getConnection, unitStor
     const record = { loading: true }; modules.set(code, record); render();
     try { const result = await moduleStore(code).load(); if (modules.get(code) === record) modules.set(code, result); }
     catch { if (modules.get(code) === record) modules.set(code, { error: true }); }
-    render();
+    render(); onModuleResourcesChange(code);
   }
+  const moduleResources = code => modules.get(code)?.document?.resources ?? [];
   function appendLink(parent, resource, label = resource.title) {
+    const code = getState().entry?.moduleCode;
+    resource = effectiveResourceDestination(resource, moduleResources(code));
+    if (makeResourceLink) { parent.append(makeResourceLink(resource, code, label)); return; }
     const location = resource.location;
     if (location?.kind === 'https' && safeResourceUrl(location.url, location.public === true)) {
       const link = el('a','resource-link',label); link.href = location.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.referrerPolicy = 'no-referrer'; parent.append(link);
@@ -73,7 +77,7 @@ export function createResourcesUI({ getState, getActive, getConnection, unitStor
     const module = modules.get(state.entry.moduleCode), common = module?.document?.resources ?? [];
     for (const [name,types] of [['Presentaciones y web',['presentation','web']],['Herramientas y entornos',['tool']],['Otros recursos',['assignment','guide','notes','example','exam','solution','moodle','other']]]) {
       const ownResources = resources.filter(r => types.includes(r.type) && !assigned.has(r.id));
-      const shared = common.filter(r => types.includes(r.type) && !resources.some(own => own.type === r.type && equal(own.location,r.location)));
+      const shared = common.filter(r => types.includes(r.type) && !resources.some(own => own.type === r.type && equal(effectiveResourceDestination(own,common).location,effectiveResourceDestination(r,common).location)));
       if (!ownResources.length && !shared.length) continue;
       const section = el('section','resource-group'); section.append(el('h3','',name)); const list = el('ul','resource-list');
       ownResources.forEach(r => list.append(resourceRow(r))); shared.forEach(r => list.append(resourceRow(r,true))); section.append(list); root.append(section);
@@ -192,7 +196,7 @@ export function createResourcesUI({ getState, getActive, getConnection, unitStor
       const prepared = scope === 'unit' ? prepareResourceSave(loaded,target,values,getActive()) : { document:{ ...loaded.document,resources:structuredClone(values.resources) } };
       if (scope === 'module' && validateModuleResources(prepared.document,target.moduleCode).length) throw new Error('Invalid resources');
       const result = await saveTaskDocument(source,prepared,{entry:target},loaded.sha);
-      if (scope === 'unit') onSaved(target,result,prepared); else { modules.set(target.moduleCode,result); render(); }
+      if (scope === 'unit') onSaved(target,result,prepared); else { modules.set(target.moduleCode,result); render(); onModuleResourcesChange(target.moduleCode); }
       loaded = result; values = resourceValues(result.document); removed.clear(); confirmed = true;
       onMessage(scope === 'unit' ? 'Recursos guardados y confirmados. Las notas pendientes de Unidad conservan su propio guardado.' : 'Enlaces del módulo guardados y confirmados. Se muestran en sus UT.');
     } catch (error) {
@@ -217,5 +221,5 @@ export function createResourcesUI({ getState, getActive, getConnection, unitStor
   $('resources-save-form').addEventListener('submit',save); for (const id of ['resources-close','resources-cancel']) $(id).addEventListener('click',close);
   $('resources-dialog').addEventListener('cancel',event => { event.preventDefault(); close(); }); $('resource-private-close').addEventListener('click',closePrivate); $('resource-private-dialog').addEventListener('cancel',event => {event.preventDefault();closePrivate();});
   $('resources-download').addEventListener('click',() => { if (!loaded || isBusy()) return; const data = { scope,path:scope === 'unit' ? target.path : `${target.moduleCode}/resources.json`,baseSha:loaded.sha,values,unfinished:unfinished() ? formValues() : null }; const url = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)+'\n'],{type:'application/json;charset=utf-8'})); const link = el('a'); link.href = url; link.download = `${target.moduleCode}-${scope === 'unit' ? target.unitCode : 'modulo'}-borrador-recursos.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url),1000); });
-  return { render,loadModule,availability,clear,isOpen,hasPending:pending,open,openPrivate,appendLink };
+  return { render,loadModule,moduleResources,availability,clear,isOpen,hasPending:pending,open,openPrivate,appendLink };
 }

@@ -1,9 +1,10 @@
-import { validateResources, validateModuleResources, moduleResourcePath, validGithubLocation } from './resources.mjs?v=20261102-replanning-signals';
-import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261102-replanning-signals';
-import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261102-replanning-signals';
-import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261102-replanning-signals';
+import { validateResources, validateModuleResources, moduleResourcePath, validGithubLocation } from './resources.mjs?v=20261102-task-notes-resources';
+import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261102-task-notes-resources';
+import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261102-task-notes-resources';
+import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261102-task-notes-resources';
 
-import { validatePlanningChanges } from './replanning.mjs?v=20261102-replanning-signals';
+import { validatePlanningChanges } from './replanning.mjs?v=20261102-task-notes-resources';
+import { validateTeachingNotes } from './task-teaching-notes.mjs?v=20261102-task-notes-resources';
 
 const OWNER = 'miGUITel';
 const REPOSITORY = 'programacion-piloto-datos';
@@ -86,6 +87,7 @@ export function isValidDate(value) {
 }
 
 function validateTaskMetadata(target, path, errors) {
+  validateTeachingNotes(target.teachingNotes, errors, `${path}.teachingNotes`);
   if (!Object.hasOwn(target, 'task')) return;
   const task = target.task;
   if (!task || typeof task !== 'object' || Array.isArray(task)) { errors.push(`${path}.task: debe ser un objeto.`); return; }

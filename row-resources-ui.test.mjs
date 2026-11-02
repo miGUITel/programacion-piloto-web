@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {resourceGroup,groupRowResources,publicWorkspaceCandidate} from './row-resources-ui.mjs?v=20261102-replanning-signals';
+import {resourceGroup,groupRowResources,publicWorkspaceCandidate} from './row-resources-ui.mjs?v=20261102-task-notes-resources';
 
 test('group related materials without losing their identities or changing their data',()=>{
   const resources=[{id:'b',type:'assignment'},{id:'ppt',type:'presentation'},{id:'a',type:'assignment'},{id:'local',type:'tool'},{id:'private',type:'guide'}],before=structuredClone(resources);
@@ -16,9 +16,10 @@ test('own module pages differ from external sites; deceptive host names remain e
 });
 test('only safe public workspace paths may be checked; private and traversing paths never are',()=>{
   const local=path=>({location:{kind:'workspace',path}});
-  const target=publicWorkspaceCandidate(local('repositorio/TAREAS/Guía 1.md'),'SR');
+  const shared=[{type:'web',role:'published-web-root',repository:'miGUITel/SR',location:{kind:'https',url:'https://miguitel.github.io/SR/'}}];
+  const target=publicWorkspaceCandidate(local('repositorio/TAREAS/Guía 1.md'),'SR',shared);
   assert.equal(target.url,'https://github.com/miGUITel/SR/blob/main/TAREAS/Gu%C3%ADa%201.md');
   assert.equal(target.path,'TAREAS/Guía 1.md');
-  for(const path of ['SOLUCIONES/privado.md','repositorio/../secreto.md','repositorio/TAREAS/../../secreto.md','repositorio//a.md','repositorio/C:\\secreto.md','repositorio/a.md?token=x'])assert.equal(publicWorkspaceCandidate(local(path),'SR'),null);
+  for(const path of ['SOLUCIONES/privado.md','repositorio/../secreto.md','repositorio/TAREAS/../../secreto.md','repositorio//a.md','repositorio/C:\\secreto.md','repositorio/a.md?token=x'])assert.equal(publicWorkspaceCandidate(local(path),'SR',shared),null);
   assert.equal(publicWorkspaceCandidate(local('repositorio/a.md'),'OTHER'),null);
 });
