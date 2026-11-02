@@ -1,5 +1,5 @@
-import { visiblePlanTasks } from './task-plan.mjs?v=20261101-exam-fiches';
-import { safeResourceUrl, validGithubLocation } from './resources.mjs?v=20261101-exam-fiches';
+import { visiblePlanTasks } from './task-plan.mjs?v=20261102-replanning-signals';
+import { safeResourceUrl, validGithubLocation } from './resources.mjs?v=20261102-replanning-signals';
 
 const preferredTypes = ['assignment', 'guide'];
 const fallbackTypes = new Set(['presentation', 'web', 'tool', 'notes', 'example', 'moodle', 'other']);

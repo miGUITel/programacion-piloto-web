@@ -1,6 +1,6 @@
-import { approvedChanges, planningSnapshot, excludedSession, planningStatus, sessionDisplayLabel, sessionPlanningLabel, resolutionLabels, planningLimit, planningMargin, teachingDates, formatPlanningComparison, operationComplete, PlanningError } from './replanning.mjs?v=20261101-exam-fiches';
+import { approvedChanges, planningSnapshot, excludedSession, planningStatus, sessionDisplayLabel, sessionPlanningLabel, resolutionLabels, planningLimit, planningMargin, teachingDates, formatPlanningComparison, operationComplete, PlanningError } from './replanning.mjs?v=20261102-replanning-signals';
 const $ = id => document.getElementById(id);
-import { movesInChange } from './planning-shifts.mjs?v=20261101-exam-fiches';
+import { movesInChange } from './planning-shifts.mjs?v=20261102-replanning-signals';
 const node = (tag, className = '', value) => { const el = document.createElement(tag); el.className = className; if (value !== undefined) el.textContent = value; return el; };
 const shortDate = d => d.split('-').reverse().join('/');
 
@@ -14,21 +14,32 @@ export function createReplanningUI({ getState, isBusy }) {
 
   function statusNodes(doc) {
     const root = node('span', 'replanning-signals'), state = getState(), status = planningStatus(doc, state.records);
-    const add = (label, kind = '') => { const b = node('button', `plan-signal ${kind}`, label); b.type = 'button'; b.setAttribute('aria-haspopup', 'dialog'); b.addEventListener('click', () => open(doc)); root.append(b); };
-    if (status.pending.length) add(`Pendiente de reprogramar · ${status.pending.length}`, 'plan-pending');
-    if (status.unchecked.length) add('Resolución pendiente de comprobar', 'plan-pending');
-    if (status.legacy.length) add('Reprogramación sin traza', 'plan-legacy');
-    if (status.modified) add('Plan modificado', 'plan-modified');
+    const count = new Set((doc.sessions ?? []).filter(excludedSession).map(s => s.id)).size;
+    if (!count && !status.modified && !status.unchecked.length) return root;
+    const detail = [`Reprogramaciones e historial${count ? `: ${count} ${count === 1 ? 'sesión' : 'sesiones'}` : ''}`];
+    if (status.pending.length) detail.push(`${status.pending.length} ${status.pending.length === 1 ? 'pendiente' : 'pendientes'} de planificar`);
+    if (status.unchecked.length) detail.push('lectura de la resolución por comprobar');
+    if (status.legacy.length) detail.push('antecedentes históricos por revisar');
+    if (status.modified) detail.push('plan modificado');
+    const button = node('button', `plan-signal plan-summary${status.pending.length ? ' plan-pending' : ''}`, `↪${count ? ` ${count}` : ''}`);
+    button.type = 'button'; button.title = detail.join(' · ');
+    button.setAttribute('aria-label', button.title); button.setAttribute('aria-haspopup', 'dialog');
+    button.setAttribute('aria-controls', 'replanning-dialog');
+    button.addEventListener('click', () => open(doc)); root.append(button);
     return root;
   }
   function render() {
     const doc = getState().document, root = $('unit-replanning'); root.replaceChildren();
-    if (doc) root.append(statusNodes(doc));
+    const signals = doc ? statusNodes(doc) : null;
+    root.hidden = !signals?.children.length;
+    if (signals) root.append(signals);
   }
   function sessionSignal(doc, session) {
     if (!['Cancelada', 'Reprogramada'].includes(session.state)) return null;
-    const b = node('button', 'plan-session-signal', sessionPlanningLabel(doc, session, getState().records));
-    b.type = 'button'; b.setAttribute('aria-haspopup', 'dialog'); b.addEventListener('click', () => open(doc)); return b;
+    const label = `S${session.number} · ${shortDate(session.date)} · ${sessionPlanningLabel(doc, session, getState().records)}`;
+    const b = node('button', 'plan-session-signal', '↪');
+    b.type = 'button'; b.title = label; b.setAttribute('aria-label', label); b.setAttribute('aria-haspopup', 'dialog');
+    b.setAttribute('aria-controls', 'replanning-dialog'); b.addEventListener('click', () => open(doc)); return b;
   }
   async function open(doc, focus = null) {
     if (isBusy() || dialog.open || document.querySelector('dialog[open]')) return;
@@ -37,11 +48,15 @@ export function createReplanningUI({ getState, isBusy }) {
     $('replanning-title').textContent = `${doc.module.code} · ${doc.unit.code} · Reprogramaciones`;
     const root = $('replanning-content'); root.replaceChildren();
     root.append(node('p', 'scope-note', 'Solo consulta. La reprogramación se acuerda en la conversación del módulo. Las notas pendientes permanecen en Unidad.'));
+    const status = planningStatus(doc, records);
+    if (status.pending.length) root.append(node('p', 'plan-open-note', `${status.pending.length} ${status.pending.length === 1 ? 'sesión pendiente' : 'sesiones pendientes'} de decidir cómo recuperar. Al aprobar la nueva distribución se guardará junto con su registro.`));
+    if (status.legacy.length) root.append(node('p', 'scope-note', 'Los antecedentes históricos sin una resolución estructurada requieren revisión. No indican por sí solos que falte reprogramar ni que haya que cambiar las clases actuales.'));
+    if (status.unchecked.length) root.append(node('p', 'scope-note', 'Hay resoluciones cuya lectura no está completa. Se conserva su registro; todavía no puede confirmarse el alcance.'));
     for (const s of doc.sessions.filter(s => ['Cancelada', 'Reprogramada'].includes(s.state))) {
       root.append(node('p', '', `S${s.number} · ${shortDate(s.date)} · ${sessionPlanningLabel(doc, s, records)}`));
     }
     const changes = approvedChanges(doc); let focusedDetail = null;
-    if (!changes.length) root.append(node('p', '', 'No hay una traza aprobada de RF 32. Se conservan los estados anteriores; no se deducen recuperaciones por fechas o títulos.'));
+    if (!changes.length) root.append(node('p', 'scope-note', 'Se conservan los estados y anotaciones históricos. No se deducen recuperaciones por fechas o títulos ni se crean registros al abrir esta consulta.'));
     for (const change of changes) {
       const section = node('section', 'plan-change');
       section.append(node('h3', '', `${shortDate(change.approvedOn)} · ${change.reason}`));

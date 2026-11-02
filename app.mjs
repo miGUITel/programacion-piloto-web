@@ -1,33 +1,33 @@
-import { createReplanningUI } from './replanning-ui.mjs?v=20261101-exam-fiches';
-import { createWeeklyScheduleUI } from './weekly-schedule-ui.mjs?v=20261101-exam-fiches';
-import { sessionDisplayLabel, chronologicalSessionRows, excludedSession } from './replanning.mjs?v=20261101-exam-fiches';
-import { createContextMemory, catalogEntries, chooseStartup, resolveRemembered, unitContext, meetingContext, meetingsForDay, madridClock } from './startup-context.mjs?v=20261101-exam-fiches';
-import { elapsedTiming, timingDescription } from './row-time.mjs?v=20261101-exam-fiches';
-import { MeetingReader } from './meeting-reader.mjs?v=20261101-exam-fiches';
-import { createMeetingWorkspace } from './meeting-workspace-ui.mjs?v=20261101-exam-fiches';
-import { createMeetingWorkUI } from './meeting-work-ui.mjs?v=20261101-exam-fiches';
-import { createMeetingTaskListUI } from './meeting-task-list-ui.mjs?v=20261101-exam-fiches';
-import { createResourcesUI } from './resources-ui.mjs?v=20261101-exam-fiches';
-import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261101-exam-fiches';
-import { renderTaskBand } from './task-band-ui.mjs?v=20261101-exam-fiches';
-import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261101-exam-fiches';
-import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261101-exam-fiches';
-import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261101-exam-fiches';
-import { orderedUnits, unitLabel, madridToday, presentationPeriods, compactSessionHeaders, globalSessionExpansion, calendarCurrentUnits } from './unit-tools.mjs?v=20261101-exam-fiches';
-import { rowResources } from './resources.mjs?v=20261101-exam-fiches';
-import { createRowResourcesUI } from './row-resources-ui.mjs?v=20261101-exam-fiches';
-import { eventTypes, setSessionEventType, activityEventType, activityEventTypes, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261101-exam-fiches';
-import { libraryIntegrity } from './model-v3.mjs?v=20261101-exam-fiches';
-import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261101-exam-fiches';
-import { createModuleViews } from './module-views-ui.mjs?v=20261101-exam-fiches';
-import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261101-exam-fiches';
-import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261101-exam-fiches';
-import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261101-exam-fiches';
-import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261101-exam-fiches';
-import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261101-exam-fiches';
-import { renderUnitInformation, sessionInformationLines } from './unit-information.mjs?v=20261101-exam-fiches';
-import { createPreparationUI } from './preparation-ui.mjs?v=20261101-exam-fiches';
-import { createSessionEditorUI, bindSessionEditRow } from './session-editor-ui.mjs?v=20261101-exam-fiches';
+import { createReplanningUI } from './replanning-ui.mjs?v=20261102-replanning-signals';
+import { createWeeklyScheduleUI } from './weekly-schedule-ui.mjs?v=20261102-replanning-signals';
+import { sessionDisplayLabel, chronologicalSessionRows, excludedSession } from './replanning.mjs?v=20261102-replanning-signals';
+import { createContextMemory, catalogEntries, chooseStartup, resolveRemembered, unitContext, meetingContext, meetingsForDay, madridClock } from './startup-context.mjs?v=20261102-replanning-signals';
+import { elapsedTiming, timingDescription } from './row-time.mjs?v=20261102-replanning-signals';
+import { MeetingReader } from './meeting-reader.mjs?v=20261102-replanning-signals';
+import { createMeetingWorkspace } from './meeting-workspace-ui.mjs?v=20261102-replanning-signals';
+import { createMeetingWorkUI } from './meeting-work-ui.mjs?v=20261102-replanning-signals';
+import { createMeetingTaskListUI } from './meeting-task-list-ui.mjs?v=20261102-replanning-signals';
+import { createResourcesUI } from './resources-ui.mjs?v=20261102-replanning-signals';
+import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261102-replanning-signals';
+import { renderTaskBand } from './task-band-ui.mjs?v=20261102-replanning-signals';
+import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261102-replanning-signals';
+import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261102-replanning-signals';
+import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261102-replanning-signals';
+import { orderedUnits, unitLabel, madridToday, presentationPeriods, compactSessionHeaders, globalSessionExpansion, calendarCurrentUnits } from './unit-tools.mjs?v=20261102-replanning-signals';
+import { rowResources } from './resources.mjs?v=20261102-replanning-signals';
+import { createRowResourcesUI } from './row-resources-ui.mjs?v=20261102-replanning-signals';
+import { eventTypes, setSessionEventType, activityEventType, activityEventTypes, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261102-replanning-signals';
+import { libraryIntegrity } from './model-v3.mjs?v=20261102-replanning-signals';
+import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261102-replanning-signals';
+import { createModuleViews } from './module-views-ui.mjs?v=20261102-replanning-signals';
+import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261102-replanning-signals';
+import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261102-replanning-signals';
+import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261102-replanning-signals';
+import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261102-replanning-signals';
+import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261102-replanning-signals';
+import { renderUnitInformation, sessionInformationLines } from './unit-information.mjs?v=20261102-replanning-signals';
+import { createPreparationUI } from './preparation-ui.mjs?v=20261102-replanning-signals';
+import { createSessionEditorUI, bindSessionEditRow } from './session-editor-ui.mjs?v=20261102-replanning-signals';
 
 const $ = (id) => document.getElementById(id);
 const fields = ['observations', 'improvements', 'realized', 'pending'];
@@ -565,6 +565,8 @@ function makeStateSelect(session, index) {
   label.htmlFor = select.id;
   select.setAttribute('aria-label', `Estado de ${sessionDisplayLabel(draft, session, moduleRecords())}`);
   for (const value of stateNames) {
+    // A completed replan is published with its trace; retain this old state only for existing history.
+    if (value === 'Reprogramada' && session.state !== 'Reprogramada') continue;
     const option = node('option', '', value || 'Sin marcar');
     option.value = value;
     option.selected = session.state === value;
@@ -572,7 +574,10 @@ function makeStateSelect(session, index) {
   }
   select.addEventListener('change', () => {
     if (busy) return;
-    draft.sessions[index].state = select.value;
+    const target = draft.sessions[index], previous = target.state;
+    target.state = select.value;
+    if (select.value === 'Cancelada' && previous !== 'Cancelada') target.replanningPending = true;
+    else if (!excludedSession(target)) delete target.replanningPending;
     select.className = `state-select ${stateClasses.get(select.value) || ''}`;
     failedSave = false;
     renderStats();

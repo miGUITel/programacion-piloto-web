@@ -1,7 +1,7 @@
-import { resourceTypes, resourceValues, assertResourceRead, prepareResourceSave, ResourceEditError, parsePrivateLocation, locationInput, safeResourceUrl, validateResources, validateModuleResources } from './resources.mjs?v=20261101-exam-fiches';
-import { saveTaskDocument } from './task-edit.mjs?v=20261101-exam-fiches';
-import { saveErrorFeedback } from './core.mjs?v=20261101-exam-fiches';
-import { renderPrivateMarkdown } from './private-markdown.mjs?v=20261101-exam-fiches';
+import { resourceTypes, resourceValues, assertResourceRead, prepareResourceSave, ResourceEditError, parsePrivateLocation, locationInput, safeResourceUrl, validateResources, validateModuleResources } from './resources.mjs?v=20261102-replanning-signals';
+import { saveTaskDocument } from './task-edit.mjs?v=20261102-replanning-signals';
+import { saveErrorFeedback } from './core.mjs?v=20261102-replanning-signals';
+import { renderPrivateMarkdown } from './private-markdown.mjs?v=20261102-replanning-signals';
 const $ = id => document.getElementById(id);
 const equal = (a,b) => JSON.stringify(a) === JSON.stringify(b);
 const el = (tag, css = '', value) => { const item = document.createElement(tag); item.className = css; if (value !== undefined) item.textContent = value; return item; };

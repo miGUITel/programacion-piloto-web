@@ -11,9 +11,9 @@
   <link rel="icon" href="./favicon.ico?v=20261029" sizes="16x16 32x32 48x48">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20261029">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20261029">
-  <link rel="stylesheet" href="./styles.css?v=20261101-exam-fiches">
-  <link rel="stylesheet" href="./weekly-schedule.css?v=20261101-exam-fiches">
-  <script type="module" src="./app.mjs?v=20261101-exam-fiches"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261102-replanning-signals">
+  <link rel="stylesheet" href="./weekly-schedule.css?v=20261102-replanning-signals">
+  <script type="module" src="./app.mjs?v=20261102-replanning-signals"></script>
 </head>
 <body>
   <header class="app-header">
@@ -97,7 +97,7 @@
         </div>
         </div>
         <div id="exam-reminders" class="exam-reminders" aria-live="polite" hidden></div>
-        <div class="list-heading session-list-heading"><h2>Sesiones</h2><div class="session-preparation-tools"><div id="unit-preparation" class="unit-preparation"></div><div id="unit-replanning" aria-live="polite"></div><button id="unit-information-open" class="unit-information-open" type="button" aria-label="Información de la unidad: diseño, referencias y notas" title="Información de la unidad" aria-haspopup="dialog" aria-controls="unit-information" hidden><span aria-hidden="true">i</span></button></div><p><span class="temporal-legend" aria-hidden="true"></span>Tiempo previsto transcurrido · no confirma impartición.</p></div>
+        <div class="list-heading session-list-heading"><h2 aria-describedby="session-temporal-note" title="La franja gris indica tiempo previsto transcurrido; no confirma impartición.">Sesiones</h2><div class="session-preparation-tools"><div id="unit-preparation" class="unit-preparation"></div><button id="unit-information-open" class="unit-information-open" type="button" aria-label="Información de la unidad: diseño, referencias y notas" title="Información de la unidad" aria-haspopup="dialog" aria-controls="unit-information" hidden><span aria-hidden="true">i</span></button><div id="unit-replanning" aria-live="polite"></div></div><p id="session-temporal-note"><span class="temporal-legend" aria-hidden="true"></span>Tiempo previsto transcurrido · no confirma impartición.</p></div>
         <div class="column-guide" aria-hidden="true"><span></span><span>Fecha</span><span>Sesión / contenido</span><span>Descripción prevista</span><span>Seguimiento</span><span>Estado</span><span>Anotar</span></div>
         <div id="sessions" class="sessions"></div>
         <section id="unit-resources" class="unit-resources" aria-labelledby="resources-heading">

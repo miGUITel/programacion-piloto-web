@@ -1,5 +1,5 @@
-import { meetingsForDay } from './startup-context.mjs?v=20261101-exam-fiches';
-import { recordGroup, recordKey, groupForSchedule, meetingTitle } from './meeting-records.mjs?v=20261101-exam-fiches';
+import { meetingsForDay } from './startup-context.mjs?v=20261102-replanning-signals';
+import { recordGroup, recordKey, groupForSchedule, meetingTitle } from './meeting-records.mjs?v=20261102-replanning-signals';
 
 export const hasMeetingContent = record => Boolean(record?.notes?.trim() || record?.minutes?.text?.trim() || ['topics', 'requests'].some(field => record?.[field]?.some(value => value.trim())));
 export const calendarGroups = document => (document?.groups ?? []).map(group => ({ ...group, space: 'meetings' }));

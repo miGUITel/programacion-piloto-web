@@ -1,6 +1,6 @@
-import { PreparationError, assertPreparationRead, preparePreparationSave } from './preparation.mjs?v=20261101-exam-fiches';
-import { taskLinks, sameTaskLinks, detachTaskLinks, removalImpact } from './preparation-links.mjs?v=20261101-exam-fiches';
-import { saveTaskDocument } from './task-edit.mjs?v=20261101-exam-fiches';
+import { PreparationError, assertPreparationRead, preparePreparationSave } from './preparation.mjs?v=20261102-replanning-signals';
+import { taskLinks, sameTaskLinks, detachTaskLinks, removalImpact } from './preparation-links.mjs?v=20261102-replanning-signals';
+import { saveTaskDocument } from './task-edit.mjs?v=20261102-replanning-signals';
 
 const equal = (a,b) => JSON.stringify(a) === JSON.stringify(b);
 const conflict = () => { throw new PreparationError('PREPARATION_STALE','Han cambiado las sesiones vinculadas o su versión. Conserva el borrador y vuelve a revisar la eliminación antes de guardar.'); };

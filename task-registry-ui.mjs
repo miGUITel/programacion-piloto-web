@@ -1,9 +1,9 @@
-import { TaskRegistryStore } from './general-notes.mjs?v=20261101-exam-fiches';
-import { taskDateFields, taskDetails } from './module-views.mjs?v=20261101-exam-fiches';
-import { TaskEditError, taskEditTarget, taskEditSnapshot, assertTaskRead, prepareTaskSave, saveTaskDocument } from './task-edit.mjs?v=20261101-exam-fiches';
-import { presentationDefaults } from './task-cycle.mjs?v=20261101-exam-fiches';
-import { taskHeading } from './task-plan.mjs?v=20261101-exam-fiches';
-import { saveErrorFeedback, isValidDate } from './core.mjs?v=20261101-exam-fiches';
+import { TaskRegistryStore } from './general-notes.mjs?v=20261102-replanning-signals';
+import { taskDateFields, taskDetails } from './module-views.mjs?v=20261102-replanning-signals';
+import { TaskEditError, taskEditTarget, taskEditSnapshot, assertTaskRead, prepareTaskSave, saveTaskDocument } from './task-edit.mjs?v=20261102-replanning-signals';
+import { presentationDefaults } from './task-cycle.mjs?v=20261102-replanning-signals';
+import { taskHeading } from './task-plan.mjs?v=20261102-replanning-signals';
+import { saveErrorFeedback, isValidDate } from './core.mjs?v=20261102-replanning-signals';
 
 const $ = id => document.getElementById(id);
 

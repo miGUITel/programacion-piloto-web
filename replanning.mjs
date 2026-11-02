@@ -1,5 +1,5 @@
 // RF32: explicit, approved history. Reading never migrates or edits a document.
-import { evaluationsFor, validateCommonCourse } from './common-course.mjs?v=20261101-exam-fiches';
+import { evaluationsFor, validateCommonCourse } from './common-course.mjs?v=20261102-replanning-signals';
 
 export const resolutionLabels = Object.freeze({ absorbed: 'Absorbida', added: 'Añadida', 'not-recovered': 'No Recuperada' });
 export class PlanningError extends Error {}
@@ -60,7 +60,7 @@ export function validatePlanningChanges(document, errors = []) {
     for (const r of change.resolutions) {
       if (!object(r)) { bad('resolución no válida.'); continue; }
       const source = before.find(s => s?.id === r.sessionId);
-      if (!source || !date(r.sourceDate) || source.date !== r.sourceDate || !excludedSession(source) || !Object.hasOwn(resolutionLabels, r.outcome)) bad('resolución sin origen cancelado/reprogramado, fecha u opción válida.');
+      if (!source || !date(r.sourceDate) || source.date !== r.sourceDate || !Object.hasOwn(resolutionLabels, r.outcome)) bad('resolución sin origen conservado, fecha u opción válida.');
       const preserved = after.find(s => s?.id === r.sessionId);
       if (!preserved || preserved.date !== r.sourceDate || !excludedSession(preserved) || JSON.stringify(source?.intervals) !== JSON.stringify(preserved.intervals)) bad('conservar fecha, horario y antecedente de la cancelación.');
       if (Object.hasOwn(r, 'note') && typeof r.note !== 'string') bad('nota de resolución no válida.');
@@ -124,15 +124,16 @@ export function planningStatus(document, records = [document]) {
     if (!excludedSession(s)) continue;
     const r = resolutionFor(document, s, records);
     if (r && !r.confirmed) unchecked.push(s);
-    else if (!r && s.state === 'Reprogramada') legacy.push(s);
-    else if (!r) pending.push(s);
+    else if (!r && s.replanningPending === true) pending.push(s);
+    else if (!r) legacy.push(s);
   }
   return { modified: approvedChanges(document).length > 0, pending, unchecked, legacy };
 }
 export function sessionPlanningLabel(document, session, records = [document]) {
   const r = resolutionFor(document, session, records);
   if (r) return r.confirmed ? `${session.state} · ${resolutionLabels[r.outcome]}` : `${session.state} · Resolución pendiente de comprobar`;
-  return session.state === 'Cancelada' ? 'Cancelada · Pendiente de reprogramar' : session.state === 'Reprogramada' ? 'Reprogramada · Sin traza' : session.state;
+  if (!excludedSession(session)) return session.state;
+  return session.replanningPending === true ? `${session.state} · Pendiente de reprogramar` : `${session.state} · Antecedente sin enlace`;
 }
 
 export function planningLimit(common, moduleCode) {

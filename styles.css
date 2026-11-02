@@ -1139,12 +1139,13 @@ textarea{resize:vertical;line-height:1.6}
 }
 
 /* Preparation belongs to the Sessions heading, not a separate row. */
-.workspace .session-list-heading { display:grid; grid-template-columns:auto auto minmax(0,1fr); gap:8px; align-items:center; }
+.workspace .session-list-heading { display:flex; flex-wrap:wrap; justify-content:flex-start; gap:8px; align-items:center; min-width:0; }
 .session-list-heading h2 { margin:0; white-space:nowrap; }
 .session-list-heading .unit-preparation { margin:0; }
 .session-list-heading .preparation-badge { padding:4px 8px; font-size:11px; }
-.workspace .session-list-heading p { min-width:0; max-width:none; margin:0; justify-self:end; }
-.session-preparation-tools { display:flex; align-items:center; gap:4px; }
+.workspace .session-list-heading p { min-width:160px; max-width:none; margin:0 0 0 auto; flex:1 1 200px; text-align:right; }
+.session-preparation-tools { display:flex; flex-wrap:wrap; align-items:center; gap:4px; min-width:0; }
+.session-preparation-tools #unit-replanning[hidden] { display:none; }
 .unit-information-open { display:grid; place-items:center; flex:none; width:32px; height:32px; padding:0; border:0; border-radius:6px; background:transparent; color:var(--teal); cursor:pointer; }
 .unit-information-open[hidden] { display:none; }
 .unit-information-open>span { display:grid; place-items:center; width:19px; height:19px; border:1.5px solid currentColor; border-radius:50%; font:700 16px/1 Georgia,serif; }
@@ -1160,10 +1161,10 @@ textarea{resize:vertical;line-height:1.6}
 .unit-information-dialog .suggestions-footer { align-items:center; gap:12px; }
 .unit-information-dialog .suggestions-footer .scope-note { margin-right:auto; }
 @media(max-width:760px) {
-  .workspace .session-list-heading { gap:6px; }
+  .workspace .session-list-heading { gap:6px; flex-wrap:nowrap; }
   .workspace .session-list-heading h2 { font-size:16px; }
   .session-list-heading .preparation-badge { min-height:44px; }
-  .workspace .session-list-heading p { font-size:10.5px; line-height:1.25; }
+  .workspace .session-list-heading p { position:absolute; width:1px; height:1px; min-width:0; margin:-1px; padding:0; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
   .unit-information-open { width:44px; height:44px; }
   .unit-information-dialog { width:calc(100vw - 16px); max-height:calc(100dvh - 16px); }
   .unit-information-layout { max-height:calc(100dvh - 18px); }
@@ -1399,9 +1400,12 @@ dialog :is(.suggestions-header,.editor-header) > :first-child { min-width:0; ove
 /* RF32: independent signals; preparation/task/exam colours retain their meaning. */
 .replanning-signals { display:inline-flex; flex-wrap:wrap; gap:4px; }
 .plan-signal,.plan-session-signal { font:inherit; font-size:11px; line-height:1.3; border:1px solid #a4b0bb; border-radius:5px; padding:3px 6px; background:#f4f6f8; color:#364858; cursor:pointer; }
+.plan-summary { display:inline-flex; align-items:center; justify-content:center; flex:none; min-height:32px; min-width:40px; padding:4px 7px; font-size:14px; white-space:nowrap; }
 .plan-pending { border-style:dashed; font-weight:700; }
 .plan-modified { font-weight:700; }
-.plan-session-signal { display:block; margin-top:3px; text-align:left; max-width:100%; }
+.plan-session-signal { display:inline-flex; align-items:center; justify-content:center; width:28px; min-height:28px; padding:3px; margin-top:3px; text-align:center; max-width:100%; font-size:16px; }
+.plan-signal:focus-visible,.plan-session-signal:focus-visible { outline:2px solid var(--teal); outline-offset:2px; }
+.plan-open-note { font-weight:650; }
 .plan-excluded-date .session-date-line { text-decoration:line-through; text-decoration-thickness:2px; }
 .replanning-dialog { width:min(96vw,1440px); max-width:calc(100vw - 24px); }
 .plan-change { padding:12px 0; border-top:1px solid #d5dddd; }
@@ -1416,7 +1420,8 @@ dialog :is(.suggestions-header,.editor-header) > :first-child { min-width:0; ove
 .overview-shift-note { display:block; font-size:10px; line-height:1.3; color:#61717c; margin-top:4px; }
 .plan-shift-detail:focus { outline:1px dotted #a5b3bd; outline-offset:3px; }
 .overview-label .replanning-signals { display:flex; margin-top:4px; }
-@media(max-width:680px) { .plan-signal,.plan-session-signal { min-height:36px; } .replanning-dialog { width:calc(100vw - 12px); max-width:calc(100vw - 12px); } }
+@media(max-width:760px) { .plan-summary,.plan-session-signal { min-width:44px; min-height:44px; } }
+@media(max-width:680px) { .plan-signal,.plan-session-signal { min-height:36px; } .plan-summary,.plan-session-signal { min-height:44px; } .replanning-dialog { width:calc(100vw - 12px); max-width:calc(100vw - 12px); } }
 :root{--meeting-work-accent:#087b73}
 .meeting-work-column{min-width:0}
 .meeting-work-panel{margin-top:18px;padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--white)}

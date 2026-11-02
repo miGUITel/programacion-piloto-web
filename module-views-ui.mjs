@@ -1,12 +1,12 @@
-import { sessionDisplayLabel, sessionPlanningLabel } from './replanning.mjs?v=20261101-exam-fiches';
-import { unitLabel } from './unit-tools.mjs?v=20261101-exam-fiches';
-import { moduleOverview, weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261101-exam-fiches';
-import { dayLetters, dayNames, commonCoursePath } from './common-course.mjs?v=20261101-exam-fiches';
-import { renderCommonCourse } from './common-course-ui.mjs?v=20261101-exam-fiches';
-import { eventTypes } from './teaching.mjs?v=20261101-exam-fiches';
-import { taskStates } from './task-cycle.mjs?v=20261101-exam-fiches';
-import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261101-exam-fiches';
-import { preparationBadge } from './preparation-ui.mjs?v=20261101-exam-fiches';
+import { sessionDisplayLabel, sessionPlanningLabel } from './replanning.mjs?v=20261102-replanning-signals';
+import { unitLabel } from './unit-tools.mjs?v=20261102-replanning-signals';
+import { moduleOverview, weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261102-replanning-signals';
+import { dayLetters, dayNames, commonCoursePath } from './common-course.mjs?v=20261102-replanning-signals';
+import { renderCommonCourse } from './common-course-ui.mjs?v=20261102-replanning-signals';
+import { eventTypes } from './teaching.mjs?v=20261102-replanning-signals';
+import { taskStates } from './task-cycle.mjs?v=20261102-replanning-signals';
+import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261102-replanning-signals';
+import { preparationBadge } from './preparation-ui.mjs?v=20261102-replanning-signals';
 
 const $ = id => document.getElementById(id);
 function el(tag, className, text) {

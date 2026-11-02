@@ -1,10 +1,10 @@
-import { preparationMaterials, materialLabels, preparationValues, preparationSummary, preparationSnapshot, assertPreparationRead, preparePreparationSave, PreparationError } from './preparation.mjs?v=20261101-exam-fiches';
-import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261101-exam-fiches';
-import { taskPreparationGroups, taskAdditionIssue, createPreparationTask, taskRemovalIssue, taskType } from './preparation-tasks.mjs?v=20261101-exam-fiches';
-import { saveTaskDocument } from './task-edit.mjs?v=20261101-exam-fiches';
-import { saveErrorFeedback } from './core.mjs?v=20261101-exam-fiches';
-import { removalImpact, removalWarning, taskLinks } from './preparation-links.mjs?v=20261101-exam-fiches';
-import { savePreparationWithLinks } from './preparation-save.mjs?v=20261101-exam-fiches';
+import { preparationMaterials, materialLabels, preparationValues, preparationSummary, preparationSnapshot, assertPreparationRead, preparePreparationSave, PreparationError } from './preparation.mjs?v=20261102-replanning-signals';
+import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261102-replanning-signals';
+import { taskPreparationGroups, taskAdditionIssue, createPreparationTask, taskRemovalIssue, taskType } from './preparation-tasks.mjs?v=20261102-replanning-signals';
+import { saveTaskDocument } from './task-edit.mjs?v=20261102-replanning-signals';
+import { saveErrorFeedback } from './core.mjs?v=20261102-replanning-signals';
+import { removalImpact, removalWarning, taskLinks } from './preparation-links.mjs?v=20261102-replanning-signals';
+import { savePreparationWithLinks } from './preparation-save.mjs?v=20261102-replanning-signals';
 const $ = id => document.getElementById(id);
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const el = (tag, css = '', text) => { const item = document.createElement(tag); item.className = css; if (text !== undefined) item.textContent = text; return item; };

@@ -1,4 +1,4 @@
-import { addDays, buildWeekSchedule, weekStart } from './weekly-schedule.mjs?v=20261101-exam-fiches';
+import { addDays, buildWeekSchedule, weekStart } from './weekly-schedule.mjs?v=20261102-replanning-signals';
 
 const dayLetters = ['', 'L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const dayNames = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];

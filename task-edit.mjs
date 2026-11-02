@@ -1,5 +1,5 @@
-import { taskDetails, taskTarget } from './module-views.mjs?v=20261101-exam-fiches';
-import { UnknownSaveError } from './core.mjs?v=20261101-exam-fiches';
+import { taskDetails, taskTarget } from './module-views.mjs?v=20261102-replanning-signals';
+import { UnknownSaveError } from './core.mjs?v=20261102-replanning-signals';
 
 /** A task transaction owns its source/version; it never saves the Unit draft. */
 export class TaskEditError extends Error {

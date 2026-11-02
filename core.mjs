@@ -1,9 +1,9 @@
-import { validateResources, validateModuleResources, moduleResourcePath, validGithubLocation } from './resources.mjs?v=20261101-exam-fiches';
-import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261101-exam-fiches';
-import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261101-exam-fiches';
-import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261101-exam-fiches';
+import { validateResources, validateModuleResources, moduleResourcePath, validGithubLocation } from './resources.mjs?v=20261102-replanning-signals';
+import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261102-replanning-signals';
+import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261102-replanning-signals';
+import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261102-replanning-signals';
 
-import { validatePlanningChanges } from './replanning.mjs?v=20261101-exam-fiches';
+import { validatePlanningChanges } from './replanning.mjs?v=20261102-replanning-signals';
 
 const OWNER = 'miGUITel';
 const REPOSITORY = 'programacion-piloto-datos';
@@ -218,6 +218,7 @@ export function validateDocument(doc, expectedEntry) {
     else numbers.add(session.number);
     if (!isValidDate(session.date)) errors.push(`${path}.date: debe ser una fecha válida con formato YYYY-MM-DD.`);
     if (!STATES.has(session.state)) errors.push(`${path}.state: estado no permitido.`);
+    if (Object.hasOwn(session, 'replanningPending') && (typeof session.replanningPending !== 'boolean' || session.replanningPending === true && !['Cancelada', 'Reprogramada'].includes(session.state))) errors.push(`${path}.replanningPending: marca booleana de incidencia cancelada/reprogramada requerida.`);
     if (Object.hasOwn(session, 'eventTypes') && (!Array.isArray(session.eventTypes) || session.eventTypes.some(type => !['task', 'exam'].includes(type)) || new Set(session.eventTypes).size !== session.eventTypes.length)) errors.push(`${path}.eventTypes: lista sin duplicados de task y/o exam.`);
     if (Object.hasOwn(session, 'taskPresented') && typeof session.taskPresented !== 'boolean') errors.push(`${path}.taskPresented: debe ser booleano.`);
     validateTaskMetadata(session, path, errors);
@@ -548,9 +549,10 @@ export class GithubStore {
   }
 
   // Publish an owner and its cross-unit detachments in one non-forced commit.
-  saveDocuments(changes, guards = []) {
+  saveDocuments(changes, guards = [], { message: commitMessage = 'Guardar preparación y retirar asociaciones de tareas' } = {}) {
     return this.#enqueue(async () => {
       if (this.#needsReload) throw new UnknownSaveError('reload-required');
+      if (typeof commitMessage !== 'string' || !commitMessage.trim() || commitMessage.length > 240) throw new ApiError('Falta el motivo de la operación.', { code:'INVALID_DOCUMENT' });
       if (!Array.isArray(changes) || !changes.length || new Set(changes.map(item => item.entry?.path)).size !== changes.length
         || !changes.some(item => item.entry?.path === this.#entry.path)) throw new ApiError('Revisa los documentos de la operación.', { code:'INVALID_TARGET' });
       const snapshots = changes.map(item => {
@@ -581,7 +583,7 @@ export class GithubStore {
         }
         const nextTree = await git('POST', 'trees', {base_tree:treeSha, tree:files});
         if (!shaOf(nextTree?.sha)) throw new UnknownSaveError('invalid-response');
-        const next = await git('POST', 'commits', {message:'Guardar preparación y retirar asociaciones de tareas',tree:nextTree.sha,parents:[head]});
+        const next = await git('POST', 'commits', {message:commitMessage,tree:nextTree.sha,parents:[head]});
         if (!shaOf(next?.sha)) throw new UnknownSaveError('invalid-response');
         try { await git('PATCH', `refs/heads/${BRANCH}`, {sha:next.sha,force:false}); }
         catch (error) { if (error.status === 422) throw new ConflictError(); throw error; }

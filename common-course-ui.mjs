@@ -1,4 +1,4 @@
-import { dayLetters, dayNames, evaluationsFor } from './common-course.mjs?v=20261101-exam-fiches';
+import { dayLetters, dayNames, evaluationsFor } from './common-course.mjs?v=20261102-replanning-signals';
 
 const node = (tag, text, className = '') => {
   const e = document.createElement(tag); e.className = className;
