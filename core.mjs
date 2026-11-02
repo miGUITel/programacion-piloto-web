@@ -1,10 +1,11 @@
-import { validateResources, validateModuleResources, moduleResourcePath, validGithubLocation } from './resources.mjs?v=20261102-ppt-guided-icons';
-import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261102-ppt-guided-icons';
-import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261102-ppt-guided-icons';
-import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261102-ppt-guided-icons';
+import { validateResources, validateModuleResources, moduleResourcePath, validGithubLocation } from './resources.mjs?v=20261102-text-integrity';
+import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261102-text-integrity';
+import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261102-text-integrity';
+import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261102-text-integrity';
 
-import { validatePlanningChanges } from './replanning.mjs?v=20261102-ppt-guided-icons';
-import { validateTeachingNotes } from './task-teaching-notes.mjs?v=20261102-ppt-guided-icons';
+import { validatePlanningChanges } from './replanning.mjs?v=20261102-text-integrity';
+import { validateTeachingNotes } from './task-teaching-notes.mjs?v=20261102-text-integrity';
+import { findTextIntegrityIssues } from './text-integrity.mjs?v=20261102-text-integrity';
 
 const OWNER = 'miGUITel';
 const REPOSITORY = 'programacion-piloto-datos';
@@ -52,8 +53,26 @@ export class UnknownSaveError extends ApiError {
   }
 }
 
+class TextIntegrityError extends ApiError {
+  constructor(issues, filePath) {
+    const source = /^(?:(?:LM|SR|ED|PRO|SOS)\/(?:resources|tasks|(?:UT|RA|B)\d{1,3}[A-Z]?)|APP\/(?:reuniones|mejoras\/(?:LM|SR|ED|PRO|SOS)))\.json$/.test(filePath) ? filePath : 'document';
+    const paths = [...new Set(issues.map(issue => `${source}: ${issue.path}${issue.location === 'key' ? ' (clave)' : ''}`))];
+    super('Hay caracteres dañados o incompletos en el texto. No se ha enviado el documento.', { code: 'TEXT_INTEGRITY', errors: paths });
+    this.paths = paths;
+  }
+}
+
+export function assertTextIntegrity(document, filePath) {
+  const issues = findTextIntegrityIssues(document);
+  if (issues.length) throw new TextIntegrityError(issues, filePath);
+}
+
 /** UI-safe save feedback: never echo exception messages or response bodies. */
 export function saveErrorFeedback(error) {
+  if (error instanceof TextIntegrityError) return {
+    code: 'TEXT_INTEGRITY', kind: 'error', requiresReload: false,
+    message: `Hay caracteres dañados o incompletos. Revisa ${error.paths.slice(0, 3).join('; ')}${error.paths.length > 3 ? `; y ${error.paths.length - 3} campos más` : ''}. No se ha enviado ningún cambio. El borrador se conserva; corrige el texto antes de volver a guardar.`,
+  };
   if (error instanceof ConflictError) return {
     code: 'CONFLICT', kind: 'warning', requiresReload: true,
     message: 'GitHub contiene cambios posteriores a la versión que abriste. No se ha sobrescrito. Tu borrador sigue aquí: descárgalo antes de actualizar y revisar las diferencias.',
@@ -524,6 +543,7 @@ export class GithubStore {
         }
       }),
       save: (document, sha) => bound.#enqueue(async () => {
+        assertTextIntegrity(document, path);
         const errors = validateModuleResources(document, code); validateJson(document, 'resources', errors);
         if (errors.length) throw new ApiError('Revisa los recursos del módulo.', { code: 'INVALID_DOCUMENT', errors });
         if (bound.#needsReload) throw new UnknownSaveError('reload-required');
@@ -558,6 +578,7 @@ export class GithubStore {
       if (!Array.isArray(changes) || !changes.length || new Set(changes.map(item => item.entry?.path)).size !== changes.length
         || !changes.some(item => item.entry?.path === this.#entry.path)) throw new ApiError('Revisa los documentos de la operación.', { code:'INVALID_TARGET' });
       const snapshots = changes.map(item => {
+        assertTextIntegrity(item.document, item.entry?.path || 'document');
         const errors = [...validateEntry(item.entry), ...validateDocument(item.document, item.entry)];
         if (errors.length || item.entry.moduleCode !== this.#entry.moduleCode) throw new ApiError('Los documentos no cumplen el formato del módulo.', { code:'INVALID_DOCUMENT', errors });
         if (!nonemptyText(item.sha)) throw new ApiError('Falta una versión leída.', { code:'MISSING_SHA' });
@@ -607,6 +628,7 @@ export class GithubStore {
 
   async save(document, sha) {
     const entry = this.#entry;
+    assertTextIntegrity(document, entry.path);
     const errors = validateDocument(document, entry);
     if (errors.length) throw new ApiError('Revisa los datos antes de guardar.', { code: 'INVALID_DOCUMENT', errors });
     if (!nonemptyText(sha)) throw new ApiError('Falta la versión original del archivo. Vuelve a cargarlo.', { code: 'MISSING_SHA' });

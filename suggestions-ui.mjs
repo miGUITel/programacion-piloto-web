@@ -1,4 +1,4 @@
-import { SuggestionsStore, createSuggestion, suggestionErrorFeedback } from './suggestions.mjs?v=20261102-ppt-guided-icons';
+import { SuggestionsStore, createSuggestion, suggestionErrorFeedback } from './suggestions.mjs?v=20261102-text-integrity';
 
 /** Separate UI and persistence: never reads or writes the academic document. */
 export function createSuggestionsUI({ isBusy, setBusy, onStateChange, isAcademicEditorOpen, onSaved = () => {} }) {

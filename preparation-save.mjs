@@ -1,6 +1,6 @@
-import { PreparationError, assertPreparationRead, preparePreparationSave } from './preparation.mjs?v=20261102-ppt-guided-icons';
-import { taskLinks, sameTaskLinks, detachTaskLinks, removalImpact } from './preparation-links.mjs?v=20261102-ppt-guided-icons';
-import { saveTaskDocument } from './task-edit.mjs?v=20261102-ppt-guided-icons';
+import { PreparationError, assertPreparationRead, preparePreparationSave } from './preparation.mjs?v=20261102-text-integrity';
+import { taskLinks, sameTaskLinks, detachTaskLinks, removalImpact } from './preparation-links.mjs?v=20261102-text-integrity';
+import { saveTaskDocument } from './task-edit.mjs?v=20261102-text-integrity';
 
 const equal = (a,b) => JSON.stringify(a) === JSON.stringify(b);
 const conflict = () => { throw new PreparationError('PREPARATION_STALE','Han cambiado las sesiones vinculadas o su versión. Conserva el borrador y vuelve a revisar la eliminación antes de guardar.'); };

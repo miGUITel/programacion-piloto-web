@@ -1,4 +1,4 @@
-import { safeResourceUrl, validGithubLocation, resourceTypes, effectiveResourceDestination, effectiveResourceDestinations, modulePublishedWebRoot, modulePublishedRepository } from './resources.mjs?v=20261102-ppt-guided-icons';
+import { safeResourceUrl, validGithubLocation, resourceTypes, effectiveResourceDestination, effectiveResourceDestinations, modulePublishedWebRoot, modulePublishedRepository } from './resources.mjs?v=20261102-text-integrity';
 
 const groups = [
   { id:'assignment', label:'Tarea o enunciado', paths:['M9 5H6v16h12V5h-3','M9 3h6v4H9z','M9 11h6M9 15h6'] },

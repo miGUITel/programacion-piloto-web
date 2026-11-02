@@ -1,8 +1,8 @@
-import { eventTypes } from './teaching.mjs?v=20261102-ppt-guided-icons';
-import { taskState } from './task-cycle.mjs?v=20261102-ppt-guided-icons';
-import { hasTaskPlan, visiblePlanTasks } from './task-plan.mjs?v=20261102-ppt-guided-icons';
-import { moduleWeekdays } from './common-course.mjs?v=20261102-ppt-guided-icons';
-import { shiftCalendarCells, groupShiftGaps } from './planning-shifts.mjs?v=20261102-ppt-guided-icons';
+import { eventTypes } from './teaching.mjs?v=20261102-text-integrity';
+import { taskState } from './task-cycle.mjs?v=20261102-text-integrity';
+import { hasTaskPlan, visiblePlanTasks } from './task-plan.mjs?v=20261102-text-integrity';
+import { moduleWeekdays } from './common-course.mjs?v=20261102-text-integrity';
+import { shiftCalendarCells, groupShiftGaps } from './planning-shifts.mjs?v=20261102-text-integrity';
 
 export const taskDateFields = ['presentedOn', 'dueOn', 'correctBy'];
 

@@ -1,9 +1,9 @@
-import { TaskRegistryStore } from './general-notes.mjs?v=20261102-ppt-guided-icons';
-import { taskDateFields, taskDetails } from './module-views.mjs?v=20261102-ppt-guided-icons';
-import { TaskEditError, taskEditTarget, taskEditSnapshot, assertTaskRead, prepareTaskSave, saveTaskDocument } from './task-edit.mjs?v=20261102-ppt-guided-icons';
-import { presentationDefaults } from './task-cycle.mjs?v=20261102-ppt-guided-icons';
-import { taskHeading } from './task-plan.mjs?v=20261102-ppt-guided-icons';
-import { saveErrorFeedback, isValidDate } from './core.mjs?v=20261102-ppt-guided-icons';
+import { TaskRegistryStore } from './general-notes.mjs?v=20261102-text-integrity';
+import { taskDateFields, taskDetails } from './module-views.mjs?v=20261102-text-integrity';
+import { TaskEditError, taskEditTarget, taskEditSnapshot, assertTaskRead, prepareTaskSave, saveTaskDocument } from './task-edit.mjs?v=20261102-text-integrity';
+import { presentationDefaults } from './task-cycle.mjs?v=20261102-text-integrity';
+import { taskHeading } from './task-plan.mjs?v=20261102-text-integrity';
+import { saveErrorFeedback, isValidDate } from './core.mjs?v=20261102-text-integrity';
 
 const $ = id => document.getElementById(id);
 

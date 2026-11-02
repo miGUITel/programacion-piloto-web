@@ -1,4 +1,4 @@
-import { rowResources, modulePresentationFolder, effectiveResourceDestinations } from './resources.mjs?v=20261102-ppt-guided-icons';
+import { rowResources, modulePresentationFolder, effectiveResourceDestinations } from './resources.mjs?v=20261102-text-integrity';
 
 /** A display shortcut, never another academic association or preparation input. */
 export function sessionRowResources(document, session, activity, records = [], moduleResources = []) {

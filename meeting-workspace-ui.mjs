@@ -1,7 +1,7 @@
-import { saveErrorFeedback } from './core.mjs?v=20261102-ppt-guided-icons';
-import { recordKey, recordGroup, groupForSchedule, meetingTitle, withMeetingRecord } from './meeting-records.mjs?v=20261102-ppt-guided-icons';
-import { madridClock, meetingContext, meetingGroupContext } from './startup-context.mjs?v=20261102-ppt-guided-icons';
-import { meetingCalendar, calendarGroups, dayChoices } from './meeting-calendar.mjs?v=20261102-ppt-guided-icons';
+import { saveErrorFeedback } from './core.mjs?v=20261102-text-integrity';
+import { recordKey, recordGroup, groupForSchedule, meetingTitle, withMeetingRecord } from './meeting-records.mjs?v=20261102-text-integrity';
+import { madridClock, meetingContext, meetingGroupContext } from './startup-context.mjs?v=20261102-text-integrity';
+import { meetingCalendar, calendarGroups, dayChoices } from './meeting-calendar.mjs?v=20261102-text-integrity';
 const $ = id => document.getElementById(id);
 const node = (tag, text, className = '') => { const e = document.createElement(tag); e.className = className; if (text !== undefined) e.textContent = text; return e; };
 const listText = value => (value ?? []).join('\n');

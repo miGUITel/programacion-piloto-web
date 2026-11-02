@@ -1,6 +1,6 @@
 // The supported conversational workflow: an approved plan and its trace are one operation.
-import { validateDocument } from './core.mjs?v=20261102-ppt-guided-icons';
-import { planningSnapshot, validatePlanningChanges, excludedSession } from './replanning.mjs?v=20261102-ppt-guided-icons';
+import { validateDocument } from './core.mjs?v=20261102-text-integrity';
+import { planningSnapshot, validatePlanningChanges, excludedSession } from './replanning.mjs?v=20261102-text-integrity';
 
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const clone = value => structuredClone(value);

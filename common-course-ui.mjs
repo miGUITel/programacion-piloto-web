@@ -1,4 +1,4 @@
-import { dayLetters, dayNames, evaluationsFor } from './common-course.mjs?v=20261102-ppt-guided-icons';
+import { dayLetters, dayNames, evaluationsFor } from './common-course.mjs?v=20261102-text-integrity';
 
 const node = (tag, text, className = '') => {
   const e = document.createElement(tag); e.className = className;

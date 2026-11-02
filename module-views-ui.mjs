@@ -1,12 +1,12 @@
-import { sessionDisplayLabel, sessionPlanningLabel } from './replanning.mjs?v=20261102-ppt-guided-icons';
-import { unitLabel } from './unit-tools.mjs?v=20261102-ppt-guided-icons';
-import { moduleOverview, weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261102-ppt-guided-icons';
-import { dayLetters, dayNames, commonCoursePath } from './common-course.mjs?v=20261102-ppt-guided-icons';
-import { renderCommonCourse } from './common-course-ui.mjs?v=20261102-ppt-guided-icons';
-import { eventTypes } from './teaching.mjs?v=20261102-ppt-guided-icons';
-import { taskStates } from './task-cycle.mjs?v=20261102-ppt-guided-icons';
-import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261102-ppt-guided-icons';
-import { preparationBadge } from './preparation-ui.mjs?v=20261102-ppt-guided-icons';
+import { sessionDisplayLabel, sessionPlanningLabel } from './replanning.mjs?v=20261102-text-integrity';
+import { unitLabel } from './unit-tools.mjs?v=20261102-text-integrity';
+import { moduleOverview, weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261102-text-integrity';
+import { dayLetters, dayNames, commonCoursePath } from './common-course.mjs?v=20261102-text-integrity';
+import { renderCommonCourse } from './common-course-ui.mjs?v=20261102-text-integrity';
+import { eventTypes } from './teaching.mjs?v=20261102-text-integrity';
+import { taskStates } from './task-cycle.mjs?v=20261102-text-integrity';
+import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261102-text-integrity';
+import { preparationBadge } from './preparation-ui.mjs?v=20261102-text-integrity';
 
 const $ = id => document.getElementById(id);
 function el(tag, className, text) {

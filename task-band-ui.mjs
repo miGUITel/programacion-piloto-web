@@ -1,5 +1,5 @@
-import { taskBand } from './task-band.mjs?v=20261102-ppt-guided-icons';
-import { safeResourceUrl, validGithubLocation } from './resources.mjs?v=20261102-ppt-guided-icons';
+import { taskBand } from './task-band.mjs?v=20261102-text-integrity';
+import { safeResourceUrl, validGithubLocation } from './resources.mjs?v=20261102-text-integrity';
 
 export function renderTaskBand(section, list, document, { resourceUI, isBusy, onManage }) {
   list.replaceChildren();section.hidden=!document;

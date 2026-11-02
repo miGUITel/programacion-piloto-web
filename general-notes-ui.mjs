@@ -1,5 +1,5 @@
-import { GeneralNotesStore, getGeneralText, withGeneralText } from './general-notes.mjs?v=20261102-ppt-guided-icons';
-import { saveErrorFeedback } from './core.mjs?v=20261102-ppt-guided-icons';
+import { GeneralNotesStore, getGeneralText, withGeneralText } from './general-notes.mjs?v=20261102-text-integrity';
+import { saveErrorFeedback } from './core.mjs?v=20261102-text-integrity';
 
 export function createGeneralNotesUI({ isBusy, setBusy, onStateChange, getTarget, otherEditorOpen, improvementIcon, onMessage = () => {} }) {
   const $ = id => document.getElementById(id);

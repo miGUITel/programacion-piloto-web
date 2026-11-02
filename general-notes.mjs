@@ -1,4 +1,4 @@
-import { ApiError, ConflictError, UnknownSaveError, validateCatalog, validateTaskRegistry, encodeUtf8Base64, decodeUtf8Base64 } from './core.mjs?v=20261102-ppt-guided-icons';
+import { ApiError, ConflictError, UnknownSaveError, validateCatalog, validateTaskRegistry, encodeUtf8Base64, decodeUtf8Base64, assertTextIntegrity } from './core.mjs?v=20261102-text-integrity';
 
 const codes = new Set(['LM', 'SR', 'SOS', 'ED', 'PRO']);
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
@@ -106,6 +106,7 @@ export class GeneralNotesStore {
     });
   }
   save(document, sha) {
+    try { assertTextIntegrity(document, this.#path()); } catch (error) { return Promise.reject(error); }
     if (this.#validate(document).length) return Promise.reject(new ApiError('Revisa el registro antes de guardar.', { code: 'INVALID_DOCUMENT' }));
     const snapshot = structuredClone(document);
     return this.#enqueue(async () => {

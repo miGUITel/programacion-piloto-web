@@ -1,5 +1,5 @@
-import { ApiError, ConflictError, UnknownSaveError, decodeUtf8Base64, encodeUtf8Base64 } from './core.mjs?v=20261102-ppt-guided-icons';
-import { meetingNotesPath, validateMeetingNotes } from './startup-context.mjs?v=20261102-ppt-guided-icons';
+import { ApiError, ConflictError, UnknownSaveError, decodeUtf8Base64, encodeUtf8Base64, assertTextIntegrity } from './core.mjs?v=20261102-text-integrity';
+import { meetingNotesPath, validateMeetingNotes } from './startup-context.mjs?v=20261102-text-integrity';
 
 // One fixed private registry. Every note save has a version and confirmed reread.
 export class MeetingReader {
@@ -44,6 +44,7 @@ export class MeetingReader {
     const result=await this.#read(this.#path(catalog));this.#blocked=false;return result;
   });}
   save(catalog,document,sha,{message='Guardar notas de reunión'}={}){return this.#enqueue(async()=>{
+    assertTextIntegrity(document,this.#path(catalog));
     if(this.#blocked)throw new UnknownSaveError('reload-required');
     if(typeof sha!=='string'||!sha||validateMeetingNotes(document).length)throw new ApiError('Revisa la reunión y su versión.',{code:'INVALID_DOCUMENT'});
     const path=this.#path(catalog),snapshot=structuredClone(document);

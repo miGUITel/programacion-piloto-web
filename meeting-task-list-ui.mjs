@@ -1,5 +1,5 @@
-import { recordKey, recordGroup } from './meeting-records.mjs?v=20261102-ppt-guided-icons';
-import { meetingTaskRows } from './meeting-work.mjs?v=20261102-ppt-guided-icons';
+import { recordKey, recordGroup } from './meeting-records.mjs?v=20261102-text-integrity';
+import { meetingTaskRows } from './meeting-work.mjs?v=20261102-text-integrity';
 
 const LABELS = { pending:'Pendiente', 'in-progress':'En curso', completed:'Completada' };
 const element = (tag, text, className = '') => { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (className) el.className = className; return el; };
