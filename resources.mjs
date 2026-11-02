@@ -76,6 +76,7 @@ export function validateResources(resources, errors = [], prefix = 'resources') 
     if (!object(resource)) { errors.push(`${path}: recurso no válido.`); return; }
     if (!text(resource.id) || ids.has(resource.id)) errors.push(`${path}.id: identificador no válido o duplicado.`); ids.add(resource.id);
     if (!text(resource.title) || !own(resourceTypes, resource.type)) errors.push(`${path}: título y tipo requeridos.`);
+    if (own(resource, 'exampleKind') && (resource.type !== 'example' || !['guided','original'].includes(resource.exampleKind))) errors.push(`${path}.exampleKind: guided u original solo corresponde a un ejemplo.`);
     if (own(resource, 'role') && (!['presentation-folder','published-web-root'].includes(resource.role)
       || resource.role === 'presentation-folder' && resource.type !== 'presentation'
       || resource.role === 'published-web-root' && resource.type !== 'web')) errors.push(`${path}.role: destino común de PPT o Web no válido.`);

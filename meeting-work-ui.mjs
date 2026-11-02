@@ -1,6 +1,6 @@
-import { saveErrorFeedback } from './core.mjs?v=20261102-task-notes-resources';
-import { recordKey, recordGroup } from './meeting-records.mjs?v=20261102-task-notes-resources';
-import { withMeetingTask, withMeetingMinutes, meetingTaskRows, draftMeetingMinutes } from './meeting-work.mjs?v=20261102-task-notes-resources';
+import { saveErrorFeedback } from './core.mjs?v=20261102-ppt-guided-icons';
+import { recordKey, recordGroup } from './meeting-records.mjs?v=20261102-ppt-guided-icons';
+import { withMeetingTask, withMeetingMinutes, meetingTaskRows, draftMeetingMinutes } from './meeting-work.mjs?v=20261102-ppt-guided-icons';
 
 const STATES = [['pending', 'Pendiente'], ['in-progress', 'En curso'], ['completed', 'Completada']];
 const stateLabel = value => STATES.find(([key]) => key === value)?.[1] ?? value;

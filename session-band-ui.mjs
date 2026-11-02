@@ -1,5 +1,5 @@
-import { sessionBand, madridToday } from './unit-tools.mjs?v=20261102-task-notes-resources';
-import { sessionDisplayLabel } from './replanning.mjs?v=20261102-task-notes-resources';
+import { sessionBand, madridToday } from './unit-tools.mjs?v=20261102-ppt-guided-icons';
+import { sessionDisplayLabel } from './replanning.mjs?v=20261102-ppt-guided-icons';
 
 export function renderSessionResourceBand(container, document, { records = [], today = madridToday(), onOpen, busy = false } = {}) {
   container.replaceChildren();container.dataset.today=today;

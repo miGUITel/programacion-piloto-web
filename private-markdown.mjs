@@ -1,4 +1,4 @@
-import { safeResourceUrl } from './resources.mjs?v=20261102-task-notes-resources';
+import { safeResourceUrl } from './resources.mjs?v=20261102-ppt-guided-icons';
 // Text-only Markdown subset: never interpret HTML, scripts, embeds or remote images.
 const el = (tag, value) => { const node = document.createElement(tag); if (value !== undefined) node.textContent = value; return node; };
 function inline(parent, text) {

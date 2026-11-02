@@ -1,5 +1,5 @@
-import { taskEditTarget, assertTaskRead, saveTaskDocument } from './task-edit.mjs?v=20261102-task-notes-resources';
-import { validateTeachingNotes as validateTaskNotes, improvementStates } from './task-teaching-notes.mjs?v=20261102-task-notes-resources';
+import { taskEditTarget, assertTaskRead, saveTaskDocument } from './task-edit.mjs?v=20261102-ppt-guided-icons';
+import { validateTeachingNotes as validateTaskNotes, improvementStates } from './task-teaching-notes.mjs?v=20261102-ppt-guided-icons';
 export { validateTaskNotes, improvementStates };
 
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);

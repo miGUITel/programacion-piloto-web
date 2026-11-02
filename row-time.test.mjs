@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { elapsedTiming, timingDescription } from './row-time.mjs?v=20261102-task-notes-resources';
-import { madridClock } from './startup-context.mjs?v=20261102-task-notes-resources';
+import { elapsedTiming, timingDescription } from './row-time.mjs?v=20261102-ppt-guided-icons';
+import { madridClock } from './startup-context.mjs?v=20261102-ppt-guided-icons';
 
 const date = '2026-10-19';
 const activities = [{ start: '08:00', end: '08:25' }, { start: '08:25', end: '08:50' }, { start: '08:55', end: '09:30' }];

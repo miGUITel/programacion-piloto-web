@@ -1,7 +1,7 @@
-import { assertSessionRead, sessionTextValues, prepareSessionSave, SessionEditError } from './session-edit.mjs?v=20261102-task-notes-resources';
-import { sessionDisplayLabel } from './replanning.mjs?v=20261102-task-notes-resources';
-import { saveTaskDocument } from './task-edit.mjs?v=20261102-task-notes-resources';
-import { saveErrorFeedback } from './core.mjs?v=20261102-task-notes-resources';
+import { assertSessionRead, sessionTextValues, prepareSessionSave, SessionEditError } from './session-edit.mjs?v=20261102-ppt-guided-icons';
+import { sessionDisplayLabel } from './replanning.mjs?v=20261102-ppt-guided-icons';
+import { saveTaskDocument } from './task-edit.mjs?v=20261102-ppt-guided-icons';
+import { saveErrorFeedback } from './core.mjs?v=20261102-ppt-guided-icons';
 const $ = id => document.getElementById(id);
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const node = (tag, className = '', text) => { const el = document.createElement(tag); el.className = className; if (text !== undefined) el.textContent = text; return el; };

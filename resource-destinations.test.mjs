@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { modulePresentationFolder, modulePublishedWebRoot, modulePublishedRepository, effectiveResourceDestination, effectiveResourceDestinations, validateModuleResources } from './resources.mjs?v=20261102-task-notes-resources';
-import { publicWorkspaceCandidate, verifyPublishedResource, createRowResourcesUI } from './row-resources-ui.mjs?v=20261102-task-notes-resources';
+import { modulePresentationFolder, modulePublishedWebRoot, modulePublishedRepository, effectiveResourceDestination, effectiveResourceDestinations, validateModuleResources } from './resources.mjs?v=20261102-ppt-guided-icons';
+import { publicWorkspaceCandidate, verifyPublishedResource, createRowResourcesUI } from './row-resources-ui.mjs?v=20261102-ppt-guided-icons';
 
 const clone=value=>structuredClone(value);
 const config=(code='SR',repository=`miGUITel/${code}`)=>[

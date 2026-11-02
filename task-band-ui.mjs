@@ -1,5 +1,5 @@
-import { taskBand } from './task-band.mjs?v=20261102-task-notes-resources';
-import { safeResourceUrl, validGithubLocation } from './resources.mjs?v=20261102-task-notes-resources';
+import { taskBand } from './task-band.mjs?v=20261102-ppt-guided-icons';
+import { safeResourceUrl, validGithubLocation } from './resources.mjs?v=20261102-ppt-guided-icons';
 
 export function renderTaskBand(section, list, document, { resourceUI, isBusy, onManage }) {
   list.replaceChildren();section.hidden=!document;

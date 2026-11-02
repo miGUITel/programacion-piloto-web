@@ -1,6 +1,6 @@
 // Read-only positions from the last approved plan; never infer a causal link.
-import { approvedChanges, operationComplete, excludedSession, planningSnapshot, teachingDates } from './replanning.mjs?v=20261102-task-notes-resources';
-import { validateCommonCourse } from './common-course.mjs?v=20261102-task-notes-resources';
+import { approvedChanges, operationComplete, excludedSession, planningSnapshot, teachingDates } from './replanning.mjs?v=20261102-ppt-guided-icons';
+import { validateCommonCourse } from './common-course.mjs?v=20261102-ppt-guided-icons';
 
 export function movesInChange(change) {
   return (change?.beforeSessions ?? []).flatMap(before => {

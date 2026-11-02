@@ -1,9 +1,10 @@
-import { safeResourceUrl, validGithubLocation, resourceTypes, effectiveResourceDestination, effectiveResourceDestinations, modulePublishedWebRoot, modulePublishedRepository } from './resources.mjs?v=20261102-task-notes-resources';
+import { safeResourceUrl, validGithubLocation, resourceTypes, effectiveResourceDestination, effectiveResourceDestinations, modulePublishedWebRoot, modulePublishedRepository } from './resources.mjs?v=20261102-ppt-guided-icons';
 
 const groups = [
   { id:'assignment', label:'Tarea o enunciado', paths:['M9 5H6v16h12V5h-3','M9 3h6v4H9z','M9 11h6M9 15h6'] },
   { id:'presentation', label:'Presentación', paths:['M3 4h18M5 4v12h14V4','M12 16v5M8 21l4-3 4 3','M8 12l3-4 3 3 2-3'] },
   { id:'notes', label:'Apuntes o web del módulo', paths:['M12 5C9 3 5 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-2-1-6-1-9 1z','M12 5v15'] },
+  { id:'guided-example', label:'Ejemplo guiado', paths:['M9 3h6M10 3v7L4 20h16l-6-10V3','M7 15h10'] },
   { id:'web', label:'Web externa', paths:['M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z','M3 12h18M12 3c-5 5-5 13 0 18 5-5 5-13 0-18z'] },
   { id:'tool', label:'Aplicación o herramienta', paths:['M14 5a5 5 0 0 0-6 6L3 16l5 5 5-5a5 5 0 0 0 6-6l-3 3-4-4z'] },
   { id:'guide', label:'Ficha docente', paths:['M5 3h11l3 3v15H5z','M15 3v5h4M8 11h8M8 15h5'] },
@@ -13,6 +14,7 @@ const icons = new Map(groups.map(group=>[group.id,group]));
 const node = (tag,css='',text) => { const el=document.createElement(tag);el.className=css;if(text!==undefined)el.textContent=text;return el; };
 
 export function resourceGroup(resource) {
+  if(resource.type==='example'&&resource.exampleKind==='guided')return 'guided-example';
   if(['assignment','presentation','tool','guide'].includes(resource.type))return resource.type;
   if(resource.type==='web') {
     try { if(new URL(resource.location?.url).hostname.toLowerCase()==='miguitel.github.io')return 'notes'; } catch {}
@@ -167,9 +169,9 @@ export function createRowResourcesUI({isBusy,canOpen,openPrivate,getModuleResour
   }
   function render(cell,resources,moduleCode,unresolved=[]) {
     const deduplicated=effectiveResourceDestinations(resources,getModuleResources(moduleCode));
-    const selected=groupRowResources(deduplicated),overflow=selected.length>3;
+    const selected=groupRowResources(deduplicated),overflow=selected.length>4;
     cell.setAttribute('role','group');cell.setAttribute('aria-label','Recursos');
-    for(const group of selected.slice(0,overflow?2:3)) {
+    for(const group of selected.slice(0,overflow?3:4)) {
       const single=group.resources.length===1,resource=group.resources[0];
       const label=single?`${group.label}: ${resource.title}`:`${group.label}: ${group.resources.length} recursos. Elegir material`;
       const item=single?control(resource,moduleCode,''):node('button');
@@ -177,7 +179,7 @@ export function createRowResourcesUI({isBusy,canOpen,openPrivate,getModuleResour
       if(!single){item.type='button';item.setAttribute('aria-haspopup','dialog');item.setAttribute('aria-controls','row-resource-picker');const count=node('span','resource-count',String(group.resources.length));count.setAttribute('aria-hidden','true');item.append(count);item.addEventListener('click',()=>showGroups([group],moduleCode,item));}
       cell.append(item);
     }
-    if(overflow){const more=node('button','resource-icon');more.type='button';more.title='Más recursos';more.setAttribute('aria-label','Más tipos de recurso');more.setAttribute('aria-haspopup','dialog');more.append(icon('more'));more.addEventListener('click',()=>showGroups(selected.slice(2),moduleCode,more));cell.append(more);}
+    if(overflow){const more=node('button','resource-icon');more.type='button';more.title='Más recursos';more.setAttribute('aria-label','Más tipos de recurso');more.setAttribute('aria-haspopup','dialog');more.append(icon('more'));more.addEventListener('click',()=>showGroups(selected.slice(3),moduleCode,more));cell.append(more);}
     if(unresolved.length){const warning=node('span','resource-reference-warning','!');warning.title='Hay referencias pendientes de resolver';warning.setAttribute('aria-label',warning.title);cell.append(warning);}
     cell.classList.toggle('is-empty',!resources.length&&!unresolved.length);
   }

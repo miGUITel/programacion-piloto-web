@@ -1,8 +1,8 @@
-import { TaskRegistryStore } from './general-notes.mjs?v=20261102-task-notes-resources';
-import { taskEditTarget } from './task-edit.mjs?v=20261102-task-notes-resources';
-import { saveErrorFeedback } from './core.mjs?v=20261102-task-notes-resources';
-import { taskHeading } from './task-plan.mjs?v=20261102-task-notes-resources';
-import { TaskNotesError, taskNotesValues, taskNotesKey, newTaskImprovement, improvementStates, prepareTaskNotesSave, saveTaskNotesDocument } from './task-notes.mjs?v=20261102-task-notes-resources';
+import { TaskRegistryStore } from './general-notes.mjs?v=20261102-ppt-guided-icons';
+import { taskEditTarget } from './task-edit.mjs?v=20261102-ppt-guided-icons';
+import { saveErrorFeedback } from './core.mjs?v=20261102-ppt-guided-icons';
+import { taskHeading } from './task-plan.mjs?v=20261102-ppt-guided-icons';
+import { TaskNotesError, taskNotesValues, taskNotesKey, newTaskImprovement, improvementStates, prepareTaskNotesSave, saveTaskNotesDocument } from './task-notes.mjs?v=20261102-ppt-guided-icons';
 
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const node = (tag, className = '', text) => { const element = document.createElement(tag); element.className = className; if (text !== undefined) element.textContent = text; return element; };

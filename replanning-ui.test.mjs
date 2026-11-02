@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createReplanningUI } from './replanning-ui.mjs?v=20261102-task-notes-resources';
+import { createReplanningUI } from './replanning-ui.mjs?v=20261102-ppt-guided-icons';
 
 function setup(documentValue) {
   const previous = globalThis.document, elements = new Map();

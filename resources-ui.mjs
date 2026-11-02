@@ -1,7 +1,7 @@
-import { resourceTypes, resourceValues, assertResourceRead, prepareResourceSave, ResourceEditError, parsePrivateLocation, locationInput, safeResourceUrl, validateResources, validateModuleResources, effectiveResourceDestination } from './resources.mjs?v=20261102-task-notes-resources';
-import { saveTaskDocument } from './task-edit.mjs?v=20261102-task-notes-resources';
-import { saveErrorFeedback } from './core.mjs?v=20261102-task-notes-resources';
-import { renderPrivateMarkdown } from './private-markdown.mjs?v=20261102-task-notes-resources';
+import { resourceTypes, resourceValues, assertResourceRead, prepareResourceSave, ResourceEditError, parsePrivateLocation, locationInput, safeResourceUrl, validateResources, validateModuleResources, effectiveResourceDestination } from './resources.mjs?v=20261102-ppt-guided-icons';
+import { saveTaskDocument } from './task-edit.mjs?v=20261102-ppt-guided-icons';
+import { saveErrorFeedback } from './core.mjs?v=20261102-ppt-guided-icons';
+import { renderPrivateMarkdown } from './private-markdown.mjs?v=20261102-ppt-guided-icons';
 const $ = id => document.getElementById(id);
 const equal = (a,b) => JSON.stringify(a) === JSON.stringify(b);
 const el = (tag, css = '', value) => { const item = document.createElement(tag); item.className = css; if (value !== undefined) item.textContent = value; return item; };

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createTaskNotesUI } from './task-notes-ui.mjs';
-import { ConflictError, UnknownSaveError } from './core.mjs?v=20261102-task-notes-resources';
+import { ConflictError, UnknownSaveError } from './core.mjs?v=20261102-ppt-guided-icons';
 
 const copy = value => structuredClone(value);
 function setup() {

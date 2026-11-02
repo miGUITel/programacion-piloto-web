@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {resourceGroup,groupRowResources,publicWorkspaceCandidate} from './row-resources-ui.mjs?v=20261102-task-notes-resources';
+import {resourceGroup,groupRowResources,publicWorkspaceCandidate} from './row-resources-ui.mjs?v=20261102-ppt-guided-icons';
 
 test('group related materials without losing their identities or changing their data',()=>{
   const resources=[{id:'b',type:'assignment'},{id:'ppt',type:'presentation'},{id:'a',type:'assignment'},{id:'local',type:'tool'},{id:'private',type:'guide'}],before=structuredClone(resources);

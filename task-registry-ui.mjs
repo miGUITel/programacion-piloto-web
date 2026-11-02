@@ -1,9 +1,9 @@
-import { TaskRegistryStore } from './general-notes.mjs?v=20261102-task-notes-resources';
-import { taskDateFields, taskDetails } from './module-views.mjs?v=20261102-task-notes-resources';
-import { TaskEditError, taskEditTarget, taskEditSnapshot, assertTaskRead, prepareTaskSave, saveTaskDocument } from './task-edit.mjs?v=20261102-task-notes-resources';
-import { presentationDefaults } from './task-cycle.mjs?v=20261102-task-notes-resources';
-import { taskHeading } from './task-plan.mjs?v=20261102-task-notes-resources';
-import { saveErrorFeedback, isValidDate } from './core.mjs?v=20261102-task-notes-resources';
+import { TaskRegistryStore } from './general-notes.mjs?v=20261102-ppt-guided-icons';
+import { taskDateFields, taskDetails } from './module-views.mjs?v=20261102-ppt-guided-icons';
+import { TaskEditError, taskEditTarget, taskEditSnapshot, assertTaskRead, prepareTaskSave, saveTaskDocument } from './task-edit.mjs?v=20261102-ppt-guided-icons';
+import { presentationDefaults } from './task-cycle.mjs?v=20261102-ppt-guided-icons';
+import { taskHeading } from './task-plan.mjs?v=20261102-ppt-guided-icons';
+import { saveErrorFeedback, isValidDate } from './core.mjs?v=20261102-ppt-guided-icons';
 
 const $ = id => document.getElementById(id);
 

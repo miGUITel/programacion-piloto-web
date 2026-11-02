@@ -1,6 +1,6 @@
-import { eventTypes } from './teaching.mjs?v=20261102-task-notes-resources';
-import { sessionPreparation } from './session-preparation.mjs?v=20261102-task-notes-resources';
-import { timeToMinutes } from './core.mjs?v=20261102-task-notes-resources';
+import { eventTypes } from './teaching.mjs?v=20261102-ppt-guided-icons';
+import { sessionPreparation } from './session-preparation.mjs?v=20261102-ppt-guided-icons';
+import { timeToMinutes } from './core.mjs?v=20261102-ppt-guided-icons';
 
 /** Presentation helpers. Codes, titles, dates and academic states remain unchanged. */
 export function orderedUnits(units) {

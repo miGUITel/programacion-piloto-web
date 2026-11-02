@@ -1,10 +1,10 @@
-import { validateResources, validateModuleResources, moduleResourcePath, validGithubLocation } from './resources.mjs?v=20261102-task-notes-resources';
-import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261102-task-notes-resources';
-import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261102-task-notes-resources';
-import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261102-task-notes-resources';
+import { validateResources, validateModuleResources, moduleResourcePath, validGithubLocation } from './resources.mjs?v=20261102-ppt-guided-icons';
+import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261102-ppt-guided-icons';
+import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261102-ppt-guided-icons';
+import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261102-ppt-guided-icons';
 
-import { validatePlanningChanges } from './replanning.mjs?v=20261102-task-notes-resources';
-import { validateTeachingNotes } from './task-teaching-notes.mjs?v=20261102-task-notes-resources';
+import { validatePlanningChanges } from './replanning.mjs?v=20261102-ppt-guided-icons';
+import { validateTeachingNotes } from './task-teaching-notes.mjs?v=20261102-ppt-guided-icons';
 
 const OWNER = 'miGUITel';
 const REPOSITORY = 'programacion-piloto-datos';

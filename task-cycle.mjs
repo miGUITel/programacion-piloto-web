@@ -1,6 +1,6 @@
-import { isValidDate } from './core.mjs?v=20261102-task-notes-resources';
-import { sessionTaskTargets } from './teaching.mjs?v=20261102-task-notes-resources';
-import { madridToday } from './unit-tools.mjs?v=20261102-task-notes-resources';
+import { isValidDate } from './core.mjs?v=20261102-ppt-guided-icons';
+import { sessionTaskTargets } from './teaching.mjs?v=20261102-ppt-guided-icons';
+import { madridToday } from './unit-tools.mjs?v=20261102-ppt-guided-icons';
 
 export const taskStates = Object.freeze({ planned: 'Planificada', presented: 'Presentada', 'to-correct': 'Por corregir', corrected: 'Corregida' });
 

@@ -1,7 +1,7 @@
 /** RF 28: preparation is derived from resources, never manual session checks. */
-import { sessionPreparation } from './session-preparation.mjs?v=20261102-task-notes-resources';
-import { taskPreparationGroups, createPreparationTask, taskRemovalIssue } from './preparation-tasks.mjs?v=20261102-task-notes-resources';
-import { detachTaskLinks, sameTaskLinks } from './preparation-links.mjs?v=20261102-task-notes-resources';
+import { sessionPreparation } from './session-preparation.mjs?v=20261102-ppt-guided-icons';
+import { taskPreparationGroups, createPreparationTask, taskRemovalIssue } from './preparation-tasks.mjs?v=20261102-ppt-guided-icons';
+import { detachTaskLinks, sameTaskLinks } from './preparation-links.mjs?v=20261102-ppt-guided-icons';
 export const preparationMaterials = ['ppt', 'web', 'tasks', 'exam'];
 export const preparationLabels = { pending: 'Pendiente', draft: 'En preparación', 'exam-pending': 'Examen pendiente', ready: 'Preparada' };
 export const materialLabels = { ppt: 'PPT', web: 'Web', tasks: 'Tareas', exam: 'Examen' };

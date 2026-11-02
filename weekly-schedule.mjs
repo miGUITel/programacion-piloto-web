@@ -1,9 +1,9 @@
 // A read-only weekly projection of the common timetable and current unit JSONs.
-import { sessionPreparation } from './session-preparation.mjs?v=20261102-task-notes-resources';
-import { preparationSummary } from './preparation.mjs?v=20261102-task-notes-resources';
-import { excludedSession } from './replanning.mjs?v=20261102-task-notes-resources';
-import { evaluationsFor } from './common-course.mjs?v=20261102-task-notes-resources';
-import { visiblePlanTasks } from './task-plan.mjs?v=20261102-task-notes-resources';
+import { sessionPreparation } from './session-preparation.mjs?v=20261102-ppt-guided-icons';
+import { preparationSummary } from './preparation.mjs?v=20261102-ppt-guided-icons';
+import { excludedSession } from './replanning.mjs?v=20261102-ppt-guided-icons';
+import { evaluationsFor } from './common-course.mjs?v=20261102-ppt-guided-icons';
+import { visiblePlanTasks } from './task-plan.mjs?v=20261102-ppt-guided-icons';
 
 const validDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
   && Number.isFinite(Date.parse(value + 'T12:00:00Z')) && new Date(value + 'T12:00:00Z').toISOString().slice(0,10) === value;

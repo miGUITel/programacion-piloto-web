@@ -1,6 +1,6 @@
-import { approvedChanges, planningSnapshot, excludedSession, planningStatus, sessionDisplayLabel, sessionPlanningLabel, resolutionLabels, planningLimit, planningMargin, teachingDates, formatPlanningComparison, operationComplete, PlanningError } from './replanning.mjs?v=20261102-task-notes-resources';
+import { approvedChanges, planningSnapshot, excludedSession, planningStatus, sessionDisplayLabel, sessionPlanningLabel, resolutionLabels, planningLimit, planningMargin, teachingDates, formatPlanningComparison, operationComplete, PlanningError } from './replanning.mjs?v=20261102-ppt-guided-icons';
 const $ = id => document.getElementById(id);
-import { movesInChange } from './planning-shifts.mjs?v=20261102-task-notes-resources';
+import { movesInChange } from './planning-shifts.mjs?v=20261102-ppt-guided-icons';
 const node = (tag, className = '', value) => { const el = document.createElement(tag); el.className = className; if (value !== undefined) el.textContent = value; return el; };
 const shortDate = d => d.split('-').reverse().join('/');
 

@@ -1,4 +1,4 @@
-import { ApiError, ConflictError, UnknownSaveError, validateCatalog, validateTaskRegistry, encodeUtf8Base64, decodeUtf8Base64 } from './core.mjs?v=20261102-task-notes-resources';
+import { ApiError, ConflictError, UnknownSaveError, validateCatalog, validateTaskRegistry, encodeUtf8Base64, decodeUtf8Base64 } from './core.mjs?v=20261102-ppt-guided-icons';
 
 const codes = new Set(['LM', 'SR', 'SOS', 'ED', 'PRO']);
 const object = value => value && typeof value === 'object' && !Array.isArray(value);

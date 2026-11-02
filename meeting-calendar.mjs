@@ -1,5 +1,5 @@
-import { meetingsForDay } from './startup-context.mjs?v=20261102-task-notes-resources';
-import { recordGroup, recordKey, groupForSchedule, meetingTitle } from './meeting-records.mjs?v=20261102-task-notes-resources';
+import { meetingsForDay } from './startup-context.mjs?v=20261102-ppt-guided-icons';
+import { recordGroup, recordKey, groupForSchedule, meetingTitle } from './meeting-records.mjs?v=20261102-ppt-guided-icons';
 
 export const hasMeetingContent = record => Boolean(record?.notes?.trim() || record?.minutes?.text?.trim() || ['topics', 'requests'].some(field => record?.[field]?.some(value => value.trim())));
 export const calendarGroups = document => (document?.groups ?? []).map(group => ({ ...group, space: 'meetings' }));

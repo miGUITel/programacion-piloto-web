@@ -1,5 +1,5 @@
-import { taskDetails, taskTarget } from './module-views.mjs?v=20261102-task-notes-resources';
-import { UnknownSaveError } from './core.mjs?v=20261102-task-notes-resources';
+import { taskDetails, taskTarget } from './module-views.mjs?v=20261102-ppt-guided-icons';
+import { UnknownSaveError } from './core.mjs?v=20261102-ppt-guided-icons';
 
 /** A task transaction owns its source/version; it never saves the Unit draft. */
 export class TaskEditError extends Error {
