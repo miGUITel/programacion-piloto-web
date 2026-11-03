@@ -97,7 +97,17 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
       const title = el('button', 'unit-link', unitLabel(row.unit));
       title.type = 'button'; title.title = title.textContent;
       title.addEventListener('click', () => onOpen(row.unit.path)); label.append(title);
-      if (row.record) { label.append(preparationBadge(row.record.document, () => onPreparation(row.record.entry), state.allRecords ?? records)); if (planStatus) label.append(planStatus(row.record.document)); }
+      if (row.record) {
+        const status = el('span', 'overview-unit-status');
+        status.append(preparationBadge(row.record.document, () => onPreparation(row.record.entry), state.allRecords ?? records));
+        if (planStatus) {
+          const signals = planStatus(row.record.document);
+          const icon = signals.querySelector('.plan-summary');
+          if (icon) icon.textContent = '↪';
+          if (signals.children.length) status.append(signals);
+        }
+        label.append(status);
+      }
       if (row.unit.path === activePath) label.append(el('span', 'overview-active', 'Abierta'));
       if (!row.record) label.append(el('span', 'overview-unavailable', 'Sin datos · reintenta Actualizar'));
       if (row.shiftIssue) label.append(el('span', 'overview-shift-note', row.shiftIssue));
