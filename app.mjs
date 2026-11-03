@@ -27,6 +27,7 @@ import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261102-text-int
 import { createTaskNotesUI } from './task-notes-ui.mjs?v=20261102-text-integrity';
 import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261102-text-integrity';
 import { renderUnitInformation, sessionInformationLines } from './unit-information.mjs?v=20261102-text-integrity';
+import { createUnitCurriculumUI } from './unit-curriculum-ui.mjs?v=20261103-unit-curriculum';
 import { createPreparationUI } from './preparation-ui.mjs?v=20261102-text-integrity';
 import { createSessionEditorUI, bindSessionEditRow } from './session-editor-ui.mjs?v=20261102-text-integrity';
 
@@ -171,6 +172,7 @@ function updateSaveState() {
   sessionEditorUI.availability();
   resourcesUI.availability();
   taskNotesUI.availability();
+  unitCurriculumUI.updateAvailability();
   $('resume-task-notes').hidden = !taskNotesUI.hasPending();
   $('resume-task-notes').disabled = busy || taskNotesUI.isOpen();
   meetingsUI.availability();
@@ -187,7 +189,7 @@ function selectedEntry() {
 
 function navigationBlocked() {
   return meetingWorkOpen() || busy || !connection || hasPendingChanges() || blockedSave || $('editor').open || (registryUI.isOpen() || taskNotesUI.isOpen()) || preparationUI.isOpen() || sessionEditorUI.isOpen() || resourcesUI.isOpen()
-    || generalNotesUI.hasPending() || generalNotesUI.isOpen() || $('module-profile-dialog').open || $('suggestions-dialog').open;
+    || generalNotesUI.hasPending() || generalNotesUI.isOpen() || $('module-profile-dialog').open || unitCurriculumUI.isOpen() || $('suggestions-dialog').open;
 }
 
 function restoreUnitSelection() {
@@ -1138,6 +1140,7 @@ async function connect(event) {
     registryUI.disconnect();
     taskNotesUI.disconnect();
     moduleProfileUI.disconnect();
+    unitCurriculumUI.clear();
     preparationUI.clear(); sessionEditorUI.clear(); resourcesUI.clear(); rowResourcesUI.clear(); replanningUI.clear();
     documentStores.clear();
     catalog = null;
@@ -1174,6 +1177,7 @@ function disconnect() {
   registryUI.disconnect();
   taskNotesUI.disconnect();
   moduleProfileUI.disconnect();
+  unitCurriculumUI.clear();
   preparationUI.clear(); sessionEditorUI.clear(); resourcesUI.clear(); rowResourcesUI.clear(); replanningUI.clear();
   presentationUI.clear();
   $('editor').close();
@@ -1613,6 +1617,15 @@ const moduleProfileUI = createModuleProfileUI({
   getTarget: () => catalog?.modules.find(item => item.code === $('module-select').value),
   getRecords: () => libraryRecords(),
   otherEditorOpen: () => $('editor').open || presentationUI.isOpen() || ((registryUI.isOpen() || taskNotesUI.isOpen()) || preparationUI.isOpen() || sessionEditorUI.isOpen() || resourcesUI.isOpen()) || generalNotesUI.isOpen() || $('suggestions-dialog').open,
+});
+const unitCurriculumUI = createUnitCurriculumUI({
+  isBusy: () => busy, getConnection: () => connection,
+  getTarget() {
+    const module = catalog?.modules.find(item => item.code === activeEntry?.moduleCode);
+    return connection && module && draft && currentView === 'unit' ? { module, document: draft } : null;
+  },
+  otherEditorOpen: () => Boolean(document.querySelector('dialog[open]:not(#unit-curriculum-dialog)')),
+  onStateChange: updateSaveState,
 });
 const preparationUI = createPreparationUI({
   makeTaskNotesActions,

@@ -1158,6 +1158,11 @@ textarea{resize:vertical;line-height:1.6}
 .unit-information-content h3 { font-size:17px; margin:18px 0 7px; }
 .unit-information-content h3:first-child { margin-top:0; }
 .unit-information-content p { margin:7px 0; white-space:pre-wrap; }
+.unit-curriculum-open { color:var(--teal); white-space:nowrap; min-height:32px; }
+.unit-curriculum-outcome + .unit-curriculum-outcome { border-top:1px solid var(--line); margin-top:20px; padding-top:16px; }
+.unit-curriculum-outcome ul { padding-left:22px; }
+.unit-curriculum-outcome li { margin:10px 0; white-space:pre-wrap; }
+@media(max-width:600px) { .unit-curriculum-open { min-height:44px; } #unit-curriculum-dialog .suggestions-footer { flex-wrap:wrap; } }
 .unit-information-dialog .suggestions-footer { align-items:center; gap:12px; }
 .unit-information-dialog .suggestions-footer .scope-note { margin-right:auto; }
 @media(max-width:760px) {
