@@ -1,20 +1,23 @@
-import { preparationMaterials, materialLabels, preparationValues, preparationSummary, preparationSnapshot, assertPreparationRead, preparePreparationSave, PreparationError } from './preparation.mjs?v=20261102-text-integrity';
-import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261102-text-integrity';
-import { taskPreparationGroups, taskAdditionIssue, createPreparationTask, taskRemovalIssue, taskType } from './preparation-tasks.mjs?v=20261102-text-integrity';
-import { saveTaskDocument } from './task-edit.mjs?v=20261102-text-integrity';
-import { saveErrorFeedback } from './core.mjs?v=20261102-text-integrity';
-import { removalImpact, removalWarning, taskLinks } from './preparation-links.mjs?v=20261102-text-integrity';
-import { savePreparationWithLinks } from './preparation-save.mjs?v=20261102-text-integrity';
+import { preparationMaterials, materialLabels, preparationValues, preparationSummary, preparationSnapshot, assertPreparationRead, preparePreparationSave, PreparationError } from './preparation.mjs?v=20261109-common-preparation';
+import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261109-common-preparation';
+import { taskPreparationGroups, taskAdditionIssue, createPreparationTask, taskRemovalIssue, taskType } from './preparation-tasks.mjs?v=20261109-common-preparation';
+import { saveTaskDocument } from './task-edit.mjs?v=20261109-common-preparation';
+import { saveErrorFeedback } from './core.mjs?v=20261109-common-preparation';
+import { removalImpact, removalWarning, taskLinks } from './preparation-links.mjs?v=20261109-common-preparation';
+import { savePreparationWithLinks } from './preparation-save.mjs?v=20261109-common-preparation';
+import { isCommonTeachingResource } from './resources.mjs?v=20261109-common-preparation';
+import { sessionDisplayLabel } from './replanning.mjs?v=20261109-common-preparation';
 const $ = id => document.getElementById(id);
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const el = (tag, css = '', text) => { const item = document.createElement(tag); item.className = css; if (text !== undefined) item.textContent = text; return item; };
 const examPartOptions = [['', 'Sin asignar'], ['test', 'Test (T)'], ['practical', 'Práctico (P)'], ['both', 'Test y práctico (T/P)']];
+const preparationCounts = summary => `${summary.materials}/4 grupos resueltos · ${summary.sessions}/${summary.total} sesiones activas preparadas`;
 
 export function preparationBadge(document, onClick, records = []) {
   const summary = preparationSummary(document, records);
   const badge = el('button', 'preparation-badge preparation-' + summary.state, summary.label);
-  badge.type = 'button'; badge.title = `${summary.materials}/4 materiales · ${summary.sessions}/${summary.total} sesiones activas por recursos${summary.excluded ? ' · '+summary.excluded+' cancelada/s o reprogramada/s fuera del cómputo' : ''}${summary.detail ? ' · '+summary.detail : ''}`;
-  badge.setAttribute('aria-label', `${document.module.code} · ${document.unit.code}: ${summary.label}. Editar preparación`);
+  badge.type = 'button'; badge.title = `${preparationCounts(summary)}${summary.excluded ? ' · '+summary.excluded+' cancelada/s o reprogramada/s fuera del cómputo' : ''}${summary.detail ? ' · '+summary.detail : ''}`;
+  badge.setAttribute('aria-label', `${document.module.code} · ${document.unit.code}: ${summary.label}. ${summary.detail ? summary.detail + '. ' : ''}Editar preparación`);
   badge.addEventListener('click', onClick); return badge;
 }
 
@@ -48,11 +51,13 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
     const snapshot = preparationSnapshot(loaded.document, values, records), summary = preparationSummary(snapshot, records);
     $('preparation-result').textContent = summary.label;
     $('preparation-result').className = 'preparation-badge preparation-' + summary.state;
-    $('preparation-detail').textContent = `${summary.materials}/4 materiales · ${summary.sessions}/${summary.total} sesiones activas por recursos${summary.excluded ? ' · '+summary.excluded+' cancelada/s o reprogramada/s fuera del cómputo' : ''}${summary.total ? '' : ' · Falta planificar las sesiones'}${summary.detail ? ' · '+summary.detail : ''}`;
+    $('preparation-detail').textContent = `${preparationCounts(summary)}${summary.excluded ? ' · '+summary.excluded+' cancelada/s o reprogramada/s fuera del cómputo' : ''}${summary.total ? '' : ' · Falta planificar las sesiones'}${summary.detail ? ' · '+summary.detail : ''}`;
+    const exceptions = $('preparation-common-exceptions');
+    if (exceptions) exceptions.hidden = !values.commonResourceRefs.length;
     renderSessionResourceBand($('preparation-session-band'), snapshot, { records });
     for (const key of ['tasks', 'exam']) {
       const group = summary.groups[key];
-      const text = `${group.ready}/${group.total} ${key === 'tasks' ? 'preparadas' : 'preparados'} · ${group.state === 'Sin mirar' ? 'Pendiente' : group.state}`;
+      const text = group.state === 'No aplica' ? group.state : `${group.ready}/${group.total} ${key === 'tasks' ? 'preparadas' : 'preparados'} · ${group.state === 'Sin mirar' ? 'Pendiente' : group.state}`;
       $('preparation-total-' + key).textContent = text;
       $('preparation-material-' + key).textContent = text;
     }
@@ -126,13 +131,23 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
         const undo = el('button', 'button button-small', 'Deshacer'); undo.type = 'button'; undo.setAttribute('aria-label', `Deshacer eliminación de ${task.code} · ${task.title}`);
         undo.addEventListener('click', () => {
           if (isBusy() || blocked) return;
-          const next = { ...values, removals: values.removals.filter(id => id !== task.id) };
+          const next = { ...values, materials: { ...values.materials }, removals: values.removals.filter(id => id !== task.id) };
+          if (next.materials[key] === 'No aplica') next.materials[key] = loaded.document.unit.resourcePreparation?.[key] ?? '';
           try { preparationSnapshot(loaded.document, next); values = next; confirmations.delete(task.id); renderTaskLists(); preview(); message('Eliminación deshecha.'); }
           catch (error) { message(error.message, 'warning'); }
         });
         row.append(undo); group.append(row);
       }
-      if (!groups[key].total) group.append(el('p', 'scope-note', type === 'task' ? 'No hay tareas en la lista oficial.' : 'No hay exámenes en la lista oficial.'));
+      if (!groups[key].total) {
+        const label = el('label', '', name), select = el('select');
+        select.setAttribute('aria-label', `Aplicación de ${name.toLowerCase()}`);
+        for (const [value, title] of [['Sin mirar', 'Pendiente de revisar'], ['No aplica', 'No aplica']]) {
+          const option = el('option', '', title); option.value = value; select.append(option);
+        }
+        select.value = values.materials[key] === 'No aplica' ? 'No aplica' : 'Sin mirar';
+        select.addEventListener('change', () => { values.materials[key] = select.value; preview(); });
+        label.append(select); group.append(label);
+      }
       if (!issue) {
         const add = el('button', 'button', type === 'task' ? 'Añadir tarea' : 'Añadir examen'); add.type = 'button';
         add.addEventListener('click', () => editNewTask(type)); group.append(add);
@@ -140,6 +155,31 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
       root.append(group);
     }
     if (issue) root.append(el('p', 'message warning', issue));
+  }
+  function commonMaterials() {
+    const fieldset = el('fieldset'); fieldset.append(el('legend', '', 'Materiales comunes'));
+    const document = loaded.document;
+    const resources = (document.resources ?? []).filter(isCommonTeachingResource);
+    if (!resources.length) {
+      fieldset.append(el('p', 'scope-note', 'Añade una PPT, Web o apuntes en Recursos para poder compartirlos entre sesiones.'));
+      return fieldset;
+    }
+    fieldset.append(el('p', 'scope-note', 'Los materiales seleccionados se aplican a las sesiones de la unidad, salvo las excepciones que marques.'));
+    function checkbox(text, checked, change) {
+      const label = el('label', 'preparation-session'), input = el('input');
+      input.type = 'checkbox'; input.checked = checked;
+      input.addEventListener('change', () => { change(input.checked); preview(); });
+      label.append(input, el('span', '', text)); return label;
+    }
+    for (const resource of resources) fieldset.append(checkbox(resource.title, values.commonResourceRefs.includes(resource.id), checked => {
+      values.commonResourceRefs = checked ? [...values.commonResourceRefs, resource.id] : values.commonResourceRefs.filter(id => id !== resource.id);
+    }));
+    const exceptions = el('details'); exceptions.id = 'preparation-common-exceptions';
+    exceptions.append(el('summary', '', 'Sesiones que no usan materiales comunes'));
+    for (const session of document.sessions) exceptions.append(checkbox(`${sessionDisplayLabel(document, session, records())} · ${session.activities[0]?.title ?? session.date}`, values.commonResourceExceptions.includes(session.id), checked => {
+      values.commonResourceExceptions = checked ? [...values.commonResourceExceptions, session.id] : values.commonResourceExceptions.filter(id => id !== session.id);
+    }));
+    fieldset.append(exceptions); return fieldset;
   }
   function fill() {
     confirmations.clear();
@@ -159,7 +199,7 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
       select.value = values.materials[key]; select.addEventListener('change', () => { values.materials[key] = select.value; preview(); });
       label.append(select); materials.append(label);
     }
-    fields.append(materials);
+    fields.append(materials, commonMaterials());
     const tasks = el('div', 'preparation-task-lists'); tasks.id = 'preparation-task-lists';
     const sessions = el('fieldset', 'preparation-sessions'); sessions.append(el('legend', '', 'Sesiones'));
     if (!loaded.document.sessions.length) sessions.append(el('p', 'scope-note', 'Esta UT todavía no tiene sesiones.'));
@@ -226,7 +266,10 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
       const issue = additionIssue(entry); if (issue) throw new Error(issue);
       const snapshot = preparationSnapshot(loaded.document, values);
       const task = createPreparationTask(snapshot, newTaskInput(), `${entry.unitId}-item-${crypto.randomUUID()}`);
-      values.additions.push(task); resetNewTask(); renderTaskLists(); preview();
+      values.additions.push(task);
+      const key = task.type === 'exam' ? 'exam' : 'tasks';
+      if (values.materials[key] === 'No aplica') values.materials[key] = 'Sin mirar';
+      resetNewTask(); renderTaskLists(); preview();
       message('Elemento añadido al borrador. Pulsa Guardar preparación para incorporarlo a la lista oficial.');
     } catch (error) { $('preparation-new-message').textContent = error.message; }
   });
@@ -260,7 +303,7 @@ export function createPreparationUI({ getState, getActive, unitStore, isBusy, se
       link.addEventListener('click', event => { event.preventDefault(); if (!isBusy()) onOpenUnit(unit.path); });
       row.append(link, el('span', 'preparation-unit-title', record?.document.unit.title ?? unit.title));
       if (record) {
-        row.append(el('span', 'scope-note', `${summary.materials}/4 materiales · ${summary.sessions}/${summary.total} sesiones activas`));
+        row.append(el('span', 'scope-note', `${preparationCounts(summary)}${summary.detail ? ' · ' + summary.detail : ''}`));
         row.append(preparationBadge(record.document, () => open(record.entry), records));
       } else row.append(el('span', 'preparation-unavailable', ready ? 'No se ha podido consultar' : 'Cargando…'));
       list.append(row);

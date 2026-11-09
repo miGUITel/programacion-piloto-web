@@ -1,4 +1,4 @@
-import { dayLetters, dayNames, evaluationsFor } from './common-course.mjs?v=20261102-text-integrity';
+import { dayLetters, dayNames, evaluationsFor } from './common-course.mjs?v=20261109-common-preparation';
 
 const node = (tag, text, className = '') => {
   const e = document.createElement(tag); e.className = className;

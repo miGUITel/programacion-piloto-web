@@ -1,5 +1,5 @@
-import { ApiError, ConflictError, UnknownSaveError, decodeUtf8Base64, encodeUtf8Base64, assertTextIntegrity } from './core.mjs?v=20261102-text-integrity';
-import { meetingNotesPath, validateMeetingNotes } from './startup-context.mjs?v=20261102-text-integrity';
+import { ApiError, ConflictError, UnknownSaveError, decodeUtf8Base64, encodeUtf8Base64, assertTextIntegrity } from './core.mjs?v=20261109-common-preparation';
+import { meetingNotesPath, validateMeetingNotes } from './startup-context.mjs?v=20261109-common-preparation';
 
 // One fixed private registry. Every note save has a version and confirmed reread.
 export class MeetingReader {

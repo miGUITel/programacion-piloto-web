@@ -1,7 +1,9 @@
 /** RF 28: preparation is derived from resources, never manual session checks. */
-import { sessionPreparation } from './session-preparation.mjs?v=20261102-text-integrity';
-import { taskPreparationGroups, createPreparationTask, taskRemovalIssue } from './preparation-tasks.mjs?v=20261102-text-integrity';
-import { detachTaskLinks, sameTaskLinks } from './preparation-links.mjs?v=20261102-text-integrity';
+import { sessionPreparation } from './session-preparation.mjs?v=20261109-common-preparation';
+import { taskPreparationGroups, createPreparationTask, taskRemovalIssue } from './preparation-tasks.mjs?v=20261109-common-preparation';
+import { detachTaskLinks, sameTaskLinks } from './preparation-links.mjs?v=20261109-common-preparation';
+import { validateCommonPreparationResources } from './resources.mjs?v=20261109-common-preparation';
+import { sessionDisplayLabel } from './replanning.mjs?v=20261109-common-preparation';
 export const preparationMaterials = ['ppt', 'web', 'tasks', 'exam'];
 export const preparationLabels = { pending: 'Pendiente', draft: 'En preparación', 'exam-pending': 'Examen pendiente', ready: 'Preparada' };
 export const materialLabels = { ppt: 'PPT', web: 'Web', tasks: 'Tareas', exam: 'Examen' };
@@ -13,13 +15,17 @@ const fail = (code, message) => { throw new PreparationError(code, message); };
 
 export function preparationValues(document) {
   return { materials: Object.fromEntries(preparationMaterials.map(key => [key, document.unit.resourcePreparation?.[key] ?? ''])),
+    commonResourceRefs: [...(document.unit.commonResourceRefs ?? [])],
+    commonResourceExceptions: document.sessions.filter(session => session.useCommonResources === false).map(session => session.id),
     examParts: Object.fromEntries((document.tasks ?? []).filter(task => task.type === 'exam').map(task => [task.id, task.examPart ?? ''])),
     tasks: Object.fromEntries((document.tasks ?? []).map(task => [task.id, task.preparation ?? ''])), additions: [], removals: [] };
 }
 
 export function preparationSummary(document, records = []) {
   const groups = taskPreparationGroups(document);
-  const materials = preparationMaterials.filter(key => (groups[key]?.state ?? document.unit.resourcePreparation?.[key]) === 'Listo').length;
+  const complete = state => state === 'Listo' || state === 'No aplica';
+  const materialStates = preparationMaterials.map(key => [key, groups[key]?.state ?? document.unit.resourcePreparation?.[key]]);
+  const materials = materialStates.filter(([, state]) => complete(state)).length;
   const sessionDetails = document.sessions.map(session => sessionPreparation(document, session, records));
   const activeSessions = sessionDetails.filter(session => !session.excluded);
   const sessions = activeSessions.filter(session => session.ready).length;
@@ -27,16 +33,29 @@ export function preparationSummary(document, records = []) {
   const excluded = sessionDetails.length - total;
   const unlinked = activeSessions.filter(session => !session.known).length;
   const teachingReady = ['ppt','web'].every(key => document.unit.resourcePreparation?.[key] === 'Listo')
-    && groups.tasks.state === 'Listo' && total > 0 && !unlinked
+    && complete(groups.tasks.state) && total > 0 && !unlinked
     && activeSessions.every(session => session.dependencies.every(item => item.kind === 'exam' || item.ready));
   const examMissing = groups.exam.items.filter(task => task.preparation !== 'ready');
   const state = materials === 4 && total > 0 && sessions === total ? 'ready'
     : teachingReady && groups.exam.total > 0 && (examMissing.length || sessionDetails.some(session => session.missing.some(item => item.kind === 'exam'))) ? 'exam-pending'
-    : materials > 0 || groups.tasks.ready > 0 || groups.exam.ready > 0 || sessionDetails.some(session => session.dependencies.some(item => item.ready)) ? 'draft' : 'pending';
+    : materialStates.some(([, state]) => state === 'Listo') || groups.tasks.ready > 0 || groups.exam.ready > 0 || sessionDetails.some(session => session.dependencies.some(item => item.ready)) ? 'draft' : 'pending';
+  const blockers = [];
+  if (unlinked) {
+    const labels = document.sessions.filter((_, index) => !sessionDetails[index].known && !sessionDetails[index].excluded)
+      .map(session => sessionDisplayLabel(document, session, records));
+    blockers.push(`${labels.slice(0, 3).join(', ')}${labels.length > 3 ? ` y ${labels.length - 3} más` : ''} sin recursos vinculados`);
+  }
+  const pendingMaterials = materialStates.filter(([, state]) => !complete(state)).map(([key]) => materialLabels[key]);
+  if (pendingMaterials.length) blockers.push(`Falta revisar ${pendingMaterials.join(', ')}`);
+  const pendingSessions = document.sessions.filter((_, index) => sessionDetails[index].known && sessionDetails[index].missing.length);
+  if (pendingSessions.length && state !== 'exam-pending') {
+    const labels = pendingSessions.map(session => sessionDisplayLabel(document, session, records));
+    blockers.push(`${labels.slice(0, 3).join(', ')}${labels.length > 3 ? ` y ${labels.length - 3} más` : ''} con recursos pendientes`);
+  }
   const detail = state === 'exam-pending' ? 'Falta preparar: ' + [...new Set([
     ...examMissing.map(task => `Examen ${task.code} · ${task.title}`),
     ...sessionDetails.flatMap(session => session.missing.filter(item => item.kind === 'exam').map(item => item.label)),
-  ])].join('; ') : unlinked ? `${unlinked} sesión/es con recursos sin vincular` : !groups.exam.total ? 'Examen por concretar' : '';
+  ])].join('; ') : blockers.join(' · ');
   return { state, label: preparationLabels[state], materials, sessions, total, excluded, groups, sessionDetails, unlinked, detail };
 }
 
@@ -58,6 +77,20 @@ export function preparationSnapshot(document, values, records = []) {
     if (value) result.unit.resourcePreparation[key] = value; else delete result.unit.resourcePreparation[key];
   }
   if (result.unit.resourcePreparation && !Object.keys(result.unit.resourcePreparation).length) delete result.unit.resourcePreparation;
+  const commonRefs = values.commonResourceRefs ?? original.commonResourceRefs;
+  const exceptions = values.commonResourceExceptions ?? original.commonResourceExceptions;
+  if (!Array.isArray(commonRefs) || !Array.isArray(exceptions) || new Set(exceptions).size !== exceptions.length
+    || exceptions.some(id => !result.sessions.some(session => session.id === id))) fail('PREPARATION_INVALID', 'Revisa los materiales comunes y sus excepciones.');
+  if (!equal(commonRefs, original.commonResourceRefs)) {
+    if (commonRefs.length) result.unit.commonResourceRefs = [...commonRefs]; else delete result.unit.commonResourceRefs;
+  }
+  for (const session of result.sessions) {
+    if (exceptions.includes(session.id)) session.useCommonResources = false;
+    else if (session.useCommonResources === false) delete session.useCommonResources;
+  }
+  const resourceErrors = [];
+  validateCommonPreparationResources(result, resourceErrors);
+  if (resourceErrors.length) fail('PREPARATION_INVALID', 'Revisa los materiales comunes seleccionados.');
   // Preserve legacy visibility before replacing its former manual preparation gate.
   // V3 approvals are explicit and are never created by a preparation calculation.
   if (document.schemaVersion !== 3) for (const task of result.tasks ?? []) {
@@ -97,12 +130,12 @@ export function preparationSnapshot(document, values, records = []) {
     task.preparation = addition.preparation;
     (result.tasks ??= []).push(task);
   }
-  const groups = taskPreparationGroups(result);
   for (const key of ['tasks', 'exam']) {
-    // No automatic completion for an empty list and no inference from former aggregate marks.
-    if (groups[key].total || Object.hasOwn(result.unit.resourcePreparation ?? {}, key)) {
-      (result.unit.resourcePreparation ??= {})[key] = groups[key].state;
-    }
+    const noAplica = (values.materials[key] ?? original.materials[key]) === 'No aplica';
+    if (noAplica) (result.unit.resourcePreparation ??= {})[key] = 'No aplica';
+    else if (result.unit.resourcePreparation?.[key] === 'No aplica') result.unit.resourcePreparation[key] = 'Sin mirar';
+    const group = taskPreparationGroups(result)[key];
+    if (group.total || Object.hasOwn(result.unit.resourcePreparation ?? {}, key)) (result.unit.resourcePreparation ??= {})[key] = group.state;
   }
   const state = preparationSummary(result, records).state;
   if (state === 'pending') delete result.unit.preparation; else result.unit.preparation = state === 'ready' ? 'ready' : 'draft';
@@ -135,6 +168,14 @@ export function preparePreparationSave(loaded, entry, values, active, records = 
     }
     merge(unitDraft.unit, before.unit, document.unit, 'resourcePreparation');
     merge(unitDraft.unit, before.unit, document.unit, 'preparation');
+    merge(unitDraft.unit, before.unit, document.unit, 'commonResourceRefs');
+    for (const [index, session] of document.sessions.entries()) {
+      const previous = before.sessions[index];
+      if (session.useCommonResources === previous.useCommonResources) continue;
+      const target = unitDraft.sessions.find(item => item.id === session.id);
+      if (!target) fail('PREPARATION_LOCAL_CONFLICT', 'Una sesión con cambios de materiales comunes ya no está en el borrador de Unidad.');
+      merge(target, previous, session, 'useCommonResources');
+    }
     for (const task of document.tasks ?? []) {
       const original = before.tasks?.find(item => item.id === task.id);
       const target = unitDraft.tasks?.find(item => item.id === task.id);

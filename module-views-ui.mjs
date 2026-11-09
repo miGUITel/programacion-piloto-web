@@ -1,12 +1,12 @@
-import { sessionDisplayLabel, sessionPlanningLabel } from './replanning.mjs?v=20261102-text-integrity';
-import { unitLabel } from './unit-tools.mjs?v=20261102-text-integrity';
-import { moduleOverview, weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261102-text-integrity';
-import { dayLetters, dayNames, commonCoursePath } from './common-course.mjs?v=20261102-text-integrity';
-import { renderCommonCourse } from './common-course-ui.mjs?v=20261102-text-integrity';
-import { eventTypes } from './teaching.mjs?v=20261102-text-integrity';
-import { taskStates } from './task-cycle.mjs?v=20261102-text-integrity';
-import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261102-text-integrity';
-import { preparationBadge } from './preparation-ui.mjs?v=20261102-text-integrity';
+import { sessionDisplayLabel, sessionPlanningLabel } from './replanning.mjs?v=20261109-common-preparation';
+import { unitLabel } from './unit-tools.mjs?v=20261109-common-preparation';
+import { moduleOverview, weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261109-common-preparation';
+import { dayLetters, dayNames, commonCoursePath } from './common-course.mjs?v=20261109-common-preparation';
+import { renderCommonCourse } from './common-course-ui.mjs?v=20261109-common-preparation';
+import { eventTypes } from './teaching.mjs?v=20261109-common-preparation';
+import { taskStates } from './task-cycle.mjs?v=20261109-common-preparation';
+import { hasTaskPlan, taskHeading } from './task-plan.mjs?v=20261109-common-preparation';
+import { preparationBadge } from './preparation-ui.mjs?v=20261109-common-preparation';
 
 const $ = id => document.getElementById(id);
 function el(tag, className, text) {

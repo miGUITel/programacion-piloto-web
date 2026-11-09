@@ -1,4 +1,4 @@
-import { rowResources, modulePresentationFolder, effectiveResourceDestinations } from './resources.mjs?v=20261102-text-integrity';
+import { rowResources, modulePresentationFolder, effectiveResourceDestinations } from './resources.mjs?v=20261109-common-preparation';
 
 /** A display shortcut, never another academic association or preparation input. */
 export function sessionRowResources(document, session, activity, records = [], moduleResources = []) {

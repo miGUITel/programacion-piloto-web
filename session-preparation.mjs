@@ -1,5 +1,6 @@
 // Read-only dependencies. Stored session.preparation is retained as historical data.
-import { excludedSession } from './replanning.mjs?v=20261102-text-integrity';
+import { excludedSession } from './replanning.mjs?v=20261109-common-preparation';
+import { commonSessionResourceRefs } from './resources.mjs?v=20261109-common-preparation';
 const own = (value, key) => Object.hasOwn(value ?? {}, key);
 const keyOf = document => document.unit?.id ?? document.module?.code ?? '';
 
@@ -37,6 +38,7 @@ export function sessionPreparation(document, session, records = []) {
     // Tools and auxiliary links have no preparation checkbox and do not add one.
   }
   const activities = session.activities ?? [];
+  for (const id of commonSessionResourceRefs(document, session)) addResource(document, id);
   for (const id of session.resourceRefs ?? []) addResource(document, id);
   for (const activity of activities) {
     if (Array.isArray(document.tasks) && Array.isArray(activity.taskRefs) && !activity.taskRefs.length) {

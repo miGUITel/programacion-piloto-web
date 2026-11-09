@@ -1,6 +1,6 @@
-import { saveErrorFeedback } from './core.mjs?v=20261102-text-integrity';
-import { recordKey, recordGroup } from './meeting-records.mjs?v=20261102-text-integrity';
-import { withMeetingTask, withMeetingMinutes, meetingTaskRows, draftMeetingMinutes } from './meeting-work.mjs?v=20261102-text-integrity';
+import { saveErrorFeedback } from './core.mjs?v=20261109-common-preparation';
+import { recordKey, recordGroup } from './meeting-records.mjs?v=20261109-common-preparation';
+import { withMeetingTask, withMeetingMinutes, meetingTaskRows, draftMeetingMinutes } from './meeting-work.mjs?v=20261109-common-preparation';
 
 const STATES = [['pending', 'Pendiente'], ['in-progress', 'En curso'], ['completed', 'Completada']];
 const stateLabel = value => STATES.find(([key]) => key === value)?.[1] ?? value;

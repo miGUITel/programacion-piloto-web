@@ -1,5 +1,5 @@
-import { taskDetails, taskTarget } from './module-views.mjs?v=20261102-text-integrity';
-import { UnknownSaveError } from './core.mjs?v=20261102-text-integrity';
+import { taskDetails, taskTarget } from './module-views.mjs?v=20261109-common-preparation';
+import { UnknownSaveError } from './core.mjs?v=20261109-common-preparation';
 
 /** A task transaction owns its source/version; it never saves the Unit draft. */
 export class TaskEditError extends Error {

@@ -1,7 +1,7 @@
-import { assertSessionRead, sessionTextValues, prepareSessionSave, SessionEditError } from './session-edit.mjs?v=20261102-text-integrity';
-import { sessionDisplayLabel } from './replanning.mjs?v=20261102-text-integrity';
-import { saveTaskDocument } from './task-edit.mjs?v=20261102-text-integrity';
-import { saveErrorFeedback } from './core.mjs?v=20261102-text-integrity';
+import { assertSessionRead, sessionTextValues, prepareSessionSave, SessionEditError } from './session-edit.mjs?v=20261109-common-preparation';
+import { sessionDisplayLabel } from './replanning.mjs?v=20261109-common-preparation';
+import { saveTaskDocument } from './task-edit.mjs?v=20261109-common-preparation';
+import { saveErrorFeedback } from './core.mjs?v=20261109-common-preparation';
 const $ = id => document.getElementById(id);
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const node = (tag, className = '', text) => { const el = document.createElement(tag); el.className = className; if (text !== undefined) el.textContent = text; return el; };

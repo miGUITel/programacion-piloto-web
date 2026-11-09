@@ -1,11 +1,11 @@
-import { validateResources, validateModuleResources, moduleResourcePath, validGithubLocation } from './resources.mjs?v=20261102-text-integrity';
-import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261102-text-integrity';
-import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261102-text-integrity';
-import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261102-text-integrity';
+import { validateResources, validateModuleResources, moduleResourcePath, validGithubLocation, validateCommonPreparationResources } from './resources.mjs?v=20261109-common-preparation';
+import { officialCode, validateExtendedTask, validateV3Document } from './model-v3.mjs?v=20261109-common-preparation';
+import { moduleProfilePath, validateModuleProfile } from './module-profile.mjs?v=20261109-common-preparation';
+import { commonCoursePath, validateCommonCourse } from './common-course.mjs?v=20261109-common-preparation';
 
-import { validatePlanningChanges } from './replanning.mjs?v=20261102-text-integrity';
-import { validateTeachingNotes } from './task-teaching-notes.mjs?v=20261102-text-integrity';
-import { findTextIntegrityIssues } from './text-integrity.mjs?v=20261102-text-integrity';
+import { validatePlanningChanges } from './replanning.mjs?v=20261109-common-preparation';
+import { validateTeachingNotes } from './task-teaching-notes.mjs?v=20261109-common-preparation';
+import { findTextIntegrityIssues } from './text-integrity.mjs?v=20261109-common-preparation';
 
 const OWNER = 'miGUITel';
 const REPOSITORY = 'programacion-piloto-datos';
@@ -199,6 +199,7 @@ export function validateDocument(doc, expectedEntry) {
   validateJson(doc, 'document', errors);
   if (![1, 2, 3].includes(doc.schemaVersion)) errors.push('schemaVersion: debe ser 1, 2 o 3.');
   validateResources(doc.resources, errors);
+  validateCommonPreparationResources(doc, errors);
   const isV2 = doc.schemaVersion === 2 || doc.schemaVersion === 3;
   const isV3 = doc.schemaVersion === 3;
   if (doc.pilot !== true) errors.push('pilot: debe ser true.');

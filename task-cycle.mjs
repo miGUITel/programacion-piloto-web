@@ -1,6 +1,6 @@
-import { isValidDate } from './core.mjs?v=20261102-text-integrity';
-import { sessionTaskTargets } from './teaching.mjs?v=20261102-text-integrity';
-import { madridToday } from './unit-tools.mjs?v=20261102-text-integrity';
+import { isValidDate } from './core.mjs?v=20261109-common-preparation';
+import { sessionTaskTargets } from './teaching.mjs?v=20261109-common-preparation';
+import { madridToday } from './unit-tools.mjs?v=20261109-common-preparation';
 
 export const taskStates = Object.freeze({ planned: 'Planificada', presented: 'Presentada', 'to-correct': 'Por corregir', corrected: 'Corregida' });
 

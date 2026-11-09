@@ -4,6 +4,21 @@ const text = value => typeof value === 'string' && value.trim().length > 0;
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const own = (value, key) => Object.hasOwn(value, key);
 export const resourceTypes = Object.freeze({ assignment: 'Enunciado', guide: 'Ficha docente', presentation: 'PPT', web: 'Web', tool: 'Herramienta o entorno', notes: 'Apuntes', example: 'Ejemplo', exam: 'Examen', solution: 'Solución', moodle: 'Aula Virtual', other: 'Otro recurso' });
+export const isCommonTeachingResource = resource => ['presentation', 'web', 'notes'].includes(resource?.type);
+export const commonSessionResourceRefs = (document, session) => session.useCommonResources === false ? [] : (document.unit?.commonResourceRefs ?? []);
+
+export function validateCommonPreparationResources(document, errors) {
+  if (object(document.unit) && own(document.unit, 'commonResourceRefs')) {
+    const refs = document.unit.commonResourceRefs;
+    const resources = Array.isArray(document.resources) ? document.resources : [];
+    if (!Array.isArray(refs) || new Set(refs).size !== refs.length || refs.some(id => !text(id) || !resources.some(r => r?.id === id && isCommonTeachingResource(r)))) {
+      errors.push('unit.commonResourceRefs: indica referencias únicas a PPT, Web o apuntes de la unidad.');
+    }
+  }
+  if (Array.isArray(document.sessions)) document.sessions.forEach((session, index) => {
+    if (object(session) && own(session, 'useCommonResources') && typeof session.useCommonResources !== 'boolean') errors.push(`sessions[${index}].useCommonResources: debe ser booleano.`);
+  });
+}
 export const moduleResourcePath = code => ['LM','SR','ED','PRO','SOS'].includes(code) ? `${code}/resources.json` : null;
 // These are explicit module destinations, never associations inferred from titles.
 export function modulePresentationFolder(resources = []) {
@@ -123,6 +138,9 @@ export function prepareResourceSave(loaded, entry, values, active) {
     document.resources = structuredClone(values.resources); unitDraft.resources = structuredClone(values.resources);
   }
   const ids = new Set(values.resources.map(r => r.id));
+  const commonIssues = [];
+  for (const candidate of [document, unitDraft]) validateCommonPreparationResources(candidate, commonIssues);
+  if (commonIssues.length) fail('RESOURCE_IN_USE', 'Un material común sigue vinculado. Revisa la selección en Preparación antes de eliminarlo o cambiar su tipo.');
   const references = [document.unit, ...document.sessions.flatMap(session => [session, ...session.activities])];
   if (references.some(item => item.resourceRefs?.some(id => !ids.has(id)))) fail('RESOURCE_IN_USE', 'Un recurso eliminado sigue vinculado a una sesión o actividad. Revisa esas referencias antes de retirarlo.');
   if (!equal(Object.keys(values.taskRefs).sort(), Object.keys(before.taskRefs).sort())) fail('RESOURCE_INVALID', 'La lista de tareas ha cambiado. Conserva el borrador y revisa la unidad.');
@@ -147,7 +165,10 @@ export function rowResources(document, session, activity, records = []) {
     }
   };
   add(document, activity?.resourceRefs);
-  if (session.activities?.[0]?.id === activity?.id) add(document, session.resourceRefs);
+  if (session.activities?.[0]?.id === activity?.id) {
+    add(document, session.resourceRefs);
+    add(document, commonSessionResourceRefs(document, session));
+  }
   if (own(activity ?? {}, 'resourceRefs')) return { resources: [...sources.values()], unresolved: [...unresolved] };
   for (const { document: owner } of [{ document }, ...records.filter(record => record.document !== document && record.document.module?.code === document.module?.code)]) {
     for (const task of owner.tasks ?? []) {

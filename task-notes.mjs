@@ -1,5 +1,5 @@
-import { taskEditTarget, assertTaskRead, saveTaskDocument } from './task-edit.mjs?v=20261102-text-integrity';
-import { validateTeachingNotes as validateTaskNotes, improvementStates } from './task-teaching-notes.mjs?v=20261102-text-integrity';
+import { taskEditTarget, assertTaskRead, saveTaskDocument } from './task-edit.mjs?v=20261109-common-preparation';
+import { validateTeachingNotes as validateTaskNotes, improvementStates } from './task-teaching-notes.mjs?v=20261109-common-preparation';
 export { validateTaskNotes, improvementStates };
 
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);

@@ -1,4 +1,4 @@
-import { validateMeetingDocument, recordGroup } from './meeting-records.mjs?v=20261102-text-integrity';
+import { validateMeetingDocument, recordGroup } from './meeting-records.mjs?v=20261109-common-preparation';
 // Navigation preferences contain references only. Academic data stays remote.
 const object = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 const string = v => typeof v === 'string' && v.length > 0 && v.length <= 300;

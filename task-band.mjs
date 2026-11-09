@@ -1,5 +1,5 @@
-import { visiblePlanTasks } from './task-plan.mjs?v=20261102-text-integrity';
-import { safeResourceUrl, validGithubLocation } from './resources.mjs?v=20261102-text-integrity';
+import { visiblePlanTasks } from './task-plan.mjs?v=20261109-common-preparation';
+import { safeResourceUrl, validGithubLocation } from './resources.mjs?v=20261109-common-preparation';
 
 const preferredTypes = ['assignment', 'guide'];
 const fallbackTypes = new Set(['presentation', 'web', 'tool', 'notes', 'example', 'moodle', 'other']);

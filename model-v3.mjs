@@ -36,7 +36,11 @@ export function validateV3Document(doc, errors) {
   if (own(unit, 'plannedLoad') && (!object(unit.plannedLoad) || !Number.isFinite(unit.plannedLoad.value) || unit.plannedLoad.value < 0 || !['teachingPeriod', 'minute', 'clockHour'].includes(unit.plannedLoad.unit))) errors.push('unit.plannedLoad: número no negativo y unidad de medida explícita requeridos.');
   if (own(unit, 'resourcePreparation')) {
     if (!object(unit.resourcePreparation)) errors.push('unit.resourcePreparation: debe ser un objeto.');
-    else for (const field of ['ppt', 'web', 'tasks', 'exam']) if (own(unit.resourcePreparation, field) && !['Sin mirar', 'En proceso', 'Listo'].includes(unit.resourcePreparation[field])) errors.push(`unit.resourcePreparation.${field}: estado de preparación no válido.`);
+    else for (const field of ['ppt', 'web', 'tasks', 'exam']) {
+      const states = ['Sin mirar', 'En proceso', 'Listo'];
+      if (field === 'tasks' || field === 'exam') states.push('No aplica');
+      if (own(unit.resourcePreparation, field) && !states.includes(unit.resourcePreparation[field])) errors.push(`unit.resourcePreparation.${field}: estado de preparación no válido.`);
+    }
   }
   // RF 3 derives preparation from material/session marks; task approval stays explicit.
   const resources = new Set();

@@ -1,5 +1,5 @@
-import { annualPlanRows, annualPlannedPeriods } from './module-profile.mjs?v=20261102-text-integrity';
-import { preparationSummary } from './preparation.mjs?v=20261102-text-integrity';
+import { annualPlanRows, annualPlannedPeriods } from './module-profile.mjs?v=20261109-common-preparation';
+import { preparationSummary } from './preparation.mjs?v=20261109-common-preparation';
 
 export function createModuleProfileUI({ isBusy, setBusy, getConnection, getTarget, getRecords, otherEditorOpen }) {
   const $ = id => document.getElementById(id);

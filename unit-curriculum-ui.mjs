@@ -1,4 +1,4 @@
-import { unitCurriculum } from './unit-curriculum.mjs?v=20261103-unit-curriculum';
+import { unitCurriculum } from './unit-curriculum.mjs?v=20261109-common-preparation';
 
 export function createUnitCurriculumUI({ isBusy, getConnection, getTarget, otherEditorOpen, onStateChange = () => {} }) {
   const $ = id => document.getElementById(id);

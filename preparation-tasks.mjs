@@ -7,7 +7,9 @@ export function taskPreparationGroups(document) {
   return Object.fromEntries([['tasks', 'task'], ['exam', 'exam']].map(([key, type]) => {
     const items = (document.tasks ?? []).filter(task => taskType(task) === type);
     const ready = items.filter(task => task.preparation === 'ready').length;
-    return [key, { items, ready, total: items.length, state: items.length && ready === items.length ? 'Listo' : ready ? 'En proceso' : 'Sin mirar' }];
+    const state = !items.length && document.unit.resourcePreparation?.[key] === 'No aplica' ? 'No aplica'
+      : items.length && ready === items.length ? 'Listo' : ready ? 'En proceso' : 'Sin mirar';
+    return [key, { items, ready, total: items.length, state }];
   }));
 }
 

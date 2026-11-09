@@ -1,5 +1,5 @@
-import { sessionBand, madridToday } from './unit-tools.mjs?v=20261102-text-integrity';
-import { sessionDisplayLabel } from './replanning.mjs?v=20261102-text-integrity';
+import { sessionBand, madridToday } from './unit-tools.mjs?v=20261109-common-preparation';
+import { sessionDisplayLabel } from './replanning.mjs?v=20261109-common-preparation';
 
 export function renderSessionResourceBand(container, document, { records = [], today = madridToday(), onOpen, busy = false } = {}) {
   container.replaceChildren();container.dataset.today=today;
