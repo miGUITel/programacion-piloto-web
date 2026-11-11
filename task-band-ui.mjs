@@ -1,7 +1,7 @@
 import { taskBand } from './task-band.mjs?v=20261109-common-preparation';
 import { safeResourceUrl, validGithubLocation } from './resources.mjs?v=20261109-common-preparation';
 
-export function renderTaskBand(section, list, document, { resourceUI, isBusy, onManage }) {
+export function renderTaskBand(section, list, document, { resourceUI, isBusy, onManage, makeExamAction }) {
   list.replaceChildren();section.hidden=!document;
   if(!document)return;
   const band=taskBand(document);
@@ -13,6 +13,7 @@ export function renderTaskBand(section, list, document, { resourceUI, isBusy, on
       const title=`${kind==='task'?'Tarea '+item.label:item.label} · ${item.title} · ${readiness}`;
       const label=kind==='exam'&&item.examPart?(item.examPart==='test'?'T':'P'):item.label;
       const access=resourceUI.access({resources:item.resources,moduleCode:document.module.code,label,title,
+        extraActions:kind==='exam'&&makeExamAction?(item.ownerIds??[]).map(id=>document.tasks.find(task=>task.id===id)).filter(Boolean).map(task=>()=>makeExamAction(task)):[],
         unresolved:item.accessWarnings??[...(item.unresolved??[]),...(item.unclassified??[])],onManage,
         emptyMessage:kind==='task'?'Esta tarea todavía no tiene un enunciado o ficha enlazados.':item.known
           ?'El cuestionario de Aula Virtual requiere autenticación y no necesita un enlace aquí. Puedes consultar desde esta banda su ficha docente privada cuando esté asociada.'

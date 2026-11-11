@@ -185,10 +185,10 @@ export function createRowResourcesUI({isBusy,canOpen,openPrivate,getModuleResour
   }
   // The task band shares the same private reader and safe external links as rows.
   // Missing destinations are explicit; opening a resource never writes a document.
-  function access({resources,moduleCode,label,title,unresolved=[],onManage,emptyMessage='Todavía no hay un recurso enlazado.'}) {
+  function access({resources,moduleCode,label,title,unresolved=[],onManage,extraActions=[],emptyMessage='Todavía no hay un recurso enlazado.'}) {
     resources=effectiveResourceDestinations(resources,getModuleResources(moduleCode));
     const location=resources[0]?.location;
-    const direct=resources.length===1&&!unresolved.length&&(location?.kind==='https'&&safeResourceUrl(location.url,location.public===true)||validGithubLocation(location)||publicWorkspaceCandidate(resources[0],moduleCode,getModuleResources(moduleCode)));
+    const direct=!extraActions.length&&resources.length===1&&!unresolved.length&&(location?.kind==='https'&&safeResourceUrl(location.url,location.public===true)||validGithubLocation(location)||publicWorkspaceCandidate(resources[0],moduleCode,getModuleResources(moduleCode)));
     const item=direct?control(resources[0],moduleCode,label):node('button','',label);
     item.title=title;item.setAttribute('aria-label',title);
     if(direct&&location.kind==='github'){item.setAttribute('aria-haspopup','dialog');item.setAttribute('aria-controls','resource-private-dialog');}
@@ -197,6 +197,7 @@ export function createRowResourcesUI({isBusy,canOpen,openPrivate,getModuleResour
       item.addEventListener('click',()=>{
         if(!allowed())return;
         ensurePicker();returnTo=item;heading.textContent=title;body.replaceChildren();
+        for(const makeAction of extraActions) { const action=makeAction(); if(action)body.append(action); }
         if(!resources.length)body.append(node('p','',emptyMessage));
         const list=node('ul','resource-choice-list');
         for(const resource of resources) {

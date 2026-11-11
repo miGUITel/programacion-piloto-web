@@ -1473,3 +1473,7 @@ dialog :is(.suggestions-header,.editor-header) > :first-child { min-width:0; ove
 .meeting-minutes-print{display:none}
 @media(max-width:600px){.meeting-work-dialog{width:calc(100vw - 16px);max-height:calc(100dvh - 16px)}.meeting-work-dialog .suggestions-form{max-height:calc(100dvh - 18px)}.meeting-work-dialog .meeting-work-form{padding:14px}.meeting-work-dialog .message{margin:0 14px 10px}.meeting-work-grid{grid-template-columns:1fr}.meeting-work-panel{padding:12px}.meeting-work-actions .button,.meeting-work-task-row .button,.meeting-task-global-row .button{min-height:44px}.meeting-task-filters{align-items:stretch}.meeting-task-filters label{flex:1 1 150px}.meeting-task-filters select{min-width:0;width:100%}.meeting-task-global-row{grid-template-columns:minmax(0,1fr)}.meeting-task-global-row>.button{justify-self:start}}
 @media print{body.meeting-minutes-printing>*:not(.meeting-minutes-print){display:none!important}body.meeting-minutes-printing .meeting-minutes-print{display:block!important;white-space:pre-wrap;background:white;color:black;padding:16px}body.meeting-minutes-printing .meeting-minutes-print pre{font:12pt/1.5 Georgia,serif;white-space:pre-wrap;overflow-wrap:anywhere}}
+:where(#student-followup-settings) .suggestions-body { padding: 1rem 1.5rem; }
+:where(#student-followup-settings) input { width: 100%; min-width: 0; }
+.student-followup-link { white-space: normal; text-align: left; }
+#registry-followup:not(:empty) { padding: 0 1.5rem .75rem; }

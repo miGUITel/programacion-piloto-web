@@ -9,13 +9,13 @@ import { createMeetingWorkUI } from './meeting-work-ui.mjs?v=20261109-common-pre
 import { createMeetingTaskListUI } from './meeting-task-list-ui.mjs?v=20261109-common-preparation';
 import { createResourcesUI } from './resources-ui.mjs?v=20261109-common-preparation';
 import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261109-common-preparation';
-import { renderTaskBand } from './task-band-ui.mjs?v=20261109-common-preparation';
+import { renderTaskBand } from './task-band-ui.mjs?v=20261111-followup';
 import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261109-common-preparation';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261109-common-preparation';
 import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261109-common-preparation';
 import { orderedUnits, unitLabel, madridToday, presentationPeriods, compactSessionHeaders, globalSessionExpansion, calendarCurrentUnits } from './unit-tools.mjs?v=20261109-common-preparation';
 import { sessionRowResources } from './session-resource-defaults.mjs?v=20261109-common-preparation';
-import { createRowResourcesUI } from './row-resources-ui.mjs?v=20261109-common-preparation';
+import { createRowResourcesUI } from './row-resources-ui.mjs?v=20261111-followup';
 import { eventTypes, setSessionEventType, activityEventType, activityEventTypes, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261109-common-preparation';
 import { libraryIntegrity } from './model-v3.mjs?v=20261109-common-preparation';
 import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261109-common-preparation';
@@ -23,11 +23,13 @@ import { createModuleViews } from './module-views-ui.mjs?v=20261109-common-prepa
 import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261109-common-preparation';
 import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261109-common-preparation';
 import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261109-common-preparation';
-import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261109-common-preparation';
+import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261111-followup';
 import { createTaskNotesUI } from './task-notes-ui.mjs?v=20261109-common-preparation';
-import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261109-common-preparation';
+import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261111-followup';
 import { renderUnitInformation, sessionInformationLines } from './unit-information.mjs?v=20261109-common-preparation';
-import { createUnitCurriculumUI } from './unit-curriculum-ui.mjs?v=20261109-common-preparation';
+import { createUnitCurriculumUI } from './unit-curriculum-ui.mjs?v=20261111-followup';
+import { examFollowup } from './student-followup.mjs?v=20261111-followup';
+import { createStudentFollowupUI } from './student-followup-ui.mjs?v=20261111-followup';
 import { createPreparationUI } from './preparation-ui.mjs?v=20261109-common-preparation';
 import { createSessionEditorUI, bindSessionEditRow } from './session-editor-ui.mjs?v=20261109-common-preparation';
 
@@ -684,6 +686,8 @@ function makeRowResources(session, activity) {
 
 function makeTaskNotesActions(task) {
   const actions = node('div', 'task-notes-actions');
+  const followup = examFollowup(task);
+  if (followup) actions.append(studentFollowupUI.button(followup, 'Alumnado ↗'));
   const notes = task.teachingNotes ?? {};
   for (const [mode, field, label, content] of [
     ['feedback', 'observations', 'Feedback al grupo', Boolean(notes.feedback?.trim())],
@@ -937,7 +941,7 @@ function renderSessions() {
   $('workspace').style.setProperty('--row-resource-width', `${resourceIcons * 28 + (resourceIcons - 1) * 3}px`);
   refreshTemporalIndicators();
   renderSessionBand();
-  renderTaskBand($('task-band-section'),$('task-band'),draft,{resourceUI:rowResourcesUI,isBusy:()=>busy,onManage:()=>resourcesUI.open('unit')});
+  renderTaskBand($('task-band-section'),$('task-band'),draft,{resourceUI:rowResourcesUI,isBusy:()=>busy,onManage:()=>resourcesUI.open('unit'),makeExamAction:task=>studentFollowupUI.button(examFollowup({entry:activeEntry,officialTaskId:task.id,...task}),`Seguimiento del alumnado · ${task.code} · ${task.title} ↗`)});
   moduleViews.render(); renderStats(); preparationUI.render(); resourcesUI.render();
   if (busy) $('workspace').querySelectorAll('button, input, textarea, select').forEach(element => { element.disabled = true; });
   updateSaveState();
@@ -1517,6 +1521,7 @@ const presentationUI = createTaskPresentationUI({
   onClose(focusId) { if (draft) renderSessions(); if (focusId) $(focusId)?.focus({ preventScroll: true }); }
 });
 const registryUI = createTaskRegistryUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState,
+  makeExamAction: task => { const context = examFollowup(task); return context ? studentFollowupUI.button(context) : null; },
   canOpen(task) {
     if (libraryIntegrity([...libraryRecords(), ...registryUI.records()]).some(issue => issue.code === 'DUPLICATE_TASK' && issue.moduleCode === task.entry.moduleCode && issue.taskId === (task.officialTaskId || task.registryTaskId))) {
       message('workspace-message', 'Esta tarea aparece en más de un documento. Revisa su conciliación antes de editarla.', 'warning'); return false;
@@ -1613,12 +1618,18 @@ const generalNotesUI = createGeneralNotesUI({
   },
 });
 const moduleProfileUI = createModuleProfileUI({
+  makeFollowupAction: (ra, target) => studentFollowupUI.button({ kind: 'ra', module: target.code, ref: ra.code, label: `RA${ra.code}` }),
   isBusy: () => busy, setBusy, getConnection: () => connection,
   getTarget: () => catalog?.modules.find(item => item.code === $('module-select').value),
   getRecords: () => libraryRecords(),
   otherEditorOpen: () => $('editor').open || presentationUI.isOpen() || ((registryUI.isOpen() || taskNotesUI.isOpen()) || preparationUI.isOpen() || sessionEditorUI.isOpen() || resourcesUI.isOpen()) || generalNotesUI.isOpen() || $('suggestions-dialog').open,
 });
+const studentFollowupUI = createStudentFollowupUI({
+  isBusy: () => busy,
+  getContext(moduleCode) { return { course: catalog?.courseId || startupCommon?.course?.id || '', group: startupCommon?.modules?.find(m => m.code === moduleCode)?.group || '' }; },
+});
 const unitCurriculumUI = createUnitCurriculumUI({
+  makeFollowupAction: (ra, target) => ra.code ? studentFollowupUI.button({ kind: 'ra', module: target.module.code, ref: ra.code, label: ra.label }) : null,
   isBusy: () => busy, getConnection: () => connection,
   getTarget() {
     const module = catalog?.modules.find(item => item.code === activeEntry?.moduleCode);

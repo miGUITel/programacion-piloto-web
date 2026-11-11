@@ -34,7 +34,7 @@ export function unitCurriculum(document, profile) {
     if (source?.criteriaStatus === 'pending' || !Object.hasOwn(ref, 'ceCodes') && !codes.length) {
       warnings.push('CE pendientes de concretar para esta unidad.');
     } else if (!codes.length) warnings.push('Este RA no tiene CE asociados a esta unidad.');
-    return { label: raLabel(ra?.code ?? ref.raCode), text: ra?.text ?? '', criteria, warnings };
+    return { code: ra?.code ?? null, label: raLabel(ra?.code ?? ref.raCode), text: ra?.text ?? '', criteria, warnings };
   });
   return {
     associationSource: source === unit ? 'Asociaciones registradas en la UT.' : 'Asociaciones del recorrido anual del módulo.',

@@ -1,7 +1,7 @@
 import { annualPlanRows, annualPlannedPeriods } from './module-profile.mjs?v=20261109-common-preparation';
 import { preparationSummary } from './preparation.mjs?v=20261109-common-preparation';
 
-export function createModuleProfileUI({ isBusy, setBusy, getConnection, getTarget, getRecords, otherEditorOpen }) {
+export function createModuleProfileUI({ isBusy, setBusy, getConnection, getTarget, getRecords, otherEditorOpen, makeFollowupAction = () => null }) {
   const $ = id => document.getElementById(id);
   const dialog = $('module-profile-dialog');
   let loaded = null, target = null, activeTab = 'plan';
@@ -66,6 +66,7 @@ export function createModuleProfileUI({ isBusy, setBusy, getConnection, getTarge
     const details = node('details', 'profile-curriculum'); details.append(node('summary', '', 'Resultados de aprendizaje y criterios de evaluación'));
     for (const ra of profile.curriculum.outcomes) {
       const item = node('details'); item.append(node('summary', '', `RA${ra.code} · ${ra.text}`));
+      const followup = makeFollowupAction(ra, target); if (followup) item.append(followup);
       list(item, ra.criteria.map(ce => `${ce.code}: ${ce.text}`)); details.append(item);
     }
     paragraph(details, profile.curriculum.sourceLabel, 'scope-note'); section.append(details);

@@ -1,6 +1,6 @@
-import { unitCurriculum } from './unit-curriculum.mjs?v=20261109-common-preparation';
+import { unitCurriculum } from './unit-curriculum.mjs?v=20261111-followup';
 
-export function createUnitCurriculumUI({ isBusy, getConnection, getTarget, otherEditorOpen, onStateChange = () => {} }) {
+export function createUnitCurriculumUI({ isBusy, getConnection, getTarget, otherEditorOpen, onStateChange = () => {}, makeFollowupAction = () => null }) {
   const $ = id => document.getElementById(id);
   const dialog = $('unit-curriculum-dialog'), opener = $('unit-curriculum-open');
   const content = $('unit-curriculum-content'), message = $('unit-curriculum-message');
@@ -43,6 +43,7 @@ export function createUnitCurriculumUI({ isBusy, getConnection, getTarget, other
       for (const ra of view.outcomes) {
         const section = node('section', '', 'unit-curriculum-outcome');
         section.append(node('h3', ra.label), node('p', ra.text));
+        const followup = makeFollowupAction(ra, snapshot); if (followup) section.append(followup);
         if (ra.criteria.length) {
           const ul = node('ul');
           for (const ce of ra.criteria) {

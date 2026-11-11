@@ -11,10 +11,10 @@
   <link rel="icon" href="./favicon.ico?v=20261029" sizes="16x16 32x32 48x48">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20261029">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20261029">
-  <link rel="stylesheet" href="./styles.css?v=20261103-unit-curriculum">
+  <link rel="stylesheet" href="./styles.css?v=20261111-followup">
   <link rel="stylesheet" href="./weekly-schedule.css?v=20261102-ppt-guided-icons">
   <link rel="stylesheet" href="./task-notes.css?v=20261102-ppt-guided-icons">
-  <script type="module" src="./app.mjs?v=20261109-common-preparation"></script>
+  <script type="module" src="./app.mjs?v=20261111-followup"></script>
 </head>
 <body>
   <header class="app-header">
@@ -36,6 +36,8 @@
         <details id="connection-menu" class="connection-menu">
           <summary id="connection-status" class="toolbar-icon" aria-label="Sin conectar. Opciones del cuaderno" title="Sin conectar. Opciones del cuaderno"><span id="connection-label" class="connection-label" role="img" aria-label="Sin conectar"><span class="status-dot" aria-hidden="true"></span></span></summary>
           <div class="toolbar-menu">
+            <button id="student-followup-open" class="button toolbar-menu-action" type="button">Recuperaciones ↗</button>
+            <button id="student-followup-configure" class="button toolbar-menu-action" type="button">Configurar seguimiento del alumnado</button>
             <button id="resume-context" class="button toolbar-menu-action" type="button" hidden>Continuar donde estaba</button>
             <button id="resume-task-notes" class="button toolbar-menu-action" type="button" hidden>Notas de tarea pendientes</button>
             <button id="open-meetings" class="button toolbar-menu-action" type="button" disabled>Reuniones</button>
@@ -234,6 +236,7 @@
   <dialog id="registry-dialog" class="suggestions-dialog" aria-labelledby="registry-title">
     <form id="registry-form" class="suggestions-form">
       <header class="suggestions-header"><h2 id="registry-title"></h2></header>
+      <div id="registry-followup"></div>
       <div class="suggestions-content"><p class="field-help">Guardar tarea conserva solo este seguimiento. No guarda las notas pendientes ni cambia la unidad abierta.</p>
         <div class="task-date-inputs"><label>Presentada<input id="registry-presentedOn" type="date"></label><label>Entrega<input id="registry-dueOn" type="date"></label><label>Corregir<input id="registry-correctBy" type="date"></label></div>
         <div class="task-editor-checks"><label><input id="registry-presented" type="checkbox">Presentada</label><label><input id="registry-corrected" type="checkbox">Corregida</label></div>

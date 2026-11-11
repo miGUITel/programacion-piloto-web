@@ -8,7 +8,7 @@ import { saveErrorFeedback, isValidDate } from './core.mjs?v=20261109-common-pre
 const $ = id => document.getElementById(id);
 
 /** One independent editor for official, legacy and historic tasks. */
-export function createTaskRegistryUI({ isBusy, setBusy, canOpen, onChange, onStateChange, unitStore, getActive, onSaved, onBlocked, capturePosition, restorePosition }) {
+export function createTaskRegistryUI({ isBusy, setBusy, canOpen, onChange, onStateChange, unitStore, getActive, onSaved, onBlocked, capturePosition, restorePosition, makeExamAction = () => null }) {
   let token = null, current = null, loaded = null, blocked = false, sourceStore = null, position = null;
   const stores = new Map(), records = new Map(); let failures = [];
   const readForm = () => ({ ...Object.fromEntries(taskDateFields.map(field => [field, $('registry-' + field).value])), presented: $('registry-presented').checked, corrected: $('registry-corrected').checked });
@@ -65,6 +65,8 @@ export function createTaskRegistryUI({ isBusy, setBusy, canOpen, onChange, onSta
       loaded = result; current = task; blocked = false; fill();
       remember(task, result);
       const item = target(); $('registry-title').textContent = taskHeading(task.entry.moduleCode, item.code || task.code, item.title || task.title);
+      if ($('registry-followup')) $('registry-followup').textContent = '';
+      const followup = makeExamAction(task); if (followup) $('registry-followup')?.append(followup);
       if (action) $(action === 'presented' ? 'registry-presented' : 'registry-corrected').checked = value;
       defaults(); message();
       const active = getActive();
