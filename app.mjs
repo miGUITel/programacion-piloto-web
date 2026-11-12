@@ -28,8 +28,8 @@ import { createTaskNotesUI } from './task-notes-ui.mjs?v=20261109-common-prepara
 import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261111-followup';
 import { renderUnitInformation, sessionInformationLines } from './unit-information.mjs?v=20261109-common-preparation';
 import { createUnitCurriculumUI } from './unit-curriculum-ui.mjs?v=20261111-followup';
-import { examFollowup } from './student-followup.mjs?v=20261111-followup';
-import { createStudentFollowupUI } from './student-followup-ui.mjs?v=20261111-followup';
+import { examFollowup } from './student-followup.mjs?v=20261112-followup-workspace';
+import { createStudentFollowupUI } from './student-followup-ui.mjs?v=20261112-followup-workspace';
 import { createPreparationUI } from './preparation-ui.mjs?v=20261109-common-preparation';
 import { createSessionEditorUI, bindSessionEditRow } from './session-editor-ui.mjs?v=20261109-common-preparation';
 

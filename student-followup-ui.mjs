@@ -1,4 +1,4 @@
-import { FOLLOWUP_SETTING, followupBase, followupUrl } from './student-followup.mjs?v=20261111-followup';
+import { FOLLOWUP_SETTING, followupBase, followupUrl } from './student-followup.mjs?v=20261112-followup-workspace';
 
 export function createStudentFollowupUI({ getContext = () => ({}), isBusy = () => false } = {}) {
   const node = (tag, text = '') => { const el = document.createElement(tag); el.textContent = text; return el; };
@@ -11,7 +11,7 @@ export function createStudentFollowupUI({ getContext = () => ({}), isBusy = () =
   const body = node('div'); body.className = 'suggestions-body';
   const label = node('label', 'URL de tu aplicación privada de Apps Script');
   const input = node('input'); input.id = 'student-followup-url'; input.type = 'url'; input.placeholder = 'https://script.google.com/macros/s/…/exec'; label.htmlFor = input.id;
-  const help = node('p', 'Se guarda solo esta dirección en este navegador. Los nombres y el seguimiento se consultan y guardan en Google.'); help.className = 'scope-note';
+  const help = node('p', 'Copia la URL de Aplicación web terminada en /exec. Si incluye /a/macros/ y el dominio de tu organización, conserva la dirección completa. Se guarda solo esta dirección en este navegador. Los nombres y el seguimiento se consultan y guardan en Google.'); help.className = 'scope-note';
   const status = node('p'); status.setAttribute('role', 'status');
   body.append(label, input, help, status);
   const footer = node('footer'); footer.className = 'suggestions-footer';
@@ -21,7 +21,7 @@ export function createStudentFollowupUI({ getContext = () => ({}), isBusy = () =
   function configure() { input.value = base; status.textContent = ''; if (!dialog.open) dialog.showModal(); input.focus(); }
   form.addEventListener('submit', event => {
     event.preventDefault(); const value = input.value.trim(), checked = value ? followupBase(value) : '';
-    if (value && !checked) { status.textContent = 'Usa la URL https://script.google.com/macros/s/…/exec, sin parámetros ni fragmentos.'; return; }
+    if (value && !checked) { status.textContent = 'Usa la URL de Aplicación web de script.google.com terminada en /exec, sin parámetros ni fragmentos. Se admiten las direcciones generales y las de tu organización (/a/macros/dominio/s/…/exec).'; return; }
     try { if (checked) localStorage.setItem(FOLLOWUP_SETTING, checked); else localStorage.removeItem(FOLLOWUP_SETTING); base = checked; status.textContent = 'Enlace guardado. Cierra y pulsa el acceso al examen o RA.'; }
     catch { status.textContent = 'El navegador no permite guardar la configuración. No se ha cambiado el enlace.'; }
   });

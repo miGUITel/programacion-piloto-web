@@ -5,7 +5,7 @@ export function followupBase(value) {
   try {
     const url = new URL(value);
     if (url.protocol !== 'https:' || url.hostname !== 'script.google.com' || url.port || url.username || url.password
-      || !/^\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url.pathname) || url.search || url.hash) return null;
+      || !/^\/(?:macros|a\/macros\/[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)\/s\/[A-Za-z0-9_-]+\/exec$/.test(url.pathname) || url.search || url.hash) return null;
     return url.href;
   } catch { return null; }
 }
