@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { examFollowup, followupBase, followupUrl } from './student-followup.mjs';
+import { examFollowup, followupBase, followupCurriculum, followupUrl, pendingCount, unitFollowupAlerts, validatePendingCounts } from './student-followup.mjs';
 const base='https://script.google.com/macros/s/syntheticDeployment/exec';
 const workspaceBase='https://script.google.com/a/macros/school.example.edu/s/syntheticDeployment/exec';
 test('only canonical Apps Script deployment URLs are accepted',()=>{
@@ -37,4 +37,30 @@ test('missing official identities do not become identities inferred from titles 
 test('RA context excludes unit identity so the same module RA has one destination',()=>{
   assert.equal(followupUrl(base,{kind:'ra',module:'LM',ref:'2',unit:'UT01'}),followupUrl(base,{kind:'ra',module:'LM',ref:'2',unit:'UT04'}));
   assert.notEqual(followupUrl(base,{kind:'ra',module:'LM',ref:'2'}),followupUrl(base,{kind:'ra',module:'SR',ref:'2'}));
+});
+
+test('curricular selector uses official codes and does not pass descriptions',()=>{
+  const profile={module:{code:'LM'},curriculum:{outcomes:[{code:'RA2',text:'Texto del módulo'},{code:'7',text:'Otro RA'}]}};
+  const context=followupCurriculum(new Map([['LM',profile]]));
+  const url=new URL(followupUrl(base,{course:'2099-2100'},context));
+  assert.deepEqual(JSON.parse(url.searchParams.get('curriculum')),[{code:'LM',ras:['RA2','7']}]);
+  assert.ok(!decodeURIComponent(url.href).includes('Texto del módulo'));
+});
+
+test('counts require exact course, group, module and ref; individual fields and duplicates are rejected',()=>{
+  const row={course:'2099-2100',group:'A',module:'LM',kind:'ra',ref:'2',count:3};
+  const counts=validatePendingCounts([row]);
+  assert.equal(pendingCount(counts,row),3);
+  for(const change of [{course:'2098-2099'},{group:''},{group:'B'},{module:'ED'},{ref:'RA2'},{kind:'exam'}]) assert.equal(pendingCount(counts,{...row,...change}),0);
+  assert.equal(validatePendingCounts([{...row,studentId:'PRIVATE'}]),null);
+  assert.equal(validatePendingCounts([row,row]),null);
+});
+
+test('a UT uses confirmed RA associations and counts one exam ID for both parts',()=>{
+  const unit={module:{code:'LM'},unit:{id:'unit',curriculumRefs:[{raCode:'RA2'},{raCode:'2'},{raCode:'3'}]}};
+  const profile={module:{code:'LM'},curriculum:{outcomes:[{code:'2',text:'Uno'},{code:'8',text:'Otro'}]}};
+  const task={officialTaskId:'id-exam',type:'exam',code:'01te',title:'Examen',entry:{moduleCode:'LM'}};
+  const alerts=unitFollowupAlerts(unit,profile,[task,task,{...task,entry:{moduleCode:'ED'}}],({kind})=>kind==='ra'?3:2);
+  assert.deepEqual(alerts.ra.map(({target,pending})=>[target.ref,pending]),[['2',3]]);
+  assert.deepEqual(alerts.exam.map(({target,pending})=>[target.ref,pending]),[['id-exam',2]]);
 });

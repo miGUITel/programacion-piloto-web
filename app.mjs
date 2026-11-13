@@ -9,7 +9,7 @@ import { createMeetingWorkUI } from './meeting-work-ui.mjs?v=20261109-common-pre
 import { createMeetingTaskListUI } from './meeting-task-list-ui.mjs?v=20261109-common-preparation';
 import { createResourcesUI } from './resources-ui.mjs?v=20261109-common-preparation';
 import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261109-common-preparation';
-import { renderTaskBand } from './task-band-ui.mjs?v=20261111-followup';
+import { renderTaskBand } from './task-band-ui.mjs?v=20261113-followup';
 import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261109-common-preparation';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261109-common-preparation';
 import { createGeneralNotesUI } from './general-notes-ui.mjs?v=20261109-common-preparation';
@@ -19,17 +19,17 @@ import { createRowResourcesUI } from './row-resources-ui.mjs?v=20261111-followup
 import { eventTypes, setSessionEventType, activityEventType, activityEventTypes, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261109-common-preparation';
 import { libraryIntegrity } from './model-v3.mjs?v=20261109-common-preparation';
 import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261109-common-preparation';
-import { createModuleViews } from './module-views-ui.mjs?v=20261109-common-preparation';
+import { createModuleViews } from './module-views-ui.mjs?v=20261113-followup';
 import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261109-common-preparation';
-import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261109-common-preparation';
+import { hasTaskPlan, visiblePlanTasks, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261109-common-preparation';
 import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261109-common-preparation';
 import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261111-followup';
 import { createTaskNotesUI } from './task-notes-ui.mjs?v=20261109-common-preparation';
 import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261111-followup';
 import { renderUnitInformation, sessionInformationLines } from './unit-information.mjs?v=20261109-common-preparation';
 import { createUnitCurriculumUI } from './unit-curriculum-ui.mjs?v=20261111-followup';
-import { examFollowup } from './student-followup.mjs?v=20261112-followup-workspace';
-import { createStudentFollowupUI } from './student-followup-ui.mjs?v=20261112-followup-workspace';
+import { examFollowup, followupCurriculum, unitFollowupAlerts } from './student-followup.mjs?v=20261113-followup';
+import { createStudentFollowupUI } from './student-followup-ui.mjs?v=20261113-followup';
 import { createPreparationUI } from './preparation-ui.mjs?v=20261109-common-preparation';
 import { createSessionEditorUI, bindSessionEditRow } from './session-editor-ui.mjs?v=20261109-common-preparation';
 
@@ -41,6 +41,8 @@ const progressNames = new Map([[0, 'Pendiente'], [1, 'En proceso'], [2, 'Complet
 const openSessions = new Set();
 const documentStores = new Map();
 const moduleDocuments = new Map();
+const followupProfiles = new Map();
+let followupProfilesRequest = null;
 let moduleLoadFailures = [];
 let moduleContextReady = false;
 let teachingTimeline = { sessions: [], exams: [], errors: [] };
@@ -131,6 +133,7 @@ function updateConnectionState() {
   $('connection-status').setAttribute('aria-disabled', String(busy));
   $('connection-status').title = `${label}. Información, mejoras y desconexión. La escritura se confirma al guardar.`;
   document.querySelector('.app-toolbar').classList.toggle('has-library', Boolean(catalog));
+  $('student-followup-summary').disabled = busy || !connected;
 }
 
 function updateSaveState() {
@@ -266,6 +269,8 @@ function acceptCatalog(result) {
   const previousModule = $('module-select').value;
   const previousUnit = $('unit-select').value;
   catalog = copy(result.catalog);
+  followupProfiles.clear();
+  followupProfilesRequest = null;
   for (const module of catalog.modules) module.units = orderedUnits(module.units);
   const select = $('module-select');
   select.replaceChildren();
@@ -941,10 +946,67 @@ function renderSessions() {
   $('workspace').style.setProperty('--row-resource-width', `${resourceIcons * 28 + (resourceIcons - 1) * 3}px`);
   refreshTemporalIndicators();
   renderSessionBand();
-  renderTaskBand($('task-band-section'),$('task-band'),draft,{resourceUI:rowResourcesUI,isBusy:()=>busy,onManage:()=>resourcesUI.open('unit'),makeExamAction:task=>studentFollowupUI.button(examFollowup({entry:activeEntry,officialTaskId:task.id,...task}),`Seguimiento del alumnado · ${task.code} · ${task.title} ↗`)});
+  renderFollowupControls();
   moduleViews.render(); renderStats(); preparationUI.render(); resourcesUI.render();
   if (busy) $('workspace').querySelectorAll('button, input, textarea, select').forEach(element => { element.disabled = true; });
   updateSaveState();
+}
+
+function loadFollowupProfiles() {
+  if (!connection || !catalog) return;
+  if (followupProfilesRequest) return followupProfilesRequest;
+  const reader = connection, source = catalog;
+  const missing = source.modules.filter(module => module.profile && !followupProfiles.has(module.code));
+  if (!missing.length) return;
+  const request = Promise.allSettled(missing.map(module => reader.loadModuleProfile(module))).then(results => {
+    if (connection !== reader || catalog !== source) return;
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') followupProfiles.set(missing[index].code, result.value.document);
+    });
+  }).finally(() => {
+    if (followupProfilesRequest === request) followupProfilesRequest = null;
+  });
+  followupProfilesRequest = request;
+  return request;
+}
+
+function followupAlerts(document, historical = []) {
+  const entry = { moduleCode: document.module.code, unitCode: document.unit.code };
+  const exams = visiblePlanTasks(document).map(task => ({ ...task, entry, officialTaskId: task.id }));
+  return unitFollowupAlerts(document, followupProfiles.get(entry.moduleCode), [...exams, ...historical], studentFollowupUI.count);
+}
+
+function renderFollowupControls() {
+  if (!draft) return;
+  const alerts = followupAlerts(draft);
+  const opener = $('unit-curriculum-open');
+  const raCount = alerts.ra.length;
+  const raTitle = 'RA / CE de esta unidad' + (raCount ? ' · ' + raCount + ' RA con alumnado pendiente' : '');
+  opener.textContent = 'RA / CE';
+  if (raCount) opener.append(node('span', 'followup-count', raCount));
+  opener.title = raTitle;
+  opener.setAttribute('aria-label', raTitle);
+  renderTaskBand($('task-band-section'), $('task-band'), draft, {
+    resourceUI: rowResourcesUI, isBusy: () => busy, onManage: () => resourcesUI.open('unit'),
+    examPending: ref => studentFollowupUI.count({ kind: 'exam', module: draft.module.code, ref }),
+    makeExamAction: task => studentFollowupUI.button(examFollowup({ entry: activeEntry, officialTaskId: task.id, ...task }),
+      `Seguimiento del alumnado · ${task.code} · ${task.title} ↗`),
+  });
+}
+
+async function updateFollowupAlerts() {
+  const source = catalog, reader = connection;
+  function render() {
+    if (connection !== reader || catalog !== source || !draft) return;
+    renderFollowupControls();
+    const scroller = document.querySelector('.compact-module-scroll');
+    const left = scroller.scrollLeft, top = scroller.scrollTop;
+    moduleViews.render();
+    scroller.scrollLeft = left; scroller.scrollTop = top;
+  }
+  render();
+  const profiles = loadFollowupProfiles();
+  if (profiles) { await profiles; render(); }
 }
 
 function renderSessionBand() {
@@ -1177,6 +1239,9 @@ function disconnect() {
   if (busy) return;
   if ((hasPendingChanges() || suggestionsUI.hasPending() || generalNotesUI.hasPending()) && !window.confirm('Hay cambios, mejoras o sugerencias sin guardar. Descárgalos si quieres conservarlos. ¿Quieres descartarlos y desconectar?')) return;
   suggestionsUI.disconnect();
+  studentFollowupUI.clear(false);
+  followupProfiles.clear();
+  followupProfilesRequest = null;
   generalNotesUI.disconnect();
   registryUI.disconnect();
   taskNotesUI.disconnect();
@@ -1627,6 +1692,11 @@ const moduleProfileUI = createModuleProfileUI({
 const studentFollowupUI = createStudentFollowupUI({
   isBusy: () => busy,
   getContext(moduleCode) { return { course: catalog?.courseId || startupCommon?.course?.id || '', group: startupCommon?.modules?.find(m => m.code === moduleCode)?.group || '' }; },
+  getCurriculum() {
+    const profiles = loadFollowupProfiles();
+    return profiles ? profiles.then(() => followupCurriculum(followupProfiles)) : followupCurriculum(followupProfiles);
+  },
+  onCountsChange: updateFollowupAlerts,
 });
 const unitCurriculumUI = createUnitCurriculumUI({
   makeFollowupAction: (ra, target) => ra.code ? studentFollowupUI.button({ kind: 'ra', module: target.module.code, ref: ra.code, label: ra.label }) : null,
@@ -1731,6 +1801,12 @@ const weeklyUI = createWeeklyScheduleUI({
 });
 const moduleViews = createModuleViews({
   makeTaskNotesActions,
+  makeFollowupMarker(record, historical, unit, moduleCode) {
+    if (!record && !historical.length) return null;
+    const alerts = record ? followupAlerts(record.document, historical)
+      : unitFollowupAlerts({ module: { code: moduleCode }, unit }, null, historical, studentFollowupUI.count);
+    return studentFollowupUI.unitMarker(unitLabel(unit), alerts);
+  },
   onShift: (record, focus) => replanningUI.open(record.document, focus),
   planStatus: doc => replanningUI.statusNodes(doc),
   getState: () => ({ module: catalog?.modules.find(item => item.code === activeEntry?.moduleCode), records: moduleRecords(), allRecords: libraryRecords(), taskRecords: [...libraryRecords(), ...registryUI.records()], integrityIssues: libraryIntegrity([...libraryRecords(), ...registryUI.records()]), registryFailures: registryUI.failures(), catalog, failures: moduleFailures(), allFailures: moduleLoadFailures, errors: teachingTimeline.errors, ready: moduleContextReady, today: madridToday(), activePath: activeEntry?.path, busy, connection, view: currentView }),

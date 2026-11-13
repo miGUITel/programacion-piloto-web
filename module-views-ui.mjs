@@ -25,7 +25,7 @@ function monthName(month) {
   return new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(month + '-15T12:00:00Z'));
 }
 
-export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPresented, onRetry, onPreparation, planStatus, onShift, makeTaskNotesActions = () => null }) {
+export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPresented, onRetry, onPreparation, planStatus, onShift, makeTaskNotesActions = () => null, makeFollowupMarker = () => null }) {
   let filterModule = '';
   let section = 'sessions', common = null, commonError = '', commonLoading = false, commonAttempted = false;
   let commonConnection = null, commonKey = '', generation = 0;
@@ -91,12 +91,18 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
     const header = el('div', 'overview-row overview-head');
     header.append(el('span', 'overview-label', 'UT'), el('div', 'overview-weekdays'));
     grid.append(header);
+    const historical = moduleTasks((state.taskRecords ?? []).filter(record => record.registry), module.code, today);
     for (const row of model.rows) {
       const tr = el('div', 'overview-row'), label = el('div', 'overview-label');
       tr.dataset.unitId = row.unit.id;
       const title = el('button', 'unit-link', unitLabel(row.unit));
       title.type = 'button'; title.title = title.textContent;
-      title.addEventListener('click', () => onOpen(row.unit.path)); label.append(title);
+      title.addEventListener('click', () => onOpen(row.unit.path));
+      const heading = el('div', 'overview-unit-heading');
+      heading.append(title);
+      const marker = makeFollowupMarker(row.record, historical.filter(task => task.entry.unitCode === row.unit.code), row.unit, module.code);
+      if (marker) heading.append(marker);
+      label.append(heading);
       if (row.record) {
         const status = el('span', 'overview-unit-status');
         status.append(preparationBadge(row.record.document, () => onPreparation(row.record.entry), state.allRecords ?? records));

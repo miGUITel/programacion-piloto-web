@@ -1477,3 +1477,15 @@ dialog :is(.suggestions-header,.editor-header) > :first-child { min-width:0; ove
 :where(#student-followup-settings) input { width: 100%; min-width: 0; }
 .student-followup-link { white-space: normal; text-align: left; }
 #registry-followup:not(:empty) { padding: 0 1.5rem .75rem; }
+.followup-menu-status { margin:4px 10px 8px; }
+.followup-count { display:inline-grid; place-items:center; min-width:16px; height:16px; padding:0 3px; border-radius:8px; background:#8c2635; color:white; font-size:10px; line-height:1; font-weight:750; }
+.unit-curriculum-open .followup-count { margin-inline-start:5px; }
+.task-band-exam { position:relative; }
+.followup-exam-count { position:absolute; inset:0 0 auto auto; transform:translate(30%,-28%); border:1px solid #fffefa; pointer-events:none; z-index:1; }
+.task-band-exam:last-child:has(.followup-exam-count) { margin-inline-end:6px; }
+.overview-unit-heading { display:flex; align-items:center; gap:4px; min-width:0; }
+.overview-unit-heading .unit-link { flex:1 1 auto; min-width:0; }
+.followup-unit-marker { flex:none; padding:1px 4px; border:1px solid #d9a6ad; border-radius:4px; background:#fff0f1; color:#842a38; font-size:10px; line-height:1.4; font-weight:700; white-space:nowrap; cursor:pointer; }
+.followup-detail-links { display:grid; gap:8px; padding:1rem 1.5rem; }
+.followup-receipt main { max-width:620px; margin:36px auto; padding:20px; }
+@media(max-width:600px){.overview-unit-heading{flex-wrap:wrap}.overview-unit-heading .unit-link{flex-basis:100%}}

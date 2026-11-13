@@ -1,7 +1,7 @@
 import { taskBand } from './task-band.mjs?v=20261109-common-preparation';
 import { safeResourceUrl, validGithubLocation } from './resources.mjs?v=20261109-common-preparation';
 
-export function renderTaskBand(section, list, document, { resourceUI, isBusy, onManage, makeExamAction }) {
+export function renderTaskBand(section, list, document, { resourceUI, isBusy, onManage, makeExamAction, examPending = () => 0 }) {
   list.replaceChildren();section.hidden=!document;
   if(!document)return;
   const band=taskBand(document);
@@ -10,7 +10,9 @@ export function renderTaskBand(section, list, document, { resourceUI, isBusy, on
       const cell=globalThis.document.createElement('li');cell.className=`task-band-cell task-band-${kind}`;
       cell.dataset[kind==='task'?'taskId':item.examPart?'examPart':'examId']=item.id;
       const readiness=item.prepared?(kind==='task'?'Preparada':'Preparado'):item.known?'Pendiente de preparar':'Sin examen asociado';
-      const title=`${kind==='task'?'Tarea '+item.label:item.label} · ${item.title} · ${readiness}`;
+      const pending=kind==='exam'?[...new Set(item.ownerIds??[])].reduce((total,id)=>total+examPending(id),0):0;
+      const reminder=pending?(pending===1?' · 1 repetición pendiente':' · '+pending+' repeticiones pendientes'):'';
+      const title=`${kind==='task'?'Tarea '+item.label:item.label} · ${item.title} · ${readiness}${reminder}`;
       const label=kind==='exam'&&item.examPart?(item.examPart==='test'?'T':'P'):item.label;
       const access=resourceUI.access({resources:item.resources,moduleCode:document.module.code,label,title,
         extraActions:kind==='exam'&&makeExamAction?(item.ownerIds??[]).map(id=>document.tasks.find(task=>task.id===id)).filter(Boolean).map(task=>()=>makeExamAction(task)):[],
@@ -25,6 +27,13 @@ export function renderTaskBand(section, list, document, { resourceUI, isBusy, on
       }
       if(access.tagName==='BUTTON')access.disabled=isBusy();
       cell.append(access);list.append(cell);
+      if (pending) {
+        const badge=globalThis.document.createElement('span');
+        badge.className='followup-count followup-exam-count';
+        badge.textContent=pending>99?'99+':String(pending);
+        badge.setAttribute('aria-hidden','true');
+        cell.append(badge);
+      }
     }
   }
 }
