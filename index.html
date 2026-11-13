@@ -11,10 +11,10 @@
   <link rel="icon" href="./favicon.ico?v=20261029" sizes="16x16 32x32 48x48">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20261029">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20261029">
-  <link rel="stylesheet" href="./styles.css?v=20261113-followup">
+  <link rel="stylesheet" href="./styles.css?v=20261113-meeting-summary">
   <link rel="stylesheet" href="./weekly-schedule.css?v=20261102-ppt-guided-icons">
   <link rel="stylesheet" href="./task-notes.css?v=20261102-ppt-guided-icons">
-  <script type="module" src="./app.mjs?v=20261113-followup"></script>
+  <script type="module" src="./app.mjs?v=20261113-meeting-summary"></script>
 </head>
 <body>
   <header class="app-header">
@@ -113,7 +113,7 @@
         </div>
         <section id="schedule-view" class="schedule-view" aria-label="Horario semanal de todos los módulos" hidden><div id="schedule-content"></div></section>
         <section id="meeting-view" class="meeting-view" aria-label="Reuniones" hidden>
-          <div class="meeting-hub-heading"><h2 id="meeting-space-title">Reuniones</h2><div class="meeting-hub-actions"><button id="meeting-new" type="button" class="button button-primary">Nueva reunión</button><button id="meeting-all" type="button" class="button">Ver todas</button><button id="meeting-editor-return" type="button" class="button" hidden>Volver a notas</button><button id="meeting-update" type="button" class="button">Actualizar</button><button id="meeting-return" type="button" class="button">Volver a la UT</button></div></div>
+          <div class="meeting-hub-heading"><h2 id="meeting-space-title">Reuniones</h2><div class="meeting-hub-actions"><button id="meeting-new" type="button" class="button button-primary">Nueva reunión</button><button id="meeting-all" type="button" class="button">Ver todas</button><a id="meeting-summary" class="button" target="_blank" rel="noopener noreferrer" title="Abrir en Google Docs (nueva pestaña)" hidden>Abrir resumen</a><button id="meeting-editor-return" type="button" class="button" hidden>Volver a notas</button><button id="meeting-update" type="button" class="button">Actualizar</button><button id="meeting-return" type="button" class="button">Volver a la UT</button></div></div>
           <p id="meeting-draft-note" class="message warning" hidden>Las notas pendientes de la UT se conservan. Vuelve a ella para guardarlas.</p>
           <p id="meetings-message" class="message" role="status" aria-live="polite" hidden></p>
           <p id="meeting-calendar-status" class="message warning" hidden></p>

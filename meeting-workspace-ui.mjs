@@ -19,12 +19,23 @@ export function createMeetingWorkspace({ getCatalog, getReader, getCommon, loadC
   const group = id => groups().find(g => g.id === id) ?? null;
   const allDays = () => meetingCalendar(loaded?.document, calendarCommon, groupId).flatMap(month => month.groups.flatMap(row => row.days));
   function availability() {
-    const busy = isBusy(), dirty = pending();
+    const busy = isBusy(), dirty = pending(), selectedGroup = group(groupId);
+    const summary = $('meeting-summary');
+    const documentId = selectedGroup && getCatalog()?.meetings?.summaryDocuments?.[selectedGroup.id];
+    const hasSummary = typeof documentId === 'string' && /^[A-Za-z0-9_-]+$/.test(documentId);
+    summary.hidden = !hasSummary;
+    if (hasSummary) {
+      summary.href = `https://docs.google.com/document/d/${documentId}/edit`;
+      summary.setAttribute('aria-label', `Abrir resumen de ${selectedGroup.title} en Google Docs (nueva pestaña)`);
+    } else {
+      summary.removeAttribute('href');
+      summary.removeAttribute('aria-label');
+    }
     controls.forEach(id => { $(id).disabled = busy || !baseline || blocked; });
     $('meeting-record-date').readOnly = Boolean(record?.meetingId);
     $('meeting-record-title').readOnly = Boolean(record?.meetingId);
     $('meeting-save').disabled = busy || !dirty || blocked;
-    $('meeting-new').disabled = busy || dirty || !group(groupId);
+    $('meeting-new').disabled = busy || dirty || !selectedGroup;
     $('meeting-update').disabled = busy || !getReader();
     $('meeting-download').hidden = !dirty; $('meeting-download').disabled = busy;
     $('meeting-discard').hidden = !dirty; $('meeting-discard').disabled = busy;

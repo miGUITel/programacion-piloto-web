@@ -4,7 +4,7 @@ import { sessionDisplayLabel, chronologicalSessionRows, excludedSession } from '
 import { createContextMemory, catalogEntries, chooseStartup, resolveRemembered, unitContext, meetingContext, meetingsForDay, madridClock } from './startup-context.mjs?v=20261109-common-preparation';
 import { elapsedTiming, timingDescription } from './row-time.mjs?v=20261109-common-preparation';
 import { MeetingReader } from './meeting-reader.mjs?v=20261109-common-preparation';
-import { createMeetingWorkspace } from './meeting-workspace-ui.mjs?v=20261109-common-preparation';
+import { createMeetingWorkspace } from './meeting-workspace-ui.mjs?v=20261113-meeting-summary';
 import { createMeetingWorkUI } from './meeting-work-ui.mjs?v=20261109-common-preparation';
 import { createMeetingTaskListUI } from './meeting-task-list-ui.mjs?v=20261109-common-preparation';
 import { createResourcesUI } from './resources-ui.mjs?v=20261109-common-preparation';
