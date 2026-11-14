@@ -19,17 +19,17 @@ import { createRowResourcesUI } from './row-resources-ui.mjs?v=20261111-followup
 import { eventTypes, setSessionEventType, activityEventType, activityEventTypes, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261109-common-preparation';
 import { libraryIntegrity } from './model-v3.mjs?v=20261109-common-preparation';
 import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261109-common-preparation';
-import { createModuleViews } from './module-views-ui.mjs?v=20261113-followup';
+import { createModuleViews } from './module-views-ui.mjs?v=20261113-ra-overview';
 import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261109-common-preparation';
-import { hasTaskPlan, visiblePlanTasks, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261109-common-preparation';
+import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261109-common-preparation';
 import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261109-common-preparation';
 import { createTaskRegistryUI } from './task-registry-ui.mjs?v=20261111-followup';
 import { createTaskNotesUI } from './task-notes-ui.mjs?v=20261109-common-preparation';
 import { createModuleProfileUI } from './module-profile-ui.mjs?v=20261111-followup';
 import { renderUnitInformation, sessionInformationLines } from './unit-information.mjs?v=20261109-common-preparation';
 import { createUnitCurriculumUI } from './unit-curriculum-ui.mjs?v=20261111-followup';
-import { examFollowup, followupCurriculum, unitFollowupAlerts } from './student-followup.mjs?v=20261113-followup';
-import { createStudentFollowupUI } from './student-followup-ui.mjs?v=20261113-followup';
+import { followupCurriculum, unitFollowupAlerts } from './student-followup.mjs?v=20261113-followup';
+import { createStudentFollowupUI } from './student-followup-ui.mjs?v=20261113-ra-overview';
 import { createPreparationUI } from './preparation-ui.mjs?v=20261109-common-preparation';
 import { createSessionEditorUI, bindSessionEditRow } from './session-editor-ui.mjs?v=20261109-common-preparation';
 
@@ -691,8 +691,6 @@ function makeRowResources(session, activity) {
 
 function makeTaskNotesActions(task) {
   const actions = node('div', 'task-notes-actions');
-  const followup = examFollowup(task);
-  if (followup) actions.append(studentFollowupUI.button(followup, 'Alumnado ↗'));
   const notes = task.teachingNotes ?? {};
   for (const [mode, field, label, content] of [
     ['feedback', 'observations', 'Feedback al grupo', Boolean(notes.feedback?.trim())],
@@ -970,17 +968,15 @@ function loadFollowupProfiles() {
   return request;
 }
 
-function followupAlerts(document, historical = []) {
-  const entry = { moduleCode: document.module.code, unitCode: document.unit.code };
-  const exams = visiblePlanTasks(document).map(task => ({ ...task, entry, officialTaskId: task.id }));
-  return unitFollowupAlerts(document, followupProfiles.get(entry.moduleCode), [...exams, ...historical], studentFollowupUI.count);
+function followupAlerts(document) {
+  return unitFollowupAlerts(document, followupProfiles.get(document.module.code), [], studentFollowupUI.count).ra;
 }
 
 function renderFollowupControls() {
   if (!draft) return;
   const alerts = followupAlerts(draft);
   const opener = $('unit-curriculum-open');
-  const raCount = alerts.ra.length;
+  const raCount = alerts.length;
   const raTitle = 'RA / CE de esta unidad' + (raCount ? ' · ' + raCount + ' RA con alumnado pendiente' : '');
   opener.textContent = 'RA / CE';
   if (raCount) opener.append(node('span', 'followup-count', raCount));
@@ -988,9 +984,6 @@ function renderFollowupControls() {
   opener.setAttribute('aria-label', raTitle);
   renderTaskBand($('task-band-section'), $('task-band'), draft, {
     resourceUI: rowResourcesUI, isBusy: () => busy, onManage: () => resourcesUI.open('unit'),
-    examPending: ref => studentFollowupUI.count({ kind: 'exam', module: draft.module.code, ref }),
-    makeExamAction: task => studentFollowupUI.button(examFollowup({ entry: activeEntry, officialTaskId: task.id, ...task }),
-      `Seguimiento del alumnado · ${task.code} · ${task.title} ↗`),
   });
 }
 
@@ -1586,7 +1579,6 @@ const presentationUI = createTaskPresentationUI({
   onClose(focusId) { if (draft) renderSessions(); if (focusId) $(focusId)?.focus({ preventScroll: true }); }
 });
 const registryUI = createTaskRegistryUI({ isBusy: () => busy, setBusy, onStateChange: updateSaveState,
-  makeExamAction: task => { const context = examFollowup(task); return context ? studentFollowupUI.button(context) : null; },
   canOpen(task) {
     if (libraryIntegrity([...libraryRecords(), ...registryUI.records()]).some(issue => issue.code === 'DUPLICATE_TASK' && issue.moduleCode === task.entry.moduleCode && issue.taskId === (task.officialTaskId || task.registryTaskId))) {
       message('workspace-message', 'Esta tarea aparece en más de un documento. Revisa su conciliación antes de editarla.', 'warning'); return false;
@@ -1691,6 +1683,7 @@ const moduleProfileUI = createModuleProfileUI({
 });
 const studentFollowupUI = createStudentFollowupUI({
   isBusy: () => busy,
+  getSelectedModule: () => draft?.module.code || $('module-select').value,
   getContext(moduleCode) { return { course: catalog?.courseId || startupCommon?.course?.id || '', group: startupCommon?.modules?.find(m => m.code === moduleCode)?.group || '' }; },
   getCurriculum() {
     const profiles = loadFollowupProfiles();
@@ -1801,11 +1794,8 @@ const weeklyUI = createWeeklyScheduleUI({
 });
 const moduleViews = createModuleViews({
   makeTaskNotesActions,
-  makeFollowupMarker(record, historical, unit, moduleCode) {
-    if (!record && !historical.length) return null;
-    const alerts = record ? followupAlerts(record.document, historical)
-      : unitFollowupAlerts({ module: { code: moduleCode }, unit }, null, historical, studentFollowupUI.count);
-    return studentFollowupUI.unitMarker(unitLabel(unit), alerts);
+  makeFollowupMarker(record, unit) {
+    return record ? studentFollowupUI.unitMarker(unitLabel(unit), followupAlerts(record.document)) : null;
   },
   onShift: (record, focus) => replanningUI.open(record.document, focus),
   planStatus: doc => replanningUI.statusNodes(doc),

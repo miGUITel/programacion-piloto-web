@@ -1,6 +1,6 @@
 import { FOLLOWUP_SETTING, SUMMARY_CHANNEL, followupBase, followupUrl, pendingCount, validatePendingCounts } from './student-followup.mjs?v=20261113-followup';
 
-export function createStudentFollowupUI({ getContext = () => ({}), isBusy = () => false, getCurriculum = () => [],
+export function createStudentFollowupUI({ getContext = () => ({}), isBusy = () => false, getCurriculum = () => [], getSelectedModule = () => '',
   onCountsChange = () => {} } = {}) {
   const node = (tag, text = '') => { const el = document.createElement(tag); el.textContent = text; return el; };
   let base = ''; try { base = followupBase(localStorage.getItem(FOLLOWUP_SETTING)) || ''; } catch {}
@@ -132,9 +132,7 @@ export function createStudentFollowupUI({ getContext = () => ({}), isBusy = () =
     return pendingCount(counts, { ...getContext(target.module), ...target });
   }
   function pendingLabel(target, pending = count(target)) {
-    return target.kind === 'exam'
-      ? (pending === 1 ? '1 repetición pendiente' : pending + ' repeticiones pendientes')
-      : (pending === 1 ? '1 alumno pendiente' : pending + ' alumnos pendientes');
+    return pending === 1 ? '1 alumno pendiente' : pending + ' alumnos pendientes';
   }
   function button(context, text = 'Seguimiento del alumnado ↗') {
     const pending = count(context);
@@ -163,25 +161,22 @@ export function createStudentFollowupUI({ getContext = () => ({}), isBusy = () =
   detail.append(detailHeader, detailBody, detailFooter);
   document.body.append(detail);
   function unitMarker(label, alerts) {
-    const { ra, exam } = alerts;
-    if (!ra.length && !exam.length) return null;
-    const text = [ra.length ? ra.length + ' RA' : '', exam.length ? exam.length + ' rep.' : ''].filter(Boolean).join(' · ');
-    const marker = node('button', text);
+    if (!alerts.length) return null;
+    const marker = node('button', alerts.length + ' RA');
     marker.type = 'button';
     marker.className = 'followup-unit-marker';
     marker.setAttribute('aria-haspopup', 'dialog');
-    marker.setAttribute('aria-label', label + ' · ' + [ra.length ? ra.length + ' RA con alumnado pendiente' : '',
-      exam.length ? exam.length + (exam.length === 1 ? ' examen por repetir' : ' exámenes por repetir') : ''].filter(Boolean).join(' · '));
+    marker.setAttribute('aria-label', label + ' · ' + alerts.length + ' RA con alumnado pendiente');
     marker.title = marker.getAttribute('aria-label');
     marker.addEventListener('click', () => {
       if (isBusy() || detail.open) return;
       detailTitle.textContent = 'Seguimiento · ' + label;
-      detailBody.replaceChildren(...[...ra, ...exam].map(({ target }) => button(target, target.label || 'Examen')));
+      detailBody.replaceChildren(...alerts.map(({ target }) => button(target, target.label)));
       detail.showModal();
     });
     return marker;
   }
-  document.getElementById('student-followup-open')?.addEventListener('click', () => open());
+  document.getElementById('student-followup-open')?.addEventListener('click', () => open({module:getSelectedModule()}));
   document.getElementById('student-followup-configure')?.addEventListener('click', configure);
   summaryButton?.addEventListener('click', refreshCounts);
   return { open, button, configure, count, unitMarker, clear };

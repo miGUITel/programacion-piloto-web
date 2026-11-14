@@ -91,7 +91,6 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
     const header = el('div', 'overview-row overview-head');
     header.append(el('span', 'overview-label', 'UT'), el('div', 'overview-weekdays'));
     grid.append(header);
-    const historical = moduleTasks((state.taskRecords ?? []).filter(record => record.registry), module.code, today);
     for (const row of model.rows) {
       const tr = el('div', 'overview-row'), label = el('div', 'overview-label');
       tr.dataset.unitId = row.unit.id;
@@ -100,7 +99,7 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
       title.addEventListener('click', () => onOpen(row.unit.path));
       const heading = el('div', 'overview-unit-heading');
       heading.append(title);
-      const marker = makeFollowupMarker(row.record, historical.filter(task => task.entry.unitCode === row.unit.code), row.unit, module.code);
+      const marker = makeFollowupMarker(row.record, row.unit);
       if (marker) heading.append(marker);
       label.append(heading);
       if (row.record) {
