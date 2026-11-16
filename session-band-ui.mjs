@@ -1,9 +1,9 @@
 import { sessionBand, madridToday } from './unit-tools.mjs?v=20261109-common-preparation';
 import { sessionDisplayLabel } from './replanning.mjs?v=20261109-common-preparation';
 
-export function renderSessionResourceBand(container, document, { records = [], today = madridToday(), onOpen, busy = false } = {}) {
+export function renderSessionResourceBand(container, document, { sessions = document.sessions, records = [], today = madridToday(), onOpen, busy = false } = {}) {
   container.replaceChildren();container.dataset.today=today;
-  for (const item of sessionBand(document.sessions, today, document, records)) {
+  for (const item of sessionBand(sessions, today, document, records)) {
     if (item.monthLabel) {
       const month=globalThis.document.createElement('li');month.className='band-month';month.textContent=item.monthLabel;
       month.title=item.monthName;month.setAttribute('aria-label',item.monthName);container.append(month);
@@ -15,10 +15,10 @@ export function renderSessionResourceBand(container, document, { records = [], t
     control.textContent=item.day;
     const date=new Intl.DateTimeFormat('es-ES',{dateStyle:'full',timeZone:'UTC'}).format(new Date(item.date+'T12:00:00Z'));
     const types=[item.task?'Tarea':'',item.exam?'Examen':''].filter(Boolean).join(' y ');
-    const sessionLabel=sessionDisplayLabel(document,document.sessions[item.index],records);
+    const sessionLabel=sessionDisplayLabel(document,sessions[item.index],records);
     const label=`${sessionLabel} · ${date}${types?' · '+types:''} · ${item.preparation?.label??'Recursos sin vincular'}${item.today?' · Hoy':''}${item.past?' · Fecha pasada':''}`;
     control.title=label;control.setAttribute('aria-label',label);
-    if(onOpen){control.type='button';control.disabled=busy;control.addEventListener('click',()=>{if(!busy)onOpen(item);});}
+    if(onOpen){control.type='button';control.disabled=busy;control.addEventListener('click',()=>{if(!control.disabled)onOpen(item);});}
     else control.tabIndex=0;
     cell.append(control);container.append(cell);
   }

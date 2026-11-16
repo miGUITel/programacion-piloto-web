@@ -8,7 +8,7 @@ import { createMeetingWorkspace } from './meeting-workspace-ui.mjs?v=20261113-me
 import { createMeetingWorkUI } from './meeting-work-ui.mjs?v=20261109-common-preparation';
 import { createMeetingTaskListUI } from './meeting-task-list-ui.mjs?v=20261109-common-preparation';
 import { createResourcesUI } from './resources-ui.mjs?v=20261109-common-preparation';
-import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261109-common-preparation';
+import { renderSessionResourceBand } from './session-band-ui.mjs?v=20261116-session-history';
 import { renderTaskBand } from './task-band-ui.mjs?v=20261113-followup';
 import { validateCatalog, validateDocument, summarize, isValidDate, GithubStore, saveErrorFeedback } from './core.mjs?v=20261109-common-preparation';
 import { createSuggestionsUI } from './suggestions-ui.mjs?v=20261109-common-preparation';
@@ -18,8 +18,8 @@ import { sessionRowResources } from './session-resource-defaults.mjs?v=20261109-
 import { createRowResourcesUI } from './row-resources-ui.mjs?v=20261111-followup';
 import { eventTypes, setSessionEventType, activityEventType, activityEventTypes, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261109-common-preparation';
 import { libraryIntegrity } from './model-v3.mjs?v=20261109-common-preparation';
-import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261109-common-preparation';
-import { createModuleViews } from './module-views-ui.mjs?v=20261113-ra-overview';
+import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261116-session-history';
+import { createModuleViews } from './module-views-ui.mjs?v=20261116-session-history';
 import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261109-common-preparation';
 import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261109-common-preparation';
 import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261109-common-preparation';
@@ -61,6 +61,11 @@ let failedSave = false;
 let editorTarget = null;
 let lastConfirmedAt = null;
 let currentView = 'unit';
+const sessionHistoryKey = 'cuaderno.show-session-history';
+const sessionHistoryControls = [$('unit-show-session-history'), $('module-show-session-history')];
+let showSessionHistory = false;
+try { showSessionHistory = localStorage.getItem(sessionHistoryKey) === 'true'; } catch { /* The preference still works for this page. */ }
+for (const control of sessionHistoryControls) control.checked = showSessionHistory;
 let weeklyCommon = null, weeklyCommonError = '', weeklyLoading = false;
 const contextMemory = createContextMemory();
 let startupCommon = null, currentMeeting = null, resumeContext = null, selectedSessionId = null, meetingReader = null;
@@ -71,6 +76,10 @@ const navigationWarnings = new Set();
 function libraryRecords() { return draft ? [...moduleDocuments.values(), { entry: activeEntry, document: draft }] : []; }
 function moduleRecords() { return libraryRecords().filter(record => record.entry.moduleCode === activeEntry?.moduleCode); }
 function moduleFailures() { return moduleLoadFailures.filter(entry => entry.moduleCode === activeEntry?.moduleCode).map(entry => entry.unitCode); }
+const sessionIsVisible = session => showSessionHistory || !excludedSession(session);
+function visibleUnitSessions() {
+  return (draft?.sessions ?? []).filter(sessionIsVisible);
+}
 function readTaskEditor() {
   return { ...Object.fromEntries(taskDateFields.map(field => [field, $('task-' + field).value])),
     presented: $('task-presented').checked, corrected: $('task-corrected').checked };
@@ -394,7 +403,7 @@ async function openModuleSource(path, sessionId) {
       openSessions.add(sessionId); renderSessions(); rememberUnit(sessionId);
       const section = $('sessions').querySelector(`[data-session-index="${index}"]`);
       section?.scrollIntoView({ block: 'start', behavior: 'instant' });
-      section?.querySelector('.session-title')?.focus({ preventScroll: true });
+      (section?.querySelector('.session-title') ?? $('unit-show-session-history')).focus({ preventScroll: true });
     }
 }
 
@@ -935,8 +944,8 @@ function renderSessions() {
   reminders.hidden = !reminders.childElementCount;
   const container = $('sessions');
   container.replaceChildren();
-  if (!draft.sessions.length) container.append(node('p', 'empty-sessions', 'Este documento no contiene sesiones.'));
-  const rows = chronologicalSessionRows(draft.sessions);
+  const rows = chronologicalSessionRows(draft.sessions).filter(({ session }) => sessionIsVisible(session));
+  if (!rows.length) container.append(node('p', 'empty-sessions', draft.sessions.length ? 'No hay sesiones vigentes.' : 'Este documento no contiene sesiones.'));
   const headings = compactSessionHeaders(rows.map(row => row.session), presentationPeriods(catalog));
   rows.forEach(({ session, index }, position) => container.append(makeSession(session, index, headings[position])));
   $('workspace').classList.toggle('has-row-resources', Boolean(container.querySelector('.row-resources:not(.is-empty)')));
@@ -1005,14 +1014,16 @@ async function updateFollowupAlerts() {
 function renderSessionBand() {
   const container = $('session-band');
   if (!draft) return;
-  renderSessionResourceBand(container,draft,{records:libraryRecords(),busy,onOpen:item=>{
+  const sessions = visibleUnitSessions();
+  renderSessionResourceBand(container,draft,{sessions,records:libraryRecords(),busy,onOpen:item=>{
       if (busy) return;
-      rememberUnit(draft.sessions[item.index]?.id);
-      const section = $('sessions').querySelector(`[data-session-index="${item.index}"]`);
+      rememberUnit(item.id);
+      const index = draft.sessions.findIndex(session => session.id === item.id);
+      const section = $('sessions').querySelector(`[data-session-index="${index}"]`);
       section?.scrollIntoView({ block: 'start', behavior: 'instant' });
       section?.querySelector('.session-title')?.focus({ preventScroll: true });
   }});
-  $('session-band-section').hidden = !draft.sessions.length;
+  $('session-band-section').hidden = !sessions.length;
 }
 
 function render() {
@@ -1458,7 +1469,7 @@ function downloadDraft() {
 
 function updateGlobalExpansion() {
   const button = $('toggle-sessions');
-  const state = globalSessionExpansion(draft?.sessions ?? [], openSessions);
+  const state = globalSessionExpansion(visibleUnitSessions(), openSessions);
   button.textContent = state.symbol; button.title = state.label;
   button.setAttribute('aria-label', state.label); button.setAttribute('aria-expanded', String(state.allOpen));
   button.hidden = currentView !== 'unit'; button.disabled = busy || state.disabled;
@@ -1466,11 +1477,12 @@ function updateGlobalExpansion() {
 
 function toggleAllSessions() {
   if (busy || !draft) return;
-  const state = globalSessionExpansion(draft.sessions, openSessions);
-  openSessions.clear();
-  if (!state.allOpen) draft.sessions.forEach((session) => {
-    openSessions.add(session.id);
-  });
+  const sessions = visibleUnitSessions();
+  const state = globalSessionExpansion(sessions, openSessions);
+  for (const session of sessions) {
+    if (state.allOpen) openSessions.delete(session.id);
+    else openSessions.add(session.id);
+  }
   renderSessions();
   $('toggle-sessions').focus({ preventScroll: true });
 }
@@ -1804,6 +1816,13 @@ const moduleViews = createModuleViews({
   onEdit: task => registryUI.open(task),
   onCorrected: correctTask, onPresented: presentTask, onRetry: retryExamContext,
   onPreparation: entry => preparationUI.open(entry),
+});
+
+for (const control of sessionHistoryControls) control.addEventListener('change', () => {
+  showSessionHistory = control.checked;
+  for (const checkbox of sessionHistoryControls) checkbox.checked = showSessionHistory;
+  try { localStorage.setItem(sessionHistoryKey, String(showSessionHistory)); } catch { /* Keep the current choice in memory. */ }
+  if (draft) renderSessions();
 });
 
 $('resume-task-notes').addEventListener('click', () => {

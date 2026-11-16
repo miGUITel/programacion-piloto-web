@@ -11,10 +11,10 @@
   <link rel="icon" href="./favicon.ico?v=20261029" sizes="16x16 32x32 48x48">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20261029">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20261029">
-  <link rel="stylesheet" href="./styles.css?v=20261113-meeting-summary">
+  <link rel="stylesheet" href="./styles.css?v=20261116-session-history">
   <link rel="stylesheet" href="./weekly-schedule.css?v=20261102-ppt-guided-icons">
   <link rel="stylesheet" href="./task-notes.css?v=20261102-ppt-guided-icons">
-  <script type="module" src="./app.mjs?v=20261113-ra-overview"></script>
+  <script type="module" src="./app.mjs?v=20261116-session-history"></script>
 </head>
 <body>
   <header class="app-header">
@@ -103,7 +103,7 @@
         </div>
         </div>
         <div id="exam-reminders" class="exam-reminders" aria-live="polite" hidden></div>
-        <div class="list-heading session-list-heading"><h2 aria-describedby="session-temporal-note" title="La franja gris indica tiempo previsto transcurrido; no confirma impartición.">Sesiones</h2><div class="session-preparation-tools"><div id="unit-preparation" class="unit-preparation"></div><button id="unit-information-open" class="unit-information-open" type="button" aria-label="Información de la unidad: diseño, referencias y notas" title="Información de la unidad" aria-haspopup="dialog" aria-controls="unit-information" hidden><span aria-hidden="true">i</span></button><button id="unit-curriculum-open" class="button button-small unit-curriculum-open" type="button" aria-label="RA / CE: consultar resultados de aprendizaje y criterios de esta unidad" title="RA y CE de esta unidad" aria-haspopup="dialog" aria-controls="unit-curriculum-dialog" hidden>RA / CE</button><div id="unit-replanning" aria-live="polite"></div></div><p id="session-temporal-note"><span class="temporal-legend" aria-hidden="true"></span>Tiempo previsto transcurrido · no confirma impartición.</p></div>
+        <div class="list-heading session-list-heading"><h2 aria-describedby="session-temporal-note" title="La franja gris indica tiempo previsto transcurrido; no confirma impartición.">Sesiones</h2><div class="session-preparation-tools"><div id="unit-preparation" class="unit-preparation"></div><button id="unit-information-open" class="unit-information-open" type="button" aria-label="Información de la unidad: diseño, referencias y notas" title="Información de la unidad" aria-haspopup="dialog" aria-controls="unit-information" hidden><span aria-hidden="true">i</span></button><button id="unit-curriculum-open" class="button button-small unit-curriculum-open" type="button" aria-label="RA / CE: consultar resultados de aprendizaje y criterios de esta unidad" title="RA y CE de esta unidad" aria-haspopup="dialog" aria-controls="unit-curriculum-dialog" hidden>RA / CE</button><div id="unit-replanning" aria-live="polite"></div></div><label class="session-history-option"><input id="unit-show-session-history" type="checkbox" aria-controls="sessions session-band">Mostrar historial de sesiones</label><p id="session-temporal-note"><span class="temporal-legend" aria-hidden="true"></span>Tiempo previsto transcurrido · no confirma impartición.</p></div>
         <div class="column-guide" aria-hidden="true"><span></span><span>Fecha</span><span>Sesión / contenido</span><span>Descripción prevista</span><span>Seguimiento</span><span>Estado</span><span>Anotar</span></div>
         <div id="sessions" class="sessions"></div>
         <section id="unit-resources" class="unit-resources" aria-labelledby="resources-heading">
@@ -133,11 +133,11 @@
         <section id="module-view" aria-label="Vista general del módulo" hidden>
           <nav class="module-sections" aria-label="Consultas del módulo"><button id="module-tab-sessions" class="layout-button" type="button" aria-pressed="true">Sesiones</button><button id="module-tab-timetable" class="layout-button" type="button" aria-pressed="false">Horario</button><button id="module-tab-calendar" class="layout-button" type="button" aria-pressed="false">Calendario escolar</button><button id="module-tab-evaluations" class="layout-button" type="button" aria-pressed="false">Evaluaciones</button></nav>
           <div id="module-sessions-panel">
-          <div class="module-view-toolbar"><label class="visually-hidden" for="overview-month">Fechas</label><select id="overview-month"></select><span class="module-legend"><span class="band-key task-key"></span>Tarea <span class="band-key exam-key"></span>Examen</span></div>
+          <div class="module-view-toolbar"><label class="visually-hidden" for="overview-month">Fechas</label><select id="overview-month"></select><label class="session-history-option"><input id="module-show-session-history" type="checkbox" aria-controls="module-grid">Mostrar historial de sesiones</label><span class="module-legend"><span class="band-key task-key"></span>Tarea <span class="band-key exam-key"></span>Examen</span></div>
           <p id="module-scope" class="scope-note"></p>
           <div class="module-grid-scroll compact-module-scroll" tabindex="0" role="region" aria-label="Sesiones alineadas por día de la semana"><div id="module-grid" class="compact-module-grid" data-days="2" data-cycles="3"></div></div>
           <p id="overview-empty" class="empty-sessions" hidden>No hay sesiones en este intervalo.</p>
-          <p class="scope-note">Columnas por día de la semana, no por fecha. Tachado: cancelada o reprogramada; subrayado rojo: fecha pasada.</p>
+          <p class="scope-note">Columnas por día de la semana. <span id="overview-history-legend" hidden>Tachado: cancelada o reprogramada. </span>Subrayado rojo: fecha pasada.</p>
           </div>
           <div id="module-common-panel" class="common-readonly" hidden>
             <div class="module-view-toolbar"><label class="visually-hidden" for="common-scope">Ámbito de consulta</label><select id="common-scope"><option value="module">Este módulo</option><option value="all">Todos</option></select><button id="common-refresh" type="button" class="button button-small">Actualizar consulta</button><span class="scope-note">Solo lectura</span></div>

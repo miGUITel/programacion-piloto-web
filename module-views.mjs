@@ -3,6 +3,7 @@ import { taskState } from './task-cycle.mjs?v=20261109-common-preparation';
 import { hasTaskPlan, visiblePlanTasks } from './task-plan.mjs?v=20261109-common-preparation';
 import { moduleWeekdays } from './common-course.mjs?v=20261109-common-preparation';
 import { shiftCalendarCells, groupShiftGaps } from './planning-shifts.mjs?v=20261109-common-preparation';
+import { excludedSession } from './replanning.mjs?v=20261109-common-preparation';
 
 export const taskDateFields = ['presentedOn', 'dueOn', 'correctBy'];
 
@@ -33,29 +34,33 @@ export function applyTaskDetails(target, values) {
 }
 
 /** Common date columns align every UT, including multiple sessions on one date. */
-export function moduleOverview(module, records, month = '') {
+export function moduleOverview(module, records, month = '', { showSessionHistory = true } = {}) {
   const byPath = new Map(records.filter(r => r.entry.moduleCode === module.code).map(r => [r.entry.path, r]));
-  const allDates = [...new Set([...byPath.values()].flatMap(r => r.document.sessions.map(s => s.date)))].sort();
+  const visibleSessions = new Map([...byPath].map(([path, { document }]) => [
+    path, showSessionHistory ? document.sessions : document.sessions.filter(session => !excludedSession(session)),
+  ]));
+  const allDates = [...new Set([...visibleSessions.values()].flatMap(sessions => sessions.map(session => session.date)))].sort();
   const dates = allDates.filter(date => !month || date.startsWith(month + '-'));
   const rows = module.units.map(unit => {
     const record = byPath.get(unit.path);
-    return { unit, record, cells: dates.map(date => record?.document.sessions
-      .filter(s => s.date === date).sort((a, b) => a.activities[0].start.localeCompare(b.activities[0].start) || a.id.localeCompare(b.id)) ?? []) };
+    const sessions = visibleSessions.get(unit.path) ?? [];
+    return { unit, record, cells: dates.map(date => sessions
+      .filter(s => s.date === date).sort((a, b) => a.activities[0].start.localeCompare(b.activities[0].start) || a.id.localeCompare(b.id))) };
   });
   return { dates, months: [...new Set(allDates.map(date => date.slice(0, 7)))], rows };
 }
 
 /** Compact each UT independently; columns mean weekdays, never shared dates. */
-export function weekdayOverview(module, records, common, month = '', { complete = true } = {}) {
-  const base = moduleOverview(module, records, month);
+export function weekdayOverview(module, records, common, month = '', { complete = true, showSessionHistory = true } = {}) {
+  const base = moduleOverview(module, records, month, { showSessionHistory });
   const confirmedDays = moduleWeekdays(common, module.code);
   const dayOf = date => new Date(date + 'T12:00:00Z').getUTCDay() || 7;
   const days = confirmedDays.length ? confirmedDays : [...new Set(base.dates.map(dayOf))].sort((a, b) => a - b);
   const rows = base.rows.map(row => {
     const slots = [], exceptions = [];
     let position = -1;
-    const trace = row.record ? shiftCalendarCells(row.record.document, records, common, { complete }) : { cells: [], dates: [], moves: [], issue: '' };
-    // Merge dates so exceptions and cancelled records can never disappear.
+    const trace = showSessionHistory && row.record ? shiftCalendarCells(row.record.document, records, common, { complete }) : { cells: [], dates: [], moves: [], issue: '' };
+    // Merge optional trace positions and the session dates selected for this view.
     const byDate = new Map(trace.cells.map(c => [c.date, { ...c, sessions: c.sessions.filter(s => !month || s.date.startsWith(month + '-')) }]));
     row.cells.forEach((sessions, i) => {
       if (sessions.length) byDate.set(base.dates[i], { date: base.dates[i], sessions, kind: 'session', shifts: trace.moves.filter(m => m.after.date === base.dates[i]) });

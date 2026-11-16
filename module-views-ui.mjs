@@ -1,6 +1,6 @@
 import { sessionDisplayLabel, sessionPlanningLabel } from './replanning.mjs?v=20261109-common-preparation';
 import { unitLabel } from './unit-tools.mjs?v=20261109-common-preparation';
-import { moduleOverview, weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261109-common-preparation';
+import { weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261116-session-history';
 import { dayLetters, dayNames, commonCoursePath } from './common-course.mjs?v=20261109-common-preparation';
 import { renderCommonCourse } from './common-course-ui.mjs?v=20261109-common-preparation';
 import { eventTypes } from './teaching.mjs?v=20261109-common-preparation';
@@ -83,7 +83,9 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
 
   function renderOverview(module, records, today, activePath) {
     const state = getState(), previous = $('overview-month').value;
-    const model = weekdayOverview(module, records, common, previous, { complete: state.ready && !state.failures?.length && !state.errors?.length });
+    const showSessionHistory = $('module-show-session-history').checked;
+    const model = weekdayOverview(module, records, common, previous, { complete: state.ready && !state.failures?.length && !state.errors?.length, showSessionHistory });
+    $('overview-history-legend').hidden = !showSessionHistory;
     const months = [...new Set([...model.months, ...(previous ? [previous] : [])])].sort();
     fillSelect($('overview-month'), [['', 'Todas las fechas'], ...months.map(month => [month, monthName(month)])], previous);
     const grid = $('module-grid'); grid.replaceChildren();
