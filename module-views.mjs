@@ -107,10 +107,11 @@ export function moduleTasks(records, moduleCode, today) {
         const session = document.sessions[sessionIndex];
         const activityIndex = session ? target.presentation.activityId ? session.activities.findIndex(activity => activity.id === target.presentation.activityId) : 0 : -1;
         const details = taskDetails(target);
+        const plannedExamDate = target.type === 'exam' && !excludedSession(session) ? session?.date : undefined;
         tasks.push({ key: JSON.stringify([entry.moduleCode, 'task', target.id]), officialTaskId: target.id, code: target.code, type: target.type || 'task',
           entry, unitTitle: document.unit.title, sessionId: session?.id, sessionIndex, activityId: session?.activities[activityIndex]?.id, activityIndex,
           unassigned: !session, title: target.title, teachingNotes: target.teachingNotes, date: session?.date || '', number: session?.number ?? null, state: session?.state, ...details,
-          status: taskState(details, today), missingDates: details.presented && (!details.dueOn || !details.correctBy) });
+          plannedExamDate, status: taskState(details, today), missingDates: details.presented && (!details.dueOn || !details.correctBy) });
       }
       continue;
     }

@@ -1,6 +1,6 @@
 import { sessionDisplayLabel, sessionPlanningLabel } from './replanning.mjs?v=20261109-common-preparation';
 import { unitLabel } from './unit-tools.mjs?v=20261109-common-preparation';
-import { weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261116-session-history';
+import { weekdayOverview, moduleTasks, filterTasks } from './module-views.mjs?v=20261125-rf43-rf6';
 import { dayLetters, dayNames, commonCoursePath } from './common-course.mjs?v=20261109-common-preparation';
 import { renderCommonCourse } from './common-course-ui.mjs?v=20261109-common-preparation';
 import { eventTypes } from './teaching.mjs?v=20261109-common-preparation';
@@ -21,6 +21,14 @@ function fillSelect(select, choices, previous) {
   if (choices.some(([value]) => value === previous)) select.value = previous;
 }
 function shortDate(date) { return date ? `${date.slice(8)}/${date.slice(5, 7)}/${date.slice(0, 4)}` : '—'; }
+const examDateFormat = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+function plannedExamDateLabel(date) {
+  if (!date) return el('span', 'task-exam-date', 'Sin fecha prevista');
+  const label = el('time', 'task-exam-date', `Examen · ${examDateFormat.format(new Date(`${date}T12:00:00Z`))}`);
+  label.dateTime = date;
+  label.title = `Fecha prevista del examen: ${shortDate(date)}`;
+  return label;
+}
 function monthName(month) {
   return new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(month + '-15T12:00:00Z'));
 }
@@ -233,14 +241,17 @@ export function createModuleViews({ getState, onOpen, onEdit, onCorrected, onPre
     for (const task of visible) {
       const overdue = task.status === 'to-correct';
       const heading = taskHeading(task.entry.moduleCode, task.code, task.title);
-      const row = el('article', `task-row task-compact${task.type === 'exam' ? ' is-exam' : ''}${task.corrected ? ' is-corrected' : overdue ? ' is-overdue' : task.presented ? ' is-presented' : ''}`); row.setAttribute('aria-label', heading);
-      row.title = `${task.type === 'exam' ? 'Examen' : 'Tarea'} · ${taskStates[task.status]} · ${task.entry.moduleCode} · ${task.entry.unitCode}${task.registryTaskId ? ' · Registro histórico sin sesiones importadas' : task.unassigned ? ' · Sin sesión asignada' : ' · Sesión ' + task.number} · ${shortDate(task.date)} · Entrega: ${shortDate(task.dueOn)}${task.state ? ' · ' + task.state : ''}`;
+      const isExam = task.type === 'exam';
+      const date = isExam ? `Fecha prevista: ${shortDate(task.plannedExamDate)}` : shortDate(task.date);
+      const row = el('article', `task-row task-compact${isExam ? ' is-exam' : ''}${task.corrected ? ' is-corrected' : overdue ? ' is-overdue' : task.presented ? ' is-presented' : ''}`); row.setAttribute('aria-label', heading);
+      row.title = `${isExam ? 'Examen' : 'Tarea'} · ${taskStates[task.status]} · ${task.entry.moduleCode} · ${task.entry.unitCode}${task.registryTaskId ? ' · Registro histórico sin sesiones importadas' : task.unassigned ? ' · Sin sesión asignada' : ' · Sesión ' + task.number} · ${date} · Entrega: ${shortDate(task.dueOn)}${task.state ? ' · ' + task.state : ''}`;
       row.dataset.taskKey = task.key;
       const title = el('div', 'task-name');
       const source = el('span', 'task-source', `${task.entry.moduleCode} · ${task.code || 'Sin código'} ·`);
       source.title = task.code ? `Módulo ${task.entry.moduleCode} · ${task.type === 'exam' ? 'Examen' : 'Tarea'} ${task.code}` : 'Equivalencia y código oficial pendientes de confirmar; se conserva el título anterior.';
       const name = el('strong', '', task.title); name.title = task.title;
       title.append(source, name, el('span', 'visually-hidden', taskStates[task.status]));
+      if (isExam) title.append(plannedExamDateLabel(task.plannedExamDate));
       if (task.unassigned) { const missing = el('span', 'task-missing-dates', '◷'); missing.title = 'Sin sesión de presentación asignada'; missing.setAttribute('aria-label', missing.title); title.append(missing); }
       if (task.missingDates) { const missing = el('span', 'task-missing-dates', '!'); missing.title = 'Tarea presentada con fechas pendientes de completar'; missing.setAttribute('aria-label', missing.title); title.append(missing); }
       row.append(title);

@@ -425,6 +425,13 @@ textarea{resize:vertical;line-height:1.6}
 .workspace .date-day{font-size:16px;letter-spacing:-.3px;white-space:nowrap}
 .workspace .date-month{font-size:9px;margin:0;line-height:1}
 .workspace .session-description,.workspace .activity-description,.workspace .session-notes,.workspace .activity-notes-preview{min-width:0}
+.session-important-notice {
+  display:block; max-width:100%; margin:3px 0 0; padding:2px 6px;
+  border:0; border-left:3px solid #75498d; border-radius:3px;
+  background:#f6edf9; color:#503063; font:inherit; font-weight:650;
+  text-align:left; overflow-wrap:anywhere; cursor:pointer;
+}
+.session-important-notice:hover { text-decoration:underline; }
 .workspace .session-meta{font-size:9px;gap:4px;line-height:1.35;margin:0 0 3px;flex-wrap:wrap}
 .workspace .session-number{font-size:9px;letter-spacing:0}
 .workspace .session-title{font-size:12px;font-weight:700;line-height:1.45;display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;overflow-wrap:normal}
@@ -846,6 +853,9 @@ textarea{resize:vertical;line-height:1.6}
 .task-compact .task-name { display:flex; align-items:center; gap:10px; min-width:0; }
 .task-compact .task-name>strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }
 .task-compact .task-source { margin:0; flex-shrink:0; font-size:12px; color:#435f6b; }
+.task-compact .task-name > .task-exam-date {
+  flex:none; margin:0; color:#6b4617; font-size:12px; font-weight:650; white-space:nowrap;
+}
 .task-inline-control { display:flex; align-items:center; gap:7px; font-variant-numeric:tabular-nums; }
 .task-toggle { position:relative; display:grid; place-items:center; width:32px; height:30px; cursor:pointer; border:1px solid #879d9d; border-radius:5px; font-weight:750; background:#ffffffb0; }
 .task-toggle input { position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; }

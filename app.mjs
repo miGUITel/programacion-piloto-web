@@ -18,8 +18,8 @@ import { sessionRowResources } from './session-resource-defaults.mjs?v=20261109-
 import { createRowResourcesUI } from './row-resources-ui.mjs?v=20261111-followup';
 import { eventTypes, setSessionEventType, activityEventType, activityEventTypes, taskProgress, sessionTaskTargets, moduleTimeline, unitExamReminders, setExamAnnouncement } from './teaching.mjs?v=20261109-common-preparation';
 import { libraryIntegrity } from './model-v3.mjs?v=20261109-common-preparation';
-import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261116-session-history';
-import { createModuleViews } from './module-views-ui.mjs?v=20261116-session-history';
+import { taskDateFields, taskTarget, taskDetails, applyTaskDetails, moduleTasks } from './module-views.mjs?v=20261125-rf43-rf6';
+import { createModuleViews } from './module-views-ui.mjs?v=20261125-rf43-rf6';
 import { presentationTargets, presentationDefaults, applyPresentation } from './task-cycle.mjs?v=20261109-common-preparation';
 import { hasTaskPlan, visibleSessionTasks, taskHeading } from './task-plan.mjs?v=20261109-common-preparation';
 import { createTaskPresentationUI } from './task-presentation-ui.mjs?v=20261109-common-preparation';
@@ -105,9 +105,11 @@ function dirty() { return Boolean(draft && JSON.stringify(draft) !== JSON.string
 
 function editorDirty() {
   if (!editorTarget || !$('editor').open || !draft) return false;
-  const activity = draft.sessions[editorTarget.sessionIndex].activities[editorTarget.activityIndex];
+  const session = draft.sessions[editorTarget.sessionIndex];
+  const activity = session.activities[editorTarget.activityIndex];
   const target = editorTaskTarget();
   return fields.some((field) => $(field).value !== text(activity[field])) || $('activity-event-type').value !== (activity.eventType || '')
+    || (editorTarget.editsSessionNotice && $('session-important-notice').value.trim() !== text(session.importantNotice))
     || (!$('task-fields').hidden && JSON.stringify(readTaskEditor()) !== JSON.stringify(taskDetails(target)));
 }
 
@@ -878,6 +880,16 @@ function makeSession(session, sessionIndex, heading) {
   title.title = first?.title || 'Sesión';
   title.tabIndex = -1;
   description.append(title, makeTeachingControls(session, sessionIndex));
+  const notice = text(session.importantNotice).trim();
+  if (notice) {
+    const button = node('button', 'session-important-notice', `Aviso: ${notice}`);
+    button.type = 'button';
+    button.title = 'Editar aviso importante';
+    button.setAttribute('aria-haspopup', 'dialog');
+    button.setAttribute('aria-controls', 'editor');
+    button.addEventListener('click', () => openEditor(sessionIndex, 0, 'importantNotice'));
+    description.append(button);
+  }
   const planSignal = replanningUI.sessionSignal(draft, session); if (planSignal) description.append(planSignal);
   const planned = node('p', 'planned-preview', first?.planned || '');
   planned.title = first?.planned || '';
@@ -1363,7 +1375,8 @@ function openEditor(sessionIndex, activityIndex, targetField = 'observations', o
   const activity = session.activities[activityIndex];
   const official = visibleSessionTasks(session, draft).filter(task => task.presentation.activityId === activity.id || (!task.presentation.activityId && activityIndex === 0));
   editorTarget = { sessionIndex, activityIndex, officialTaskId: officialTaskId || (official.length === 1 ? official[0].id : undefined),
-    sessionTask: !hasTaskPlan(draft) && taskTarget(session, activityIndex) === session };
+    sessionTask: !hasTaskPlan(draft) && taskTarget(session, activityIndex) === session,
+    editsSessionNotice: activityIndex === 0 && targetField !== 'task' };
   $('editor-kicker').textContent = `SESIÓN ${sessionDisplayLabel(draft, session, moduleRecords())} · ${activityIndex === 0 ? 'PRIMERA PORCIÓN' : 'ACTIVIDAD'}`;
   $('editor-title').textContent = editorTarget.officialTaskId ? taskHeading(draft.module.code, editorTaskTarget().code, editorTaskTarget().title) : activity.title || 'Actividad';
   $('editor-time').textContent = `${activity.start}–${activity.end} · ${dateInfo(session.date).full}`;
@@ -1371,6 +1384,8 @@ function openEditor(sessionIndex, activityIndex, targetField = 'observations', o
   $('editor-progress').textContent = progressNames.has(activity.progress) ? `Progreso importado: ${progressNames.get(activity.progress)} · Solo lectura` : '';
   $('editor-planned').textContent = activity.planned || 'Sin descripción prevista.';
   fields.forEach((field) => { $(field).value = text(activity[field]); });
+  $('session-notice-field').hidden = !editorTarget.editsSessionNotice;
+  $('session-important-notice').value = editorTarget.editsSessionNotice ? text(session.importantNotice) : '';
   $('activity-event-type').value = activity.eventType || '';
   const detailsTask = taskDetails(editorTaskTarget());
   taskDateFields.forEach(field => { $('task-' + field).value = detailsTask[field]; $('task-' + field).setCustomValidity(''); });
@@ -1384,7 +1399,8 @@ function openEditor(sessionIndex, activityIndex, targetField = 'observations', o
   $('editor').querySelectorAll('details').forEach((element) => { element.open = false; });
   $('editor').showModal();
   $('editor').querySelector('.editor-content').scrollTop = 0;
-  const target = $(targetField === 'task' ? 'task-dueOn' : targetField === 'improvements' ? 'improvements' : 'observations');
+  const focusFields = { task: 'task-dueOn', improvements: 'improvements', importantNotice: 'session-important-notice' };
+  const target = $(focusFields[targetField] ?? 'observations');
   target.focus({ preventScroll: true });
   target.scrollIntoView({ block: 'nearest', behavior: 'instant' });
   updateSaveState();
@@ -1437,6 +1453,11 @@ function applyEditor(event) {
     }
   }
   fields.forEach((field) => { activity[field] = $(field).value; });
+  if (editorTarget.editsSessionNotice) {
+    const notice = $('session-important-notice').value.trim();
+    if (notice) session.importantNotice = notice;
+    else delete session.importantNotice;
+  }
   if (!hasTaskPlan(draft)) {
     if ($('activity-event-type').value) activity.eventType = $('activity-event-type').value;
     else delete activity.eventType;
